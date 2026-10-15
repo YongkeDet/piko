@@ -16,7 +16,12 @@
 
 ## X 自定义下载目录
 
-此分支增加了系统文件夹选择器，可自行指定 X 图片和视频的保存目录。详见[使用与构建说明](docs/custom-download-folder.md)。
+此分支增加了系统文件夹选择器，可自行指定 X 图片和视频的保存目录。
+
+- **X 12.34.0-prod.01**：选择 `Custom download folder (modern X)`，安装后长按 X 图标，打开 **下载文件夹**。本次适配使用 APKMirror 的 **arm64-v8a、Android 10+** 安装包；新版只迁移了下载目录功能，其他旧版 Piko 功能仍需分别适配。
+- **X 12.19.1-release.0**：继续通过 **Piko 设置 → 下载 → 选择自定义下载文件夹** 设置目录，并使用原有 Piko 补丁。
+
+详见[使用与构建说明](docs/custom-download-folder.md)。
 
 ## 🕹️ Usage
 
@@ -26,7 +31,7 @@ Starting with patches v3.0.0, Piko patches use [Morphe](https://morphe.software)
 
 Tap the link to add Piko as a patch source in Morphe Manager:
 
-[**➕ Add Piko to Morphe**](https://morphe.software/add-source?github=crimera/piko)
+[**➕ Add Piko to Morphe**](https://morphe.software/add-source?github=YongkeDet/piko&name=Piko%20Custom%20Folder)
 
 Then patch Twitter/X or Instagram:
 1. Tap X or Instagram app icon in Morphe
