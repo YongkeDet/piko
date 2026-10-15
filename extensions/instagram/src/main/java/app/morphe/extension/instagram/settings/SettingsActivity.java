@@ -27,7 +27,7 @@ import android.widget.TextView;
 
 import java.util.function.Supplier;
 
-import app.morphe.extension.crimera.downloader.StorageUtils;
+import app.morphe.extension.crimera.legacydownloader.StorageUtils;
 import app.morphe.extension.instagram.constants.Constants;
 import app.morphe.extension.instagram.constants.UI;
 import app.morphe.extension.instagram.settings.preference.Helper;
@@ -203,8 +203,6 @@ public class SettingsActivity extends Activity {
                 screenBuilder.buildAdsSection();
             } else if(fragment_name.equals(Constants.PIKO_FRAGMENT_GHOST)) {
                 screenBuilder.ghostSection();
-            } else if(fragment_name.equals(Constants.PIKO_FRAGMENT_STORY)) {
-                screenBuilder.storySection();
             } else if(fragment_name.equals(Constants.PIKO_FRAGMENT_LINKS)) {
                 screenBuilder.linksSection();
             } else if(fragment_name.equals(Constants.PIKO_FRAGMENT_DISTRACTION_FREE)) {

@@ -97,15 +97,7 @@ val disableDiscoverPeoplePatch =
                 .filterSuggestionFlag(FOLLOW_REQUEST_SUGGESTIONS, 2)
 
             val categoryParser = FriendingCenterCategoryFingerprint.matchAll(1..1).single().method
-            val response = FriendingCenterResponseFingerprint.matchAll(1..1).single()
-            val responseParser = response.classDef.methods.singleOrNull { candidate ->
-                candidate.instructions.any {
-                    ((it as? ReferenceInstruction)?.reference as? MethodReference)?.toString() == categoryParser.toString()
-                } && (candidate == response.method || candidate.instructions.any {
-                    ((it as? ReferenceInstruction)?.reference as? MethodReference)?.toString() == response.method.toString()
-                })
-            } ?: throw PatchException("Expected one friending center response parser")
-            responseParser.apply {
+            FriendingCenterResponseFingerprint.matchAll(1..1).single().method.apply {
                 val index = instructions.mapIndexedNotNull { index, instruction ->
                     val reference = (instruction as? ReferenceInstruction)?.reference as? MethodReference
                     if (reference?.toString() == categoryParser.toString()) index else null

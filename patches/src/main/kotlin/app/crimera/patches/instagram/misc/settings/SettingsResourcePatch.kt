@@ -71,7 +71,6 @@ val addSettingsActivityPatch =
                 ResourceGroup(
                     "drawable",
                     "piko_settings_shortcut_icon.xml",
-                    "piko_settings_shortcut_foreground.xml",
                     "piko_ghost_icon.xml",
                 ),
                 ResourceGroup(
@@ -107,7 +106,7 @@ val addSettingsActivityPatch =
                 listOf(
                     "app.morphe.extension.instagram.settings.preference.fragments.BackupPrefActivity",
                     "app.morphe.extension.instagram.settings.preference.fragments.RestorePrefActivity",
-                    "app.morphe.extension.crimera.downloader.FolderPickerActivity",
+                    "app.morphe.extension.crimera.legacydownloader.FolderPickerActivity",
                 ).forEach { activityName ->
                     activity = document.createElement("activity")
                     activity.setAttribute("android:name", activityName)

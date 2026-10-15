@@ -1,9 +1,9 @@
-name: Publish custom download folder
+name: Publish verified NewX 12.34 bundle
 
 on:
   workflow_dispatch:
   push:
-    branches: [feat/custom-download-folder]
+    branches: [feat/x-12.34-full]
     paths:
       - .github/workflows/publish-custom-download-folder.yml
 
@@ -12,7 +12,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: publish-custom-download-folder
+  group: publish-newx-custom
   cancel-in-progress: false
 
 jobs:
@@ -20,11 +20,13 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      SOURCE_RUN_ID: '38703254600'
-      SOURCE_SHA: 0623ce2f437f176902f00cef6b9cd1671c80e3f6
-      BUNDLE_SHA256: b0996cb80b48076c9c564dae8e850f73994086370cbc9ee4d1dbf4e186c5cb1f
-      RELEASE_TAG: v3.10.0-custom-download.2
+      SOURCE_RUN_ID: '38742137984'
+      SOURCE_SHA: f5ca7bbd864db688d7d2eceab0e86125e29ec971
+      BUNDLE_SHA256: 936f9edb68a4ecad1a77266e70bd02fa3cddfd6bcf1a2437700e2e80cf6f8016
+      RELEASE_TAG: v3.10.0-custom-newx.1
+      BUNDLE_NAME: patches-3.10.0-custom-newx.1.mpp
     steps:
+      - uses: actions/checkout@v7
       - name: Verify source build
         run: |
           test "$(gh run view "$SOURCE_RUN_ID" --repo "$GITHUB_REPOSITORY" --json headSha --jq '.headSha')" = "$SOURCE_SHA"
@@ -33,36 +35,27 @@ jobs:
         run: >-
           gh run download "$SOURCE_RUN_ID"
           --repo "$GITHUB_REPOSITORY"
-          --name piko-custom-download-folder
+          --name piko-newx-12.34
           --dir dist
-      - name: Verify bundle checksum
-        working-directory: dist
+      - name: Verify bundle and provenance
         run: |
-          printf '%s  %s\n' "$BUNDLE_SHA256" 'patches-3.10.0.mpp' > SHA256SUMS
-          sha256sum --check SHA256SUMS
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib
+          root = pathlib.Path('dist')
+          bundle = root / os.environ['BUNDLE_NAME']
+          record = json.loads((root / 'source-provenance.json').read_text())
+          assert record['source_sha'] == os.environ['SOURCE_SHA']
+          assert record['bundle'] == bundle.name
+          digest = hashlib.sha256(bundle.read_bytes()).hexdigest()
+          assert record['sha256'] == digest == os.environ['BUNDLE_SHA256']
+          (root / 'SHA256SUMS').write_text(f'{digest}  {bundle.name}\n')
+          PY
       - name: Publish bundle
         run: |
-          cat > dist/RELEASE_NOTES.md <<'NOTES'
-          Supports X 12.34.0-prod.01 (312340001), arm64-v8a, Android 10+.
-          Select "Custom download folder (modern X)" when patching the original APKM.
-          Long-press the X launcher icon > Download folder to choose a directory.
-          中文入口：长按 X 图标 > 下载文件夹 > 选择下载文件夹。
-
-          The rewritten X app receives the custom folder feature only. Other Piko features remain available on legacy X 12.19.1-release.0.
-          Normal media saving, direct-message attachments and exported videos are covered. X retains its existing download permissions and streaming/error handling.
-
-          Validation: 20 Android tests and the full extension/patch bundle build passed in run 38703254600.
-          The exact uploaded arm64 APKM was patched and rebuilt successfully using default patch selection, without forcing compatibility.
-          Verified the three save paths, application initialization, settings Activity, launcher shortcut and arm64-only native libraries in the rebuilt APK.
-          Device testing is still pending.
-
-          Source build: 0623ce2f437f176902f00cef6b9cd1671c80e3f6.
-          Input APKM SHA-256: 016a7eb2b6d8e2d6410da7f3c60e1bb46b002f6fedd797e366b068fb2897682b.
-          NOTES
           gh release create "$RELEASE_TAG" \
-            dist/patches-3.10.0.mpp dist/SHA256SUMS \
+            "dist/$BUNDLE_NAME" dist/SHA256SUMS dist/source-provenance.json \
             --repo "$GITHUB_REPOSITORY" \
             --target "$GITHUB_SHA" \
-            --title 'Piko custom download folder - X 12.34 arm64' \
-            --notes-file dist/RELEASE_NOTES.md \
+            --title 'Piko NewX Custom — X 12.34 arm64' \
+            --notes-file docs/releases/v3.10.0-custom-newx.1.md \
             --latest

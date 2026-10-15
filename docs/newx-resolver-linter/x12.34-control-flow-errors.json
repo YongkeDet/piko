@@ -1,0 +1,185 @@
+{
+  "appliedPatches": [
+    {
+      "name": "NewX: Browse tweet object"
+    },
+    {
+      "name": "NewX: Classic inline action spacing"
+    },
+    {
+      "name": "NewX: Clone",
+      "options": [
+        {
+          "key": "packageName",
+          "value": "com.twitter.android.piko"
+        },
+        {
+          "key": "appName",
+          "value": "X Piko"
+        }
+      ]
+    },
+    {
+      "name": "NewX: Crash logs"
+    },
+    {
+      "name": "NewX: Custom font"
+    },
+    {
+      "name": "NewX: Custom sharing domain"
+    },
+    {
+      "name": "NewX: Customize drawer items"
+    },
+    {
+      "name": "NewX: Customize inline actions"
+    },
+    {
+      "name": "NewX: Customize media menu items"
+    },
+    {
+      "name": "NewX: Customize navigation bar"
+    },
+    {
+      "name": "NewX: Customize post menu items"
+    },
+    {
+      "name": "NewX: Customize profile tabs"
+    },
+    {
+      "name": "NewX: Customize timeline tabs"
+    },
+    {
+      "name": "NewX: Disable automatic timeline refresh"
+    },
+    {
+      "name": "NewX: Disable blur effects"
+    },
+    {
+      "name": "NewX: Disable video player scrolling"
+    },
+    {
+      "name": "NewX: Feature switch overrides"
+    },
+    {
+      "name": "NewX: Filter For You by topic"
+    },
+    {
+      "name": "NewX: Filter posts by keyword"
+    },
+    {
+      "name": "NewX: Force translate option"
+    },
+    {
+      "name": "NewX: Gallery profile Photos tab"
+    },
+    {
+      "name": "NewX: Hide AI-generated posts"
+    },
+    {
+      "name": "NewX: Hide Community Notes"
+    },
+    {
+      "name": "NewX: Hide Discover more"
+    },
+    {
+      "name": "NewX: Hide Spaces bar"
+    },
+    {
+      "name": "NewX: Hide compose button"
+    },
+    {
+      "name": "NewX: Hide new posts pill"
+    },
+    {
+      "name": "NewX: Hide post dividers"
+    },
+    {
+      "name": "NewX: Hide post reply bar"
+    },
+    {
+      "name": "NewX: Hide posts by verified account type"
+    },
+    {
+      "name": "NewX: Hide premium upsell"
+    },
+    {
+      "name": "NewX: Hide promote button"
+    },
+    {
+      "name": "NewX: Hide timeline tabs bar"
+    },
+    {
+      "name": "NewX: Hide who to follow"
+    },
+    {
+      "name": "NewX: Inline download button"
+    },
+    {
+      "name": "NewX: Open canonical URLs"
+    },
+    {
+      "name": "NewX: Redirect downloads to chosen folder"
+    },
+    {
+      "name": "NewX: Remove ads"
+    },
+    {
+      "name": "NewX: Restore Twitter branding"
+    },
+    {
+      "name": "NewX: Restore pinned home tab"
+    },
+    {
+      "name": "NewX: Restore timeline position"
+    },
+    {
+      "name": "NewX: Server error logging"
+    },
+    {
+      "name": "NewX: Set default media tab"
+    },
+    {
+      "name": "NewX: Set default profile post sorting"
+    },
+    {
+      "name": "NewX: Set default reply sorting"
+    },
+    {
+      "name": "NewX: Share post as image"
+    },
+    {
+      "name": "NewX: Show poll results"
+    },
+    {
+      "name": "NewX: Show sensitive media"
+    },
+    {
+      "name": "NewX: Theme"
+    },
+    {
+      "name": "NewX: Unlock color customization"
+    },
+    {
+      "name": "NewX: Unlock downloads"
+    }
+  ],
+  "failedPatches": [
+    {
+      "patch": {
+        "name": "NewX: Force highest video resolution"
+      },
+      "reason": "app.morphe.patcher.patch.PatchException: Expected exactly one native half-resolution adaptive constraint, found 0: []\n\tat app.crimera.patches.common.ResolverCardinalityKt.requireExactlyOne(ResolverCardinality.kt:15)\n\tat app.crimera.patches.common.ResolverCardinalityKt.requireExactlyOne$default(ResolverCardinality.kt:8)\n\tat app.crimera.patches.newx.misc.mediaquality.PreferredVideoResolutionKt.preserveSelectedVideoHeight(PreferredVideoResolution.kt:146)\n\tat app.crimera.patches.newx.misc.mediaquality.PreferredVideoResolutionKt.patchPreferredVideoResolution(PreferredVideoResolution.kt:113)\n\tat app.crimera.patches.newx.misc.mediaquality.ForceHighestVideoQualityPatchKt.newXForceHighestVideoQualityPatch$lambda$0$0(ForceHighestVideoQualityPatch.kt:130)\n\tat app.morphe.patcher.patch.Patch.execute(Patch.kt:120)\n\tat app.morphe.patcher.patch.BytecodePatch.execute$morphe_patcher(Patch.kt:264)\n\tat app.morphe.patcher.Patcher$invoke$1.invokeSuspend$execute(Patcher.kt:96)\n\tat app.morphe.patcher.Patcher$invoke$1.invokeSuspend(Patcher.kt:120)\n\tat app.morphe.patcher.Patcher$invoke$1.invoke(Patcher.kt)\n\tat app.morphe.patcher.Patcher$invoke$1.invoke(Patcher.kt)\n\tat kotlinx.coroutines.flow.SafeFlow.collectSafely(Builders.kt:57)\n\tat kotlinx.coroutines.flow.AbstractFlow.collect(Flow.kt:226)\n\tat app.morphe.desktop.command.PatchCommand$call$3$3$1.invokeSuspend(PatchCommand.kt:787)\n\tat kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)\n\tat kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)\n\tat kotlinx.coroutines.EventLoopImplBase.processNextEvent(EventLoop.common.kt:256)\n\tat kotlinx.coroutines.BlockingCoroutine.joinBlocking(Builders.kt:54)\n\tat kotlinx.coroutines.BuildersKt__BuildersKt.runBlockingImpl(Builders.kt:30)\n\tat kotlinx.coroutines.BuildersKt.runBlockingImpl(Unknown Source)\n\tat kotlinx.coroutines.BuildersKt__Builders_concurrentKt.runBlockingK(Builders.concurrent.kt:172)\n\tat kotlinx.coroutines.BuildersKt.runBlockingK(Unknown Source)\n\tat kotlinx.coroutines.BuildersKt__Builders_concurrentKt.runBlockingK$default(Builders.concurrent.kt:157)\n\tat kotlinx.coroutines.BuildersKt.runBlockingK$default(Unknown Source)\n\tat app.morphe.desktop.command.PatchCommand.call$lambda$13$2(PatchCommand.kt:786)\n\tat app.morphe.desktop.command.model.PatchingResultKt.addStepResult(PatchingResult.kt:29)\n\tat app.morphe.desktop.command.PatchCommand.call(PatchCommand.kt:785)\n\tat app.morphe.desktop.command.PatchCommand.call(PatchCommand.kt:55)\n\tat picocli.CommandLine.executeUserObject(CommandLine.java:2031)\n\tat picocli.CommandLine.access$1500(CommandLine.java:148)\n\tat picocli.CommandLine$RunLast.executeUserObjectOfLastSubcommandWithSameParent(CommandLine.java:2469)\n\tat picocli.CommandLine$RunLast.handle(CommandLine.java:2461)\n\tat picocli.CommandLine$RunLast.handle(CommandLine.java:2423)\n\tat picocli.CommandLine$AbstractParseResultHandler.execute(CommandLine.java:2277)\n\tat picocli.CommandLine$RunLast.execute(CommandLine.java:2425)\n\tat picocli.CommandLine.execute(CommandLine.java:2174)\n\tat app.morphe.MorpheLauncherKt.main(MorpheLauncher.kt:85)\n"
+    }
+  ],
+  "patchingSteps": [
+    {
+      "step": "PATCHING",
+      "success": true
+    },
+    {
+      "step": "REBUILDING",
+      "success": true
+    }
+  ]
+}

@@ -7,10 +7,9 @@
 package app.morphe.extension.instagram.patches.filter.story;
 
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
 
+import app.morphe.extension.instagram.settings.SettingsStatus;
 import app.morphe.extension.instagram.utils.Pref;
 import app.morphe.extension.instagram.entity.ReelResponseItem;
 import app.morphe.extension.instagram.entity.UserData;
@@ -20,30 +19,36 @@ import app.morphe.extension.crimera.PikoUtils;
 @SuppressWarnings("unused")
 public class FilterStory {
 
-    public static List<Object> filter(List<Object> items) {
-        if (items == null || items.isEmpty()) return items;
+    private static Set<String> REEL_TYPES;
+    private static Set<String> USER_TYPES;
+    private static Integer MIN_STORY_ITEM;
+    private static Integer MAX_STORY_ITEM;
 
-        Set<String> reelTypes = Pref.filterStoryByType();
-        Set<String> userTypes = Pref.filterStoryByUserType();
-        int minStoryItems = Pref.filterStoryByMinStoryItems();
-        int maxStoryItems = Pref.filterStoryByMaxStoryItems();
-        List<Object> filtered = new ArrayList<>(items.size());
-        for (Object item : items) {
-            try {
-                ReelResponseItem reelResponseItem = new ReelResponseItem(item);
-                if (reelTypes.contains(reelResponseItem.getReelType())) continue;
+    static {
+        REEL_TYPES = Pref.filterStoryByType();
+        USER_TYPES = Pref.filterStoryByUserType();
+        MIN_STORY_ITEM = Pref.filterStoryByMinStoryItems();
+        MAX_STORY_ITEM = Pref.filterStoryByMaxStoryItems();
+    }
 
-                UserData userData = reelResponseItem.getUserData();
-                if (userTypes.contains("verified") && userData.isVerified()) continue;
-                if (userTypes.contains("unverified") && !userData.isVerified()) continue;
+    public static Object filter(Object itemObject) {
+        try {
+            ReelResponseItem reelResponseItem = new ReelResponseItem(itemObject);
 
-                int mediaCount = reelResponseItem.getMediaCount();
-                if (mediaCount < minStoryItems || mediaCount > maxStoryItems) continue;
-            } catch (Exception e) {
-                PikoUtils.logger(e.toString());
-            }
-            filtered.add(item);
+            String reelType = reelResponseItem.getReelType();
+            if(REEL_TYPES.contains(reelType)) return null;
+
+            UserData userData = reelResponseItem.getUserData();
+            if(USER_TYPES.contains("verified") && userData.isVerified()) return null;
+            if(USER_TYPES.contains("unverified") && !userData.isVerified()) return null;
+
+            Integer mediaCount = reelResponseItem.getMediaCount();
+            if(mediaCount < MIN_STORY_ITEM) return null;
+            if(mediaCount > MAX_STORY_ITEM) return null;
+
+        } catch (Exception e) {
+            PikoUtils.logger(e.toString());
         }
-        return filtered;
+        return itemObject;
     }
 }

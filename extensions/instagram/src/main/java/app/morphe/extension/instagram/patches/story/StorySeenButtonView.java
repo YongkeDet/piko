@@ -17,14 +17,9 @@ import android.widget.ImageView;
 import java.lang.reflect.Constructor;
 
 import app.morphe.extension.instagram.constants.UI;
-import app.morphe.extension.shared.ResourceType;
-import app.morphe.extension.shared.ResourceUtils;
 
 final class StorySeenButtonView {
     private static final String BUTTON_TAG = "piko_mark_story_seen_button";
-    private static final String[] ACTION_ID_NAMES = {
-            "toolbar_like_container", "toolbar_reshare_button", "toolbar_menu_button"
-    };
 
     private StorySeenButtonView() {
     }
@@ -33,28 +28,16 @@ final class StorySeenButtonView {
         return new ViewFrameHost(root);
     }
 
-    static ViewGroup findActionRow(View root) {
-        if (root == null) {
-            return null;
-        }
-        View row = findView(root, "toolbar_buttons_container");
-        return row instanceof ViewGroup ? (ViewGroup) row : null;
-    }
-
-    private static View findView(View root, String name) {
-        int id = ResourceUtils.getIdentifier(ResourceType.ID, name);
-        return id == 0 ? null : root.findViewById(id);
-    }
-
     static void deactivate(View anchor) {
         setUnavailable(anchor, false);
     }
 
-    static void setUnavailable(View toolbar, boolean hide) {
-        if (!(toolbar instanceof ViewGroup)) {
+    static void setUnavailable(View overflow, boolean hide) {
+        ViewGroup parent = parentOf(overflow);
+        if (parent == null) {
             return;
         }
-        ImageView button = findButton((ViewGroup) toolbar);
+        ImageView button = findButton(parent);
         if (button == null) {
             return;
         }
@@ -65,40 +48,21 @@ final class StorySeenButtonView {
         }
     }
 
-    static ImageView prepare(ViewGroup parent) {
-        View anchor = findActionAnchor(parent);
+    static ImageView prepare(View overflow) {
+        ViewGroup parent = parentOf(overflow);
+        if (parent == null) {
+            throw new IllegalArgumentException("Story header menu has no parent ViewGroup");
+        }
+
         ImageView button = findButton(parent);
-        if (anchor == null) {
-            if (button != null) {
-                button.setVisibility(View.VISIBLE);
-            }
-            return button;
-        }
         if (button == null) {
-            button = createButton(parent, anchor);
+            button = createButton(parent, overflow);
         } else {
-            copyButtonGeometry(button, anchor);
-            button.setLayoutParams(copyLayoutParams(anchor.getLayoutParams()));
-            int anchorIndex = parent.indexOfChild(anchor);
-            int buttonIndex = parent.indexOfChild(button);
-            if (buttonIndex != anchorIndex - 1) {
-                parent.removeView(button);
-                parent.addView(button, parent.indexOfChild(anchor));
-            }
+            copyButtonGeometry(button, overflow);
         }
+        keepAboveHeaderActions(button, parent);
         button.setVisibility(View.VISIBLE);
         return button;
-    }
-
-    private static View findActionAnchor(ViewGroup parent) {
-        for (String name : ACTION_ID_NAMES) {
-            View candidate = findView(parent, name);
-            if (candidate != null && candidate.getParent() == parent
-                    && candidate.getVisibility() == View.VISIBLE) {
-                return candidate;
-            }
-        }
-        return null;
     }
 
     static boolean showState(ImageView button, StorySeenBridge.SeenState seenState) {
@@ -125,20 +89,34 @@ final class StorySeenButtonView {
         }
     }
 
-    private static ImageView createButton(ViewGroup parent, View anchor) {
+    private static ImageView createButton(ViewGroup parent, View overflow) {
         ImageView button = new ImageView(parent.getContext());
         button.setTag(BUTTON_TAG);
         button.setScaleType(ImageView.ScaleType.CENTER);
         button.setClickable(true);
         button.setFocusable(true);
         button.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
-        copyButtonGeometry(button, anchor);
+        copyButtonGeometry(button, overflow);
 
-        int insertIndex = parent.indexOfChild(anchor);
-        ViewGroup.LayoutParams layoutParams = copyLayoutParams(anchor.getLayoutParams());
+        int overflowIndex = parent.indexOfChild(overflow);
+        int insertIndex = overflowIndex < 0 ? parent.getChildCount() : overflowIndex;
+        ViewGroup.LayoutParams layoutParams = copyLayoutParams(overflow.getLayoutParams());
         parent.addView(button, insertIndex, layoutParams);
-        new FirstLayoutDrawGate(button, parent, anchor).start();
+        new FirstLayoutDrawGate(button, parent, overflow).start();
         return button;
+    }
+
+    private static void keepAboveHeaderActions(ImageView button, ViewGroup parent) {
+        float highestSiblingZ = 0.0f;
+        for (int index = 0; index < parent.getChildCount(); index++) {
+            View child = parent.getChildAt(index);
+            if (child != button) {
+                highestSiblingZ = Math.max(highestSiblingZ, child.getZ());
+            }
+        }
+
+        // Instagram raises header badges above other controls during the opening transition.
+        button.setZ(highestSiblingZ + 1.0f);
     }
 
     private static void copyButtonGeometry(ImageView button, View anchor) {
@@ -160,6 +138,12 @@ final class StorySeenButtonView {
             }
         }
         return null;
+    }
+
+    private static ViewGroup parentOf(View view) {
+        return view != null && view.getParent() instanceof ViewGroup
+                ? (ViewGroup) view.getParent()
+                : null;
     }
 
     private static ViewGroup.LayoutParams copyLayoutParams(ViewGroup.LayoutParams source) {
@@ -235,7 +219,7 @@ final class StorySeenButtonView {
         @Override
         public boolean onPreDraw() {
             StorySeenBindingRetry.FrameCallback current = callback;
-            // Skip this frame after binding so the action row can lay out with the eye button.
+            // Skip this frame after binding so the header can lay out with the eye button.
             return current == null || !current.onFrame();
         }
 
@@ -290,14 +274,14 @@ final class StorySeenButtonView {
             View.OnAttachStateChangeListener {
         private final ImageView button;
         private final ViewGroup parent;
-        private final View anchor;
+        private final View overflow;
         private boolean observing;
         private boolean deferred;
 
-        private FirstLayoutDrawGate(ImageView button, ViewGroup parent, View anchor) {
+        private FirstLayoutDrawGate(ImageView button, ViewGroup parent, View overflow) {
             this.button = button;
             this.parent = parent;
-            this.anchor = anchor;
+            this.overflow = overflow;
         }
 
         private void start() {
@@ -315,8 +299,8 @@ final class StorySeenButtonView {
             boolean defer = button.isAttachedToWindow()
                     && !deferred
                     && (button.getWidth() == 0 || button.getHeight() == 0)
-                    && anchor.getWidth() > 0
-                    && anchor.getHeight() > 0;
+                    && overflow.getWidth() > 0
+                    && overflow.getHeight() > 0;
             if (defer) {
                 deferred = true;
                 parent.requestLayout();

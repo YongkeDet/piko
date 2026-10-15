@@ -46,8 +46,6 @@ import com.instagram.common.session.UserSession;
 
 public class FriendshipStatusIndicator {
 
-    private static final String STATUS_TAG = "piko_friendship_status_textview";
-
     private static void friendshipStatusDialogBox(Context context, UserFriendshipStatus userFriendshipStatus) {
         InstagramDialogBox dialog = new InstagramDialogBox(context);
 
@@ -87,19 +85,6 @@ public class FriendshipStatusIndicator {
             String indicatorIconDrawable
     ) {
         TextView friendshipStatusTextView = new TextView(context);
-        bindStatusTextView(friendshipStatusTextView, userFriendshipStatus, text,
-                indicatorColorHex, indicatorIconDrawable);
-        return friendshipStatusTextView;
-    }
-
-    private static void bindStatusTextView(
-            TextView friendshipStatusTextView,
-            UserFriendshipStatus userFriendshipStatus,
-            String text,
-            String indicatorColorHex,
-            String indicatorIconDrawable
-    ) {
-        Context context = friendshipStatusTextView.getContext();
         friendshipStatusTextView.setText(text);
 
         float indicatorTextSizeSp = 12;
@@ -156,7 +141,8 @@ public class FriendshipStatusIndicator {
         ));
 
         setStatusClickListener(friendshipStatusTextView, userFriendshipStatus);
-        friendshipStatusTextView.setVisibility(View.VISIBLE);
+
+        return friendshipStatusTextView;
     }
 
     // Split out so a recycled badge's listener can be refreshed for its new row without
@@ -183,17 +169,15 @@ public class FriendshipStatusIndicator {
         if (parent instanceof ViewGroup) {
             ViewGroup viewGroup = (ViewGroup) parent;
 
-            TextView existingStatus = viewGroup.findViewWithTag(STATUS_TAG);
-            if (existingStatus != null) {
-                bindStatusTextView(existingStatus, userFriendshipStatus, text,
-                        indicatorColorHex, indicatorIconDrawable);
+            String tag = "piko_friendship_status_textview";
+            if (viewGroup.findViewWithTag(tag) != null) {
                 return;
             }
 
             TextView friendshipStatusTextView = createStatusTextView(
                     internalBadgeTextView.getContext(), userFriendshipStatus, text,
                     indicatorColorHex, indicatorIconDrawable);
-            friendshipStatusTextView.setTag(STATUS_TAG);
+            friendshipStatusTextView.setTag(tag);
 
             int targetIndex = viewGroup.indexOfChild(internalBadgeTextView);
             ViewGroup.MarginLayoutParams layoutParams = new ViewGroup.MarginLayoutParams(
@@ -206,19 +190,8 @@ public class FriendshipStatusIndicator {
     }
 
     public static void addFriendshipIndicator(Object profileInfoObject, Object badgeObject){
-        try {
-            Entity entity = new Entity(badgeObject);
-            TextView badgeView = (TextView) entity.getMethod("getView");
-            if (badgeView == null) return;
-
-            ViewParent parent = badgeView.getParent();
-            if (parent instanceof ViewGroup) {
-                View existingStatus = ((ViewGroup) parent).findViewWithTag(STATUS_TAG);
-                // A reused profile may now be unknown, self, or disabled.
-                if (existingStatus != null) existingStatus.setVisibility(View.GONE);
-            }
-
-            if(Pref.followBackIndicator() && SettingsStatus.followBackIndicator) {
+        if(Pref.followBackIndicator() && SettingsStatus.followBackIndicator) {
+            try {
                 ProfileInfo profileInfo = new ProfileInfo(profileInfoObject);
                 Boolean isSelfProfile = profileInfo.isSelfProfile();
 
@@ -227,10 +200,11 @@ public class FriendshipStatusIndicator {
 
                 UserData viewingUserData = profileInfo.getUserData();
                 UserFriendshipStatus userFriendshipStatus = viewingUserData.getUserFriendshipStatus();
-                Map<String, Boolean> friendshipMap = userFriendshipStatus.getMappings();
-                Boolean followed_by = friendshipMap.get("followed_by");
-                if (followed_by == null) return;
-                boolean following = Boolean.TRUE.equals(friendshipMap.get("following"));
+                Boolean followed_by = userFriendshipStatus.getFollowBackStatus();
+                Boolean following = userFriendshipStatus.getFollowingStatus();
+
+                Entity entity = new Entity(badgeObject);
+                TextView badgeView = (TextView) entity.getMethod("getView");
 
                 String indicatorText;
                 String indicatorIconDrawable;
@@ -258,9 +232,9 @@ public class FriendshipStatusIndicator {
                         indicatorIconDrawable
                 );
 
+            } catch (Exception ex) {
+                Logger.printException(() -> "Failed follow back indicator", ex);
             }
-        } catch (Exception ex) {
-            Logger.printException(() -> "Failed follow back indicator", ex);
         }
     }
 }

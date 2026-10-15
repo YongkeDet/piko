@@ -44,11 +44,9 @@ val openLinksExternallyPatch =
                 val stringMatchIndex = it.stringMatches[0].index
 
                 it.method.apply {
-                    // Search after the putString call, since a Bundle can be moved between the key and the call.
-                    val putStringIndex = indexOfFirstInstructionOrThrow(stringMatchIndex, Opcode.INVOKE_VIRTUAL)
                     val urlResultObjIndex =
                         indexOfFirstInstructionOrThrow(
-                            putStringIndex,
+                            stringMatchIndex,
                             Opcode.MOVE_OBJECT_FROM16,
                         )
 

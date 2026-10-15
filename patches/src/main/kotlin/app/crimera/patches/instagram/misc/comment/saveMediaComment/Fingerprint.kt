@@ -7,11 +7,9 @@
 package app.crimera.patches.instagram.misc.comment.saveMediaComment
 
 import app.crimera.patches.instagram.entity.commentDataEntity.CHAT_CONTEXT_BUTTON_SUPER_CLASS
+import app.crimera.patches.instagram.misc.comment.copyComment.CopyTextChatButtonToStringFingerprint
 import app.crimera.patches.instagram.utils.Constants.COMMENT_BUTTON_EXTENSION_CLASS
 import app.morphe.patcher.Fingerprint
-import app.morphe.util.getReference
-import com.android.tools.smali.dexlib2.Opcode
-import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 
 internal const val COMMENT_COPY_EXTENSION_CLASS = "${COMMENT_BUTTON_EXTENSION_CLASS}/saveMediaButton"
 internal const val BUTTON_EXTENSION_CLASS = "${COMMENT_COPY_EXTENSION_CLASS}/SaveMediaButton;"
@@ -28,20 +26,16 @@ internal object InitSaveMediaButtonExtensionFingerprint : Fingerprint(
     definingClass = BUTTON_EXTENSION_CLASS,
 )
 
-internal object ChatButtonActionsFingerprint : Fingerprint(
-    name = "<clinit>",
-    strings = listOf("SAVE_MEDIA", "COPY_TEXT", "save_media"),
-    custom = { _, classDef -> classDef.superclass == "Ljava/lang/Enum;" },
+internal object SaveMediaChatButtonToStringFingerprint : Fingerprint(
+    name = "toString",
+    returnType = "Ljava/lang/String;",
+    strings = listOf("SaveMedia"),
+    custom = { _, classDef ->
+        classDef.superclass == CHAT_CONTEXT_BUTTON_SUPER_CLASS
+    },
 )
 
-internal class SaveMediaChatButtonInitFingerprint(action: FieldReference) : Fingerprint(
+internal object SaveMediaChatButtonInitFingerprint : Fingerprint(
+    classFingerprint = SaveMediaChatButtonToStringFingerprint,
     name = "<init>",
-    parameters = emptyList(),
-    custom = { method, classDef ->
-        classDef.superclass == CHAT_CONTEXT_BUTTON_SUPER_CLASS && method.implementation?.instructions?.any { instruction ->
-            instruction.opcode == Opcode.SGET_OBJECT && instruction.getReference<FieldReference>()?.let {
-                it.definingClass == action.definingClass && it.name == action.name && it.type == action.type
-            } == true
-        } == true
-    },
 )

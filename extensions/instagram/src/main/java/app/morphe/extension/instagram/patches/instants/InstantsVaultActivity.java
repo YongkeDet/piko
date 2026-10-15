@@ -120,7 +120,7 @@ public class InstantsVaultActivity extends Activity {
 
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setBackgroundColor(InstagramPreferenceStyle.backgroundColor());
+        root.setBackgroundColor(themed("igds_color_primary_background", 0xFF000000));
         InstagramPreferenceStyle.applySystemBarStyle(this);
         root.addView(buildToolbar());
         if (!items.isEmpty()) root.addView(buildSearchField());
@@ -131,8 +131,7 @@ public class InstantsVaultActivity extends Activity {
         rebuildContent();
 
         root.setOnApplyWindowInsetsListener((v, insets) -> {
-            v.setPadding(0, insets.getSystemWindowInsetTop(), 0,
-                    insets.getSystemWindowInsetBottom());
+            v.setPadding(0, insets.getSystemWindowInsetTop(), 0, 0);
             return insets;
         });
         setContentView(root);
@@ -427,19 +426,30 @@ public class InstantsVaultActivity extends Activity {
     }
 
     private LinearLayout buildToolbar() {
+        int pad = dp(12);
         LinearLayout bar = new LinearLayout(this);
-        bar.setBackgroundColor(InstagramPreferenceStyle.backgroundColor());
+        bar.setOrientation(LinearLayout.HORIZONTAL);
+        bar.setGravity(Gravity.CENTER_VERTICAL);
+        bar.setPadding(pad, pad, pad, pad);
+        bar.setBackgroundColor(themed("igds_color_primary_background", 0xFF101010));
 
-        ImageView back = new ImageView(this);
-        UI.setThemedIcon(back, UI.DRAWABLE_ARROW_BACK);
-        back.setOnClickListener(v -> finish());
+        // Instagram's own back arrow, themed. If the drawable can't be resolved on this build we'd
+        // otherwise ship a toolbar with no way back, so fall back to a plain glyph.
+        if (UI.addImageViewToViewGroup(bar, UI.DRAWABLE_ARROW_BACK, this::finish) == null) {
+            TextView back = new TextView(this);
+            back.setText("←");
+            back.setTextColor(themed("igds_color_primary_text", 0xFFFFFFFF));
+            back.setTextSize(TypedValue.COMPLEX_UNIT_SP, 20);
+            back.setOnClickListener(v -> finish());
+            bar.addView(back);
+        }
 
         TextView title = new TextView(this);
         title.setText(str("piko_view_saved_instants"));
-        title.setTextColor(InstagramPreferenceStyle.primaryTextColor());
-        InstagramPreferenceStyle.applyToolbarLayout(this, bar, back, title, false);
-        bar.addView(back);
-        bar.addView(title);
+        title.setTextColor(themed("igds_color_primary_text", 0xFFFFFFFF));
+        title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18);
+        bar.addView(title, new LinearLayout.LayoutParams(0,
+                LinearLayout.LayoutParams.WRAP_CONTENT, 1));
 
         if (!items.isEmpty()) {
             TextView clear = new TextView(this);

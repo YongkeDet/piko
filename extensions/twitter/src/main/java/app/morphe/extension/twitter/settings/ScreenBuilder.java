@@ -23,7 +23,6 @@ import app.morphe.extension.twitter.settings.widgets.*;
 import androidx.annotation.Nullable;
 
 import app.morphe.extension.twitter.Pref;
-import app.morphe.extension.twitter.downloads.DownloadFolder;
 
 
 public class ScreenBuilder {
@@ -192,26 +191,12 @@ public class ScreenBuilder {
         
     }
 
-    private void addDownloadFolderPreferences(LegacyTwitterPreferenceCategory category) {
-        addPreference(category, helper.buttonPreference(
-                str("piko_pref_download_custom_folder"),
-                DownloadFolder.getFolderSummary(context),
-                Settings.SELECT_DOWNLOAD_FOLDER
-        ));
-        addPreference(category, helper.buttonPreference(
-                str("piko_pref_download_reset_folder"), "", Settings.RESET_DOWNLOAD_FOLDER
-        ));
-    }
-
     public void buildDownloadSection(boolean buildCategory){
         if (!(SettingsStatus.enableDownloadSection())) return;
             
         LegacyTwitterPreferenceCategory category = null;
         if(buildCategory)
             category = preferenceCategory(str("piko_title_download"));
-        if (SettingsStatus.changeDownloadEnabled || SettingsStatus.nativeDownloader) {
-            addDownloadFolderPreferences(category);
-        }
         if (SettingsStatus.changeDownloadEnabled) {
             addPreference(category,helper.listPreference(
                     str("piko_pref_download_path"),
@@ -439,7 +424,6 @@ public class ScreenBuilder {
                 );
             }
 
-            addDownloadFolderPreferences(category);
             addPreference(category,helper.listPreference(
                     str("piko_pref_download_path"),
                     str("piko_pref_download_path_desc"),

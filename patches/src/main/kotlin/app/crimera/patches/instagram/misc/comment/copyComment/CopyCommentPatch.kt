@@ -12,13 +12,16 @@ import app.crimera.patches.instagram.misc.comment.addButtonAttribute
 import app.crimera.patches.instagram.misc.comment.addButtonInterface
 import app.crimera.patches.instagram.misc.comment.addCommentPatch
 import app.crimera.patches.instagram.misc.comment.commentButtonClickCheckPatch
-import app.crimera.patches.instagram.misc.comment.nativeChatButtonResources
 import app.crimera.patches.instagram.misc.comment.debugComment.debugCommentPatch
 import app.crimera.patches.instagram.misc.settings.settingsPatch
 import app.crimera.patches.instagram.utils.Constants.COMPATIBILITY_INSTAGRAM
 import app.crimera.patches.instagram.utils.enableSettings
-import app.morphe.patcher.patch.PatchException
+import app.morphe.patcher.extensions.InstructionExtensions.instructions
 import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.resource.ResourceType
+import app.morphe.patcher.resource.resourceId
+import com.android.tools.smali.dexlib2.Opcode
+import com.android.tools.smali.dexlib2.iface.instruction.formats.Instruction31i
 
 // Thanks to MyInsta.
 @Suppress("unused")
@@ -39,9 +42,12 @@ val copyCommentPatch =
         )
         execute {
 
-            val constructor = CopyTextChatButtonToStringFingerprint.classDef.methods.singleOrNull { it.name == "<init>" }
-                ?: throw PatchException("Expected one native copy button constructor")
-            val (stringLateral, drawableLateral) = nativeChatButtonResources(constructor)
+            var stringLateral: Long
+            CopyTextChatButtonToStringFingerprint.classDef.methods.first { it.name == "<init>" }.apply {
+                stringLateral = (instructions.last { it.opcode == Opcode.CONST } as Instruction31i).wideLiteral
+            }
+
+            var drawableLateral: Long = resourceId(ResourceType.DRAWABLE, "instagram_copy_outline_24")
 
             addButtonAttribute(
                 stringLateral,

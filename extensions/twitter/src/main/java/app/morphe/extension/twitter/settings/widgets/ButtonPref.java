@@ -35,9 +35,6 @@ import app.morphe.extension.twitter.settings.ActivityHook;
 import app.morphe.extension.twitter.settings.Settings;
 import app.morphe.extension.twitter.settings.fragments.BackupPrefFragment;
 import app.morphe.extension.twitter.settings.fragments.RestorePrefFragment;
-import app.morphe.extension.twitter.settings.fragments.DownloadFolderPickerFragment;
-import app.morphe.extension.twitter.settings.fragments.PageFragment;
-import app.morphe.extension.twitter.downloads.DownloadFolder;
 import app.morphe.extension.twitter.Utils;
 
 public class ButtonPref extends Preference {
@@ -101,16 +98,7 @@ public class ButtonPref extends Preference {
                     Bundle bundle = new Bundle();
                     Fragment fragment = null;
 
-                    if (key.equals(Settings.SELECT_DOWNLOAD_FOLDER)) {
-                        fragment = new DownloadFolderPickerFragment();
-                    } else if (key.equals(Settings.RESET_DOWNLOAD_FOLDER)) {
-                        DownloadFolder.resetFolder(context);
-                        Fragment current = ((Activity) context).getFragmentManager().findFragmentById(
-                                ResourceUtils.getIdentifier(ResourceType.ID, "fragment_container"));
-                        if (current instanceof PageFragment) {
-                            ((PageFragment) current).refreshDownloadFolderPreferences();
-                        }
-                    } else if (key.equals(Settings.EXPORT_PREF)) {
+                    if (key.equals(Settings.EXPORT_PREF)) {
                         bundle.putBoolean("featureFlag", false);
                         fragment = new BackupPrefFragment();
                     } else if (key.equals(Settings.EXPORT_FLAGS)) {

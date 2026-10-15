@@ -18,7 +18,6 @@ import app.morphe.patcher.patch.bytecodePatch
 val viewLiveAnonymouslyPatch =
     bytecodePatch(
         name = "View live anonymously",
-        default = false,
     ) {
         dependsOn(settingsPatch, interceptUriPatch, chatActionBarButtonPatch, inboxActionBarButtonPatch)
         compatibleWith(COMPATIBILITY_INSTAGRAM)

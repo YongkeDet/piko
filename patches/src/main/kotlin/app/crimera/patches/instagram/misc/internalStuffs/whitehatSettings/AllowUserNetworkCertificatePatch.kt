@@ -25,7 +25,7 @@ val allowUserNetworkCertificatePatch =
     bytecodePatch(
         name = "Allow user network certificate",
         description = "Allows user network certificate for whitehat testing",
-        default = false,
+        default = true,
     ) {
         compatibleWith(COMPATIBILITY_INSTAGRAM)
         dependsOn(

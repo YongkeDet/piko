@@ -21,10 +21,10 @@ import java.util.Map;
 import java.util.List;
 import java.util.Locale;
 
-import app.morphe.extension.instagram.patches.devFlags.RecommendedFlags;
-import app.morphe.extension.instagram.patches.devFlags.Flag;
+import  app.morphe.extension.instagram.patches.devFlags.RecommendedFlags;
+import  app.morphe.extension.instagram.patches.devFlags.Flag;
 
-import app.morphe.extension.crimera.downloader.StorageUtils;
+import app.morphe.extension.crimera.legacydownloader.StorageUtils;
 import app.morphe.extension.instagram.patches.Links;
 import app.morphe.extension.instagram.patches.customise.font.FontStorage;
 import app.morphe.extension.instagram.patches.focusLock.FocusLock;
@@ -50,12 +50,12 @@ public class ScreenBuilder {
     }
 
     private void addPreference(Preference pref) {
-        addPreference(null, pref);
+        addPreference(null,pref);
     }
 
-    // Adding preference category might be used in the future
+    // Adding preference category might be usedin the future
     // to segregate the preference inside the fragment
-    private void addPreference(PreferenceCategory category, Preference pref) {
+    private void addPreference(PreferenceCategory category,  Preference pref) {
         if (category != null) {
             category.addPreference(pref);
         } else {
@@ -140,6 +140,15 @@ public class ScreenBuilder {
             );
         }
 
+        if (SettingsStatus.removeBuildExpirePopup) {
+            addPreference(
+                    helper.switchPreference(
+                            str("piko_remove_build_expire_popup"),
+                            str("piko_remove_build_expire_popup_desc"),
+                            Settings.REMOVE_BUILD_EXPIRE_POPUP
+                    )
+            );
+        }
         if (SettingsStatus.unlockEmployeeOptions) {
             addPreference(
                     helper.switchPreference(
@@ -245,23 +254,6 @@ public class ScreenBuilder {
             );
         }
 
-        if (SettingsStatus.inboxLock) {
-            addPreference(
-                    helper.switchPreference(
-                            str("piko_inbox_lock"),
-                            str("piko_inbox_lock_desc"),
-                            Settings.INBOX_LOCK
-                    )
-            );
-            addPreference(
-                    helper.switchPreference(
-                            str("piko_inbox_lock_notifications"),
-                            str("piko_inbox_lock_notifications_desc"),
-                            Settings.INBOX_LOCK_NOTIFICATIONS
-                    )
-            );
-        }
-
         if (SettingsStatus.saveDeletedMessages) {
             addPreference(
                     helper.switchPreference(
@@ -278,6 +270,8 @@ public class ScreenBuilder {
                     )
             );
         }
+
+
     }
 
     public void ghostSection() {
@@ -438,15 +432,6 @@ public class ScreenBuilder {
                     Settings.LIMIT_FOLLOWING_FEED
             );
         }
-        if (SettingsStatus.disableDiscoverPeople) {
-            addPreference(
-                    helper.switchPreference(
-                            str("piko_disable_discover_people"),
-                            "",
-                            Settings.DISABLE_DISCOVER_PEOPLE
-                    )
-            );
-        }
         if (SettingsStatus.disableReelsScrolling) {
             addLockableSwitch(
                     str("piko_disable_reels_scrolling"),
@@ -475,42 +460,7 @@ public class ScreenBuilder {
                     Settings.HIDE_REELS_FOLLOW_BUTTON
             );
         }
-        if (SettingsStatus.hideShareButton) {
-            addPreference(
-                    helper.switchPreference(
-                            str("piko_hide_share_button"),
-                            "",
-                            Settings.HIDE_SHARE_BUTTON
-                    )
-            );
-        }
-        if (SettingsStatus.hideSaveButtons) {
-            addPreference(
-                    helper.switchPreference(
-                            str("piko_hide_save_buttons"),
-                            "",
-                            Settings.HIDE_SAVE_BUTTONS
-                    )
-            );
-        }
-        if (SettingsStatus.hideReshareButton) {
-            addPreference(
-                    helper.switchPreference(
-                            str("piko_hide_reshare_button"),
-                            "",
-                            Settings.HIDE_RESHARE_BUTTON
-                    )
-            );
-        }
-        if (SettingsStatus.disableVideoAutoplay) {
-            addPreference(
-                    helper.switchPreference(
-                            str("piko_disable_video_autoplay"),
-                            "",
-                            Settings.DISABLE_VIDEO_AUTOPLAY
-                    )
-            );
-        }
+
         if (SettingsStatus.disableDoubleTapLike) {
             addLockableSwitch(
                     str("piko_disable_double_tap_like_post"),
@@ -664,6 +614,24 @@ public class ScreenBuilder {
                     )
             );
         }
+        if (SettingsStatus.disableVideoAutoplay) {
+            addPreference(
+                    helper.switchPreference(
+                            str("piko_disable_video_autoplay"),
+                            "",
+                            Settings.DISABLE_VIDEO_AUTOPLAY
+                    )
+            );
+        }
+        if (SettingsStatus.disableDiscoverPeople) {
+            addPreference(
+                    helper.switchPreference(
+                            str("piko_disable_discover_people"),
+                            "",
+                            Settings.DISABLE_DISCOVER_PEOPLE
+                    )
+            );
+        }
         if (SettingsStatus.followBackIndicator) {
             addPreference(
                     helper.switchPreference(
@@ -690,6 +658,52 @@ public class ScreenBuilder {
                     )
             );
         }
+        if (SettingsStatus.viewStoryMentions) {
+            addPreference(
+                    helper.switchPreference(
+                            str("piko_view_story_mentions"),
+                            "",
+                            Settings.VIEW_STORY_MENTIONS
+                    )
+            );
+        }
+        if (SettingsStatus.disableStoryFlipping) {
+            addPreference(
+                    helper.switchPreference(
+                            str("piko_disable_story_flipping"),
+                            str("piko_disable_story_flipping_desc"),
+                            Settings.DISABLE_STORY_FLIPPING
+                    )
+            );
+        }
+        if (SettingsStatus.loopStory) {
+            addPreference(
+                    helper.switchPreference(
+                            str("piko_loop_story"),
+                            str("piko_loop_story_desc"),
+                            Settings.LOOP_STORY
+                    )
+            );
+        }
+
+        if (SettingsStatus.customiseStoryTimestamp) {
+            addPreference(
+                    helper.listPreference(
+                            str("piko_customise_story_timestamp"),
+                            str("piko_customise_story_timestamp_desc"),
+                            Settings.CUSTOMISE_STORY_TIMESTAMP
+                    )
+            );
+        }
+        if(SettingsStatus.customiseStoryRingSize) {
+            addPreference(
+                    helper.editTextNumPreference(
+                            str("piko_customise_story_ring_size"),
+                            str("piko_customise_story_ring_size_desc"),
+                            Settings.CUSTOMISE_STORY_RING_SIZE
+                    ));
+        }
+
         if (SettingsStatus.improveImageViewing) {
             addPreference(
                     helper.switchPreference(
@@ -699,12 +713,31 @@ public class ScreenBuilder {
                     )
             );
         }
+
+        if (SettingsStatus.hideReshareButton) {
+            addPreference(
+                    helper.switchPreference(
+                            str("piko_hide_reshare_button"),
+                            "",
+                            Settings.HIDE_RESHARE_BUTTON
+                    )
+            );
+        }
         if (SettingsStatus.copyCommentButton) {
             addPreference(
                     helper.switchPreference(
                             str("piko_copy_comment"),
                             str("piko_copy_comment_desc"),
                             Settings.COMMENT_COPY_BUTTON
+                    )
+            );
+        }
+        if (SettingsStatus.saveMediaCommentButton) {
+            addPreference(
+                    helper.switchPreference(
+                            str("piko_save_media_comment"),
+                            str("piko_save_media_comment_desc"),
+                            Settings.COMMENT_SAVE_MEDIA_BUTTON
                     )
             );
         }
@@ -750,25 +783,6 @@ public class ScreenBuilder {
                         Settings.ENABLE_DOWNLOAD
                 )
         );
-
-        if (SettingsStatus.feedDownloadButton) {
-            addPreference(
-                    helper.switchPreference(
-                            str("piko_feed_download_button"),
-                            str("piko_feed_download_button_desc"),
-                            Settings.FEED_DOWNLOAD_BUTTON
-                    )
-            );
-        }
-        if (SettingsStatus.saveMediaCommentButton) {
-            addPreference(
-                    helper.switchPreference(
-                            str("piko_save_media_comment"),
-                            str("piko_save_media_comment_desc"),
-                            Settings.COMMENT_SAVE_MEDIA_BUTTON
-                    )
-            );
-        }
 
         addPreference(
                 helper.switchPreference(
@@ -1043,56 +1057,6 @@ public class ScreenBuilder {
 
     }
 
-    public void storySection() {
-        if (!SettingsStatus.storySection()) return;
-
-        if (SettingsStatus.viewStoryMentions) {
-            addPreference(
-                    helper.switchPreference(
-                            str("piko_view_story_mentions"),
-                            "",
-                            Settings.VIEW_STORY_MENTIONS
-                    )
-            );
-        }
-        if (SettingsStatus.disableStoryFlipping) {
-            addPreference(
-                    helper.switchPreference(
-                            str("piko_disable_story_flipping"),
-                            str("piko_disable_story_flipping_desc"),
-                            Settings.DISABLE_STORY_FLIPPING
-                    )
-            );
-        }
-        if (SettingsStatus.loopStory) {
-            addPreference(
-                    helper.switchPreference(
-                            str("piko_loop_story"),
-                            str("piko_loop_story_desc"),
-                            Settings.LOOP_STORY
-                    )
-            );
-        }
-        if (SettingsStatus.customiseStoryTimestamp) {
-            addPreference(
-                    helper.listPreference(
-                            str("piko_customise_story_timestamp"),
-                            str("piko_customise_story_timestamp_desc"),
-                            Settings.CUSTOMISE_STORY_TIMESTAMP
-                    )
-            );
-        }
-        if (SettingsStatus.customiseStoryRingSize) {
-            addPreference(
-                    helper.editTextNumPreference(
-                            str("piko_customise_story_ring_size"),
-                            str("piko_customise_story_ring_size_desc"),
-                            Settings.CUSTOMISE_STORY_RING_SIZE
-                    )
-            );
-        }
-    }
-
     public void buildSettingsPage() {
         if (SettingsStatus.adsSection()){
             addPreference(
@@ -1130,16 +1094,6 @@ public class ScreenBuilder {
                             str("piko_category_dm"),
                             "",
                             Constants.PIKO_FRAGMENT_DM
-                    )
-            );
-        }
-
-        if (SettingsStatus.storySection()){
-            addPreference(
-                    helper.categoryPreference(
-                            str("piko_category_story"),
-                            "",
-                            Constants.PIKO_FRAGMENT_STORY
                     )
             );
         }
@@ -1186,7 +1140,7 @@ public class ScreenBuilder {
 
         if (SettingsStatus.instantsDownload){
             addPreference(
-                    helper.categoryPreference(
+                    helper.buttonPreference(
                             str("piko_instants_title"),
                             "",
                             Constants.PIKO_FRAGMENT_INSTANTS

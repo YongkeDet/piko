@@ -7,26 +7,65 @@
 
 package app.morphe.extension.instagram.entity;
 
-import app.morphe.extension.crimera.downloader.MediaType;
+import java.util.Map;
+import java.util.HashMap;
+import app.morphe.extension.crimera.PikoUtils;
+
+import com.instagram.model.mediasize.VideoVersion;
+import com.instagram.model.mediasize.ImmutablePandoVideoVersion;
+import com.instagram.model.mediasize.VideoVersionIntf;
+
+import app.morphe.extension.crimera.legacydownloader.MediaType;
 
 public class VideoData extends Entity implements MediaInterface {
+    private final VideoVersionIntf obj;
+    private final boolean isPandoVideoVersion;
+
     public VideoData(Object obj) {
         super(obj);
+
+        this.obj = (VideoVersionIntf) obj;
+        this.isPandoVideoVersion = obj instanceof ImmutablePandoVideoVersion;
+
+    }
+
+    private Map immutablePandoVideoVersionMap(){
+        try{
+            return (Map) super.getMethod("methodname");
+        } catch (Exception e) {
+            PikoUtils.logger(e);
+        }
+        return new HashMap();
+    }
+
+    private Map videoVersionMap(){
+        try{
+            return (Map) super.getMethod("methodname");
+        } catch (Exception e) {
+            PikoUtils.logger(e);
+        }
+        return new HashMap();
     }
 
     public Integer getHeight() throws Exception {
-        Integer height = (Integer) super.getMethod("methodname");
-        return height != null ? height : 0;
+        if(this.isPandoVideoVersion){
+            return (Integer) this.immutablePandoVideoVersionMap().getOrDefault("height",0);
+        }
+        return (Integer) this.videoVersionMap().getOrDefault("height",0);
     }
 
     public Integer getWidth() throws Exception {
-        Integer width = (Integer) super.getMethod("methodname");
-        return width != null ? width : 0;
+        if(this.isPandoVideoVersion){
+            return (Integer) this.immutablePandoVideoVersionMap().getOrDefault("width",0);
+        }
+        return (Integer) this.videoVersionMap().getOrDefault("width",0);
     }
 
     private Integer getCodec() throws Exception {
-        Integer codec = (Integer) super.getMethod("methodname");
-        return codec != null ? codec : 0;
+        if(this.isPandoVideoVersion){
+            return (Integer) this.immutablePandoVideoVersionMap().getOrDefault("type",0);
+        }
+        return (Integer) this.videoVersionMap().getOrDefault("type",0);
     }
 
     public String getVariantTag() {
@@ -38,7 +77,7 @@ public class VideoData extends Entity implements MediaInterface {
     }
 
     public String getUrl() throws Exception {
-        return (String) super.getMethod("methodname");
+        return this.obj.getUrl();
     }
 
     public MediaType getMediaType(){

@@ -149,10 +149,6 @@ public class Pref {
         return SharedPref.getBooleanPref(Settings.DISABLE_COMMENTS);
     }
 
-    public static boolean hideCommentButtons() {
-        return lockable(Settings.DISABLE_COMMENTS) && SettingsStatus.disableComments;
-    }
-
     public static boolean limitFollowingFeed() {
         return SharedPref.getBooleanPref(Settings.LIMIT_FOLLOWING_FEED);
     }
@@ -237,18 +233,6 @@ public class Pref {
         return SharedPref.getBooleanPref(Settings.UNLIMITED_REPLAYS) && SettingsStatus.unlimitedReplaysOnEphemeralMedia;
     }
 
-    public static boolean hideShareButton() {
-        return SharedPref.getBooleanPref(Settings.HIDE_SHARE_BUTTON) && SettingsStatus.hideShareButton;
-    }
-
-    public static boolean hideSaveButtons() {
-        return SharedPref.getBooleanPref(Settings.HIDE_SAVE_BUTTONS) && SettingsStatus.hideSaveButtons;
-    }
-
-    public static boolean showSaveButton(boolean original) {
-        return original && !hideSaveButtons();
-    }
-
     public static boolean hideReshareButton() {
         return SharedPref.getBooleanPref(Settings.HIDE_RESHARE_BUTTON) && SettingsStatus.hideReshareButton;
     }
@@ -273,6 +257,10 @@ public class Pref {
     }
     public static boolean allowUserNetworkCertificate() {
         return SharedPref.getBooleanPref(Settings.ALLOW_USER_NETWORK_CERTIFICATE);
+    }
+
+    public static int buildAge(int appAge) {
+        return SharedPref.getBooleanPref(Settings.REMOVE_BUILD_EXPIRE_POPUP) ? 1 : appAge;
     }
 
     public static boolean disableAnalytics() {
@@ -488,11 +476,5 @@ public class Pref {
         return Integer.valueOf(SharedPref.getStringPref(Settings.FILTER_STORY_MAX_STORY_ITEMS));
     }
 
-    public static boolean inboxLock() {
-        return SharedPref.getBooleanPref(Settings.INBOX_LOCK);
-    }
-
-    public static boolean inboxLockNotifications() {
-        return SharedPref.getBooleanPref(Settings.INBOX_LOCK_NOTIFICATIONS);
-    }
+    //end
 }

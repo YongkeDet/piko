@@ -8,6 +8,7 @@ package app.morphe.extension.instagram.patches.story;
 
 import static app.morphe.extension.instagram.utils.IgStr.str;
 
+import android.app.Activity;
 import android.os.Looper;
 import android.view.View;
 import android.view.ViewGroup;
@@ -20,9 +21,12 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import app.morphe.extension.instagram.utils.Pref;
 import app.morphe.extension.shared.Logger;
+import app.morphe.extension.shared.ResourceType;
+import app.morphe.extension.shared.ResourceUtils;
 import app.morphe.extension.shared.Utils;
 
 public final class StorySeenButton {
+    private static final String HEADER_MENU_ID_NAME = "header_menu_button";
     private static final int MAX_DEFERRED_BINDING_ATTEMPTS = 8;
     private static final long DEFERRED_BINDING_TIMEOUT_MILLIS = 250L;
     private static final AtomicLong CAPTURE_GENERATION = new AtomicLong();
@@ -187,29 +191,37 @@ public final class StorySeenButton {
         View bound = null;
         boolean deferred = false;
         try {
-            View toolbar = StorySeenButtonView.findActionRow(root);
-            if (root != null) {
-                if (toolbar == null) {
+            Activity activity = Utils.getActivity();
+            int headerMenuId = ResourceUtils.getIdentifier(ResourceType.ID, HEADER_MENU_ID_NAME);
+            View overflow = headerMenuId == 0
+                    ? null
+                    : root == null
+                            ? activity == null ? null : activity.findViewById(headerMenuId)
+                            : root.findViewById(headerMenuId);
+            if (headerMenuId != 0 && root != null) {
+                if (overflow == null) {
                     deferred = deferBinding(
                             generation,
                             story,
-                            root
+                            root,
+                            headerMenuId
                     );
                 } else {
-                    bound = bind(toolbar, story);
+                    bound = bind(overflow, story);
                     if (bound == null) {
                         deferred = deferBinding(
                                 generation,
                                 story,
-                                root
+                                root,
+                                headerMenuId
                         );
                     }
                 }
             } else {
-                bound = bind(toolbar, story);
+                bound = bind(overflow, story);
             }
         } catch (Throwable throwable) {
-            Logger.printException(() -> "Failed to locate the story action row", throwable);
+            Logger.printException(() -> "Failed to locate the story header menu", throwable);
         } finally {
             if (!deferred) {
                 finishCapture(generation, story.item, bound);
@@ -220,14 +232,16 @@ public final class StorySeenButton {
     private static boolean deferBinding(
             long generation,
             CapturedStory story,
-            View root) {
+            View root,
+            int headerMenuId) {
         StorySeenBindingRetry retry = new StorySeenBindingRetry(
                 StorySeenButtonView.frameHost(root),
                 () -> isLatestCapture(generation, CAPTURE_GENERATION.get()),
                 () -> attemptDeferredBinding(
                         generation,
                         story,
-                        root
+                        root,
+                        headerMenuId
                 ),
                 completed -> deferredBindingStopped(
                         generation,
@@ -256,12 +270,13 @@ public final class StorySeenButton {
     private static boolean attemptDeferredBinding(
             long generation,
             CapturedStory story,
-            View root) {
-        View toolbar = StorySeenButtonView.findActionRow(root);
-        if (toolbar == null) {
+            View root,
+            int headerMenuId) {
+        View overflow = root.findViewById(headerMenuId);
+        if (overflow == null) {
             return false;
         }
-        View bound = bind(toolbar, story);
+        View bound = bind(overflow, story);
         if (bound == null) {
             return false;
         }
@@ -334,15 +349,16 @@ public final class StorySeenButton {
     }
 
     private static View bind(
-            View toolbar,
+            View overflow,
             CapturedStory story) {
-        if (!(toolbar instanceof ViewGroup)) {
+        boolean anchorParent = overflow != null && overflow.getParent() instanceof ViewGroup;
+        if (!anchorParent) {
             return null;
         }
 
         try {
             boolean anonymousStories = Pref.viewStoriesAnonymously();
-            boolean toolbarVisible = toolbar.isShown();
+            boolean overflowVisible = overflow.getVisibility() == View.VISIBLE;
             boolean available = StorySeenBridge.isAvailable(
                     story.session,
                     story.item,
@@ -351,27 +367,24 @@ public final class StorySeenButton {
             );
             boolean display = shouldDisplay(
                     anonymousStories,
-                    toolbarVisible,
+                    overflowVisible,
                     available
             );
             if (!display) {
                 boolean retryBinding = shouldRetryBinding(
                         anonymousStories,
-                        toolbarVisible,
+                        overflowVisible,
                         available
                 );
                 StorySeenButtonView.setUnavailable(
-                        toolbar,
+                        overflow,
                         !retryBinding
                 );
-                return retryBinding ? null : toolbar;
+                return retryBinding ? null : overflow;
             }
 
             StorySeenKey storyKey = StorySeenBridge.storyKey(story.session, story.item);
-            ImageView button = StorySeenButtonView.prepare((ViewGroup) toolbar);
-            if (button == null) {
-                return null;
-            }
+            ImageView button = StorySeenButtonView.prepare(overflow);
             BindingState bindingState = new BindingState(story, button, storyKey);
             synchronized (BINDINGS) {
                 BINDINGS.put(button, bindingState);
@@ -393,9 +406,9 @@ public final class StorySeenButton {
             } else {
                 button.setOnClickListener(null);
             }
-            return toolbar;
+            return overflow;
         } catch (Throwable throwable) {
-            StorySeenButtonView.setUnavailable(toolbar, true);
+            StorySeenButtonView.setUnavailable(overflow, true);
             Logger.printException(() -> "Failed to bind mark story as seen button", throwable);
             return null;
         }
@@ -405,8 +418,8 @@ public final class StorySeenButton {
         return retainedAnchor != null ? retainedAnchor : newCandidate;
     }
 
-    static boolean shouldDisplay(boolean anonymousStories, boolean toolbarVisible, boolean supportedStory) {
-        return anonymousStories && toolbarVisible && supportedStory;
+    static boolean shouldDisplay(boolean anonymousStories, boolean overflowVisible, boolean supportedStory) {
+        return anonymousStories && overflowVisible && supportedStory;
     }
 
     static boolean isCurrentBinding(Object expected, Object current) {
@@ -415,9 +428,9 @@ public final class StorySeenButton {
 
     static boolean shouldRetryBinding(
             boolean anonymousStories,
-            boolean toolbarVisible,
+            boolean overflowVisible,
             boolean supportedStory) {
-        return anonymousStories && !toolbarVisible && supportedStory;
+        return anonymousStories && !overflowVisible && supportedStory;
     }
 
     static boolean shouldInvalidateBoundStory(Object selectedItem, Object previousItem) {

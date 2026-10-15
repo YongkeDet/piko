@@ -30,10 +30,3 @@ internal object IgFragmentActivityOnCreate : Fingerprint(
     name = "onCreate",
     definingClass = "Lcom/instagram/base/activity/IgFragmentActivity;",
 )
-
-internal object IgFragmentActivityOnResume : Fingerprint(
-    name = "onResume",
-    definingClass = "Lcom/instagram/base/activity/IgFragmentActivity;",
-    parameters = emptyList(),
-    returnType = "V",
-)
