@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="piko_newx_hide_community_notes_title">Hide Community Notes</string>
+    <string name="piko_newx_hide_community_notes_summary">Hide notes on posts. Restart X after changing this setting.</string>
+    <string name="piko_newx_force_translate_title">Always offer translation</string>
+    <string name="piko_newx_force_translate_summary">Allow the native translation option on posts. Restart X after changing this setting.</string>
+    <string name="piko_newx_hide_promote_title">Hide promote button</string>
+    <string name="piko_newx_hide_promote_summary">Hide quick-promote and boost controls. Restart X after changing this setting.</string>
     <string name="piko_newx_settings_title">Piko Settings</string>
     <string name="piko_newx_settings_ok">OK</string>
     <string name="piko_newx_settings_cancel">Cancel</string>

@@ -6,6 +6,21 @@ import app.morphe.patcher.patch.Compatibility
 import app.morphe.patcher.patch.SupportedAbi
 
 internal object Constants {
+    private val TARGET_NEW_X_12_34 = AppTarget(
+        version = "12.34.0-prod.01",
+        versionCodes = mapOf(SupportedAbi.ARM64_V8A to 312340001),
+        minSdk = 29,
+    )
+
+    // New model policies are validated against this exact APK, without widening older targets.
+    val COMPATIBILITY_NEW_X_12_34 = Compatibility(
+        name = "NewX",
+        packageName = "com.twitter.android",
+        apkFileType = ApkFileType.APKM,
+        appIconColor = 0x000000,
+        targets = listOf(TARGET_NEW_X_12_34),
+    )
+
     val COMPATIBILITY_NEW_X =
         Compatibility(
             name = "NewX",
@@ -22,11 +37,7 @@ internal object Constants {
                 AppTarget(version = "12.33.0-alpha.02", isExperimental = true),
                 AppTarget(version = "12.33.0-prod.01"),
                 AppTarget(version = "12.33.1-prod.01"),
-                AppTarget(
-                    version = "12.34.0-prod.01",
-                    versionCodes = mapOf(SupportedAbi.ARM64_V8A to 312340001),
-                    minSdk = 29,
-                ),
+                TARGET_NEW_X_12_34,
             ),
         )
 

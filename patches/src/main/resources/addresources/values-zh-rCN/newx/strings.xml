@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="piko_newx_hide_community_notes_title">隐藏社区笔记</string>
+    <string name="piko_newx_hide_community_notes_summary">隐藏帖子中的社区笔记。修改后请重启 X。</string>
+    <string name="piko_newx_force_translate_title">始终提供翻译选项</string>
+    <string name="piko_newx_force_translate_summary">允许帖子显示原生翻译选项。修改后请重启 X。</string>
+    <string name="piko_newx_hide_promote_title">隐藏推广按钮</string>
+    <string name="piko_newx_hide_promote_summary">隐藏快速推广与加推控件。修改后请重启 X。</string>
+</resources>
