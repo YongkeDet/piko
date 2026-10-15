@@ -15,6 +15,7 @@ import app.morphe.patcher.patch.ApkFileType
 import app.morphe.patcher.patch.AppTarget
 import app.morphe.patcher.patch.Compatibility
 import app.morphe.patcher.patch.PatchException
+import app.morphe.patcher.patch.SupportedAbi
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.patch.resourcePatch
 import app.morphe.util.getReference
@@ -99,7 +100,11 @@ val modernDownloadFolderPatch = bytecodePatch(
         packageName = "com.twitter.android",
         apkFileType = ApkFileType.APKM,
         appIconColor = 0x000000,
-        targets = listOf(AppTarget(version = "12.34.0-prod.01")),
+        targets = listOf(AppTarget(
+            version = "12.34.0-prod.01",
+            versionCodes = mapOf(SupportedAbi.ARM64_V8A to 312340001),
+            minSdk = 29,
+        )),
     ))
     extendWith("extensions/modern.mpe")
     dependsOn(modernFolderResources)
