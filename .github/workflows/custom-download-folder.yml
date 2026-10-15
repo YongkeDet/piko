@@ -4,6 +4,9 @@ on:
   workflow_dispatch:
   push:
     branches: [feat/custom-download-folder]
+    paths-ignore:
+      - .github/workflows/publish-custom-download-folder.yml
+      - patches-bundle.json
 
 permissions:
   contents: read
