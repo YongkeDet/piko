@@ -81,8 +81,8 @@ class HidePostReplyBarPatchTest {
                 method = method,
                 actionBarCallIndex = 0,
                 actionBarCall = actionBarCall,
-                modifierRegister = 1,
-                composerRegister = 8,
+                modifierRegister = 16,
+                composerRegister = 22,
                 windowInsetsHolderProvider = holderProvider,
                 navigationBarsField = navigationBarsField,
                 insetsPaddingCall = insetsPadding,
@@ -96,7 +96,8 @@ class HidePostReplyBarPatchTest {
             emptySet<ImmutableAnnotation>(), emptySet<HiddenApiRestriction>(), bridgeImplementation.methodImplementation,
         ))
         emitImmersiveInsetsBridge(bridge, "newx.test.hide_post_reply_bar", hook)
-        applyImmersiveActionBarSafeAreaHook(hook)
+        val prepared = reserveImmersiveInsetsCall(hook)
+        applyImmersiveActionBarSafeAreaHook(prepared)
 
         val instructions = bridge.instructions
         val insetFieldIndex = instructions.indexOfFirst { instruction ->
@@ -108,11 +109,11 @@ class HidePostReplyBarPatchTest {
         assertEquals(true, insetFieldIndex >= 0)
         assertEquals(true, paddingCallIndex > insetFieldIndex)
         assertEquals(Opcode.MOVE_RESULT_OBJECT, instructions[paddingCallIndex + 1].opcode)
-        val caller = method.instructions
+        val caller = prepared.method.instructions
         val bridgeCall = caller.indexOfFirst { it.getReference<MethodReference>()?.definingClass == bridge.definingClass }
-        assertEquals(true, bridgeCall in 0 until caller.indexOf(actionBarCall))
+        assertEquals(true, bridgeCall in 0 until caller.indexOf(prepared.actionBarCall))
         assertEquals(
-            1,
+            16,
             (caller[bridgeCall + 1] as OneRegisterInstruction).registerA,
             "the padded Modifier must replace the action row's Modifier register",
         )
@@ -153,12 +154,12 @@ class HidePostReplyBarPatchTest {
         val method = fixture(registerCount = 32)
         // All four-bit registers are live at the action-row call on 12.34. The old inline
         // iget-based implementation failed here while looking for a four-bit scratch register.
-        val consumeSignature = "Ljava/lang/Object;".repeat(16)
+        val consumeSignature = "Ljava/lang/Object;".repeat(32)
         method.addInstructionsWithLabels(
             0,
             """
-                invoke-static {v1, v8}, Lapp/crimera/test/ActionBar;->renderActionBar(Landroidx/compose/ui/Modifier;Landroidx/compose/runtime/Composer;)V
-                invoke-static/range {v0 .. v15}, Lapp/crimera/test/Sink;->consume($consumeSignature)V
+                invoke-static/range {v16 .. v24}, Lapp/crimera/test/ActionBar;->renderActionBar(Landroidx/compose/ui/Modifier;IIIIILandroidx/compose/runtime/Composer;II)V
+                invoke-static/range {v0 .. v31}, Lapp/crimera/test/Sink;->consume($consumeSignature)V
             """.trimIndent(),
         )
         return method

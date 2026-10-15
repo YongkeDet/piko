@@ -29,6 +29,8 @@ import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.util.getReference
 import app.morphe.util.cloneMutable
 import app.morphe.util.p0Register
+import app.morphe.util.numberOfParameterRegisters
+import app.morphe.util.numberOfParameterRegistersLogical
 import app.morphe.util.registersUsed
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
@@ -783,6 +785,12 @@ private fun resolveImmersiveActionBarSafeAreaHook(
 
 private const val INSETS_BRIDGE = "Lapp/morphe/extension/newx/misc/ReplyBarInsets;->apply(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;"
 
+internal fun reserveImmersiveInsetsCall(hook: ImmersiveActionBarSafeAreaHook): ImmersiveActionBarSafeAreaHook {
+    val expanded = hook.method.cloneMutable(additionalRegisters = hook.method.numberOfParameterRegisters + 2)
+    val index = hook.actionBarCallIndex + hook.method.numberOfParameterRegistersLogical
+    return hook.copy(method = expanded, actionBarCallIndex = index, actionBarCall = expanded.instructions[index])
+}
+
 // Keep the field access in a small bridge. The target's Compose frame can have every low
 // register live, while iget needs two four-bit operands. The caller only replaces its Modifier.
 internal fun emitImmersiveInsetsBridge(
@@ -971,7 +979,11 @@ val newXHidePostReplyBarPatch =
                 bridgeOwner.methods.remove(originalBridge)
                 bridgeOwner.methods.add(bridge)
                 emitImmersiveInsetsBridge(bridge, hidePostReplyBar.id, hook)
-                applyImmersiveActionBarSafeAreaHook(hook)
+                val prepared = reserveImmersiveInsetsCall(hook)
+                val callerOwner = mutableClassDefBy(hook.method.definingClass)
+                callerOwner.methods.remove(hook.method)
+                callerOwner.methods.add(prepared.method)
+                applyImmersiveActionBarSafeAreaHook(prepared)
             }
         }
     }

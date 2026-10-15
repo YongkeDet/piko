@@ -1975,6 +1975,8 @@ internal fun Method.delegatesFirstColorTo(constructor: Method): Boolean {
     val call = requireAtMostOne("NewX XDS concrete constructor delegation in $this", calls) ?: return false
     val colorRegister = (call.value as RegisterRangeInstruction).startRegister + 1
     val firstParameter = implementation!!.registerCount - parameterTypes.sumOf { it.toString().registerWidth() }
+    val maskParameterIndex = parameterTypes.indexOfFirst { it == "I" }
+    val firstMaskRegister = firstParameter + parameterTypes.take(maskParameterIndex).sumOf { it.toString().registerWidth() }
     val copies = body.withIndex().filter { (index, instruction) ->
         val move = instruction as? TwoRegisterInstruction
         index < call.index && instruction.opcode in setOf(Opcode.MOVE_WIDE, Opcode.MOVE_WIDE_FROM16, Opcode.MOVE_WIDE_16) &&
@@ -1991,6 +1993,7 @@ internal fun Method.delegatesFirstColorTo(constructor: Method): Boolean {
         mask.opcode in setOf(Opcode.AND_INT_LIT8, Opcode.AND_INT_LIT16) &&
             (mask as? NarrowLiteralInstruction)?.narrowLiteral == 1 &&
             operands.registerA == (instruction as OneRegisterInstruction).registerA &&
+            body.integerRegisterResolvesToParameter(index - 1, operands.registerB, firstMaskRegister) &&
             addresses[index] + branch.codeOffset == addresses[copy.index]
     }
 }
@@ -2080,7 +2083,7 @@ private fun Instruction.invokeArgumentRegisters(): List<Int>? = when (this) {
     else -> null
 }
 
-private fun Method.assignsFirstColorParameter(field: FieldReference): Boolean {
+internal fun Method.assignsFirstColorParameter(field: FieldReference): Boolean {
     if (AccessFlags.STATIC.isSet(accessFlags)) return false
     val implementation = implementation ?: return false
     val instructions = implementation.instructions.toList()
@@ -2094,15 +2097,18 @@ private fun Method.assignsFirstColorParameter(field: FieldReference): Boolean {
     val storedColorRegister = (instruction as? TwoRegisterInstruction)?.registerA ?: return false
     val firstParameterRegister =
         implementation.registerCount - parameterTypes.sumOf { it.toString().registerWidth() }
-    if (storedColorRegister == firstParameterRegister) return true
-
-    val latestStoredColorWrite = instructions.take(index)
-        .lastOrNull { previous -> previous.writesWideRegisterPair(storedColorRegister) }
-        ?: return false
-    val move = latestStoredColorWrite as? TwoRegisterInstruction ?: return false
-    return latestStoredColorWrite.opcode.setsWideRegister() &&
-        move.registerA == storedColorRegister &&
-        move.registerB == firstParameterRegister
+    // R8 reuses the first parameter's register for later color arguments. Trace its value at
+    // this write, rather than treating the register number as permanent parameter identity.
+    fun origin(register: Int, before: Int): Int? {
+        // newx-resolver-lint: allow instruction-order raw-first because the nearest preceding writer defines the value
+        val write = (before - 1 downTo 0).firstOrNull { instructions[it].writesWideRegisterPair(register) }
+            ?: return register
+        val instruction = instructions[write]
+        val move = instruction as? TwoRegisterInstruction ?: return null
+        if (instruction.opcode !in setOf(Opcode.MOVE_WIDE, Opcode.MOVE_WIDE_FROM16, Opcode.MOVE_WIDE_16) || move.registerA != register) return null
+        return origin(move.registerB, write)
+    }
+    return origin(storedColorRegister, index) == firstParameterRegister
 }
 
 private fun Instruction.destinationRegister(): Int? =

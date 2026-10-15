@@ -8,6 +8,7 @@ import app.crimera.patches.newx.settings.newXToggle
 import app.crimera.patches.newx.utils.Constants.COMPATIBILITY_NEW_X
 import app.crimera.patches.newx.utils.Constants.SETTINGS_REGISTRY_DESCRIPTOR
 import app.crimera.bytecode.Target
+import app.crimera.bytecode.RegisterLimit
 import app.crimera.bytecode.insertHook
 import app.crimera.bytecode.methodReference
 import app.crimera.patches.common.requireExactlyOne
@@ -27,7 +28,12 @@ import app.morphe.util.getReference
 import app.morphe.util.numberOfParameterRegisters
 import app.morphe.util.p0Register
 import com.android.tools.smali.dexlib2.AccessFlags
+import com.android.tools.smali.dexlib2.HiddenApiRestriction
 import com.android.tools.smali.dexlib2.Opcode
+import com.android.tools.smali.dexlib2.builder.MethodImplementationBuilder
+import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
+import com.android.tools.smali.dexlib2.immutable.ImmutableMethodParameter
+import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
@@ -686,8 +692,9 @@ val restoreTimelinePositionPatch =
                 )
             // Newer save methods also update cache/visibility bookkeeping after the map write.
             // A non-loaded state skips this write, then continues through that native tail.
-            if (saveMethod.instructions.getOrNull(mapPutIndex + 1) == null) {
-                throw PatchException("NewX timeline-position map write has no continuation")
+            val mapContinuation = saveMethod.instructions.getOrNull(mapPutIndex + 1)
+            if (mapContinuation == null || mapContinuation.opcode in setOf(Opcode.MOVE_RESULT, Opcode.MOVE_RESULT_OBJECT, Opcode.MOVE_RESULT_WIDE)) {
+                throw PatchException("NewX timeline-position map write has no independent continuation")
             }
 
             // Ranked Following uses the same shared save method as Latest Following, but
@@ -715,50 +722,50 @@ val restoreTimelinePositionPatch =
                 layoutPolicyGateIndex + 1,
                 "nop",
             )
-            saveMethod.insertHook(
-                index = mapPutIndex,
-                // The three registers the original call reads are live here and must stay untouched.
-                excludedRegisters = listOf(saveTimelineRegister, saveHolderRegister, saveMapRegister),
-                // Plain insertion used to leave an incoming branch on the map write, which keeps skipping
-                // the hook exactly as before.
-                relocateBranchTargets = false,
+            // New native bookkeeping keeps every low register live at the map call. Put the
+            // field reads in a small method on the same class, preserving private-field access.
+            val captureName = "pikoCaptureScrollPosition"
+            if (saveMatch.classDef.methods.any { it.name == captureName }) throw PatchException("NewX position capture method already exists")
+            val capture = MutableMethod(ImmutableMethod(
+                componentDescriptor, captureName,
+                listOf(componentDescriptor, timelineTypeDescriptor, holderDescriptor).map {
+                    ImmutableMethodParameter(it, emptySet(), null)
+                }, "Z", AccessFlags.PRIVATE.value or AccessFlags.STATIC.value,
+                emptySet(), emptySet<HiddenApiRestriction>(), MethodImplementationBuilder(7).methodImplementation,
+            ))
+            saveMatch.classDef.methods.add(capture)
+            val (positionIndexField, positionOffsetField) = holderPositionFields.also {
+                if (it.size != 2) throw PatchException("Expected two NewX position holder fields, found ${it.size}")
+            }
+            capture.insertHook(0, relocateBranchTargets = false) {
+                iget(0, capture.p0Register, stateFlowField)
+                checkCast(0, stateGetValueReference.definingClass.toString())
+                invokeVirtual(stateGetValueReference, 0)
+                moveResult(0, OBJECT_DESCRIPTOR)
+                instanceOf(1, 0, successStateType)
+                ifEqz(1, Target.Local("not_loaded"))
+                iget(0, capture.p0Register, repositoryField)
+                invokeInterface(methodReference(timelineIdentityGetterReference), 0)
+                moveResult(0, OBJECT_DESCRIPTOR)
+                iget(0, 0, timelineIdentityField)
+                iget(1, capture.p0Register + 2, positionIndexField)
+                iget(2, capture.p0Register + 2, positionOffsetField)
+                invokeStatic(methodReference(SAVE_POSITION_DESCRIPTOR), capture.p0Register + 1, 0, 1, 2)
+                constInt(0, 1)
+                returnValue(0)
+                label("not_loaded")
+                constInt(0, 0)
+                returnValue(0)
+            }
+            saveMethod.insertHook(mapPutIndex,
+                excludedRegisters = listOf(saveTimelineRegister, saveHolderRegister, saveMapRegister, saveMethod.p0Register),
+                relocateBranchTargets = true,
             ) {
-                val saveIdentityRegister = scratchRegister()
-                val saveIndexRegister = scratchRegister()
-                val saveOffsetRegister = scratchRegister()
-                move(saveIdentityRegister, saveMethod.p0Register, OBJECT_DESCRIPTOR)
-                iget(saveIdentityRegister, saveIdentityRegister, stateFlowField)
-                checkCast(saveIdentityRegister, stateGetValueReference.definingClass.toString())
-                invokeVirtual(stateGetValueReference, saveIdentityRegister)
-                moveResult(saveIdentityRegister, OBJECT_DESCRIPTOR)
-                instanceOf(saveIndexRegister, saveIdentityRegister, successStateType)
-                ifNez(saveIndexRegister, Target.Local(SAVE_LOADED_POSITION_LABEL))
+                val captured = scratchRegister(RegisterLimit.BYTE)
+                invokeStatic(capture, saveMethod.p0Register, saveTimelineRegister, saveHolderRegister)
+                moveResult(captured, "Z")
+                ifNez(captured, Target.Original)
                 goto(Target.AfterOriginal(1))
-                label(SAVE_LOADED_POSITION_LABEL)
-                move(saveIdentityRegister, saveMethod.p0Register, OBJECT_DESCRIPTOR)
-                iget(saveIdentityRegister, saveIdentityRegister, repositoryField)
-                invokeInterface(methodReference(timelineIdentityGetterReference), saveIdentityRegister)
-                moveResult(saveIdentityRegister, OBJECT_DESCRIPTOR)
-                iget(saveIdentityRegister, saveIdentityRegister, timelineIdentityField)
-                // The resolver already proved the holder has exactly these two public int fields;
-                // destructure instead of indexing so the cardinality stays explicit here too.
-                val (positionIndexField, positionOffsetField) =
-                    holderPositionFields.also { fields ->
-                        if (fields.size != 2) {
-                            throw PatchException(
-                                "Expected two NewX scroll-position holder fields, found ${fields.size}",
-                            )
-                        }
-                    }
-                iget(saveIndexRegister, saveHolderRegister, positionIndexField)
-                iget(saveOffsetRegister, saveHolderRegister, positionOffsetField)
-                invokeStatic(
-                    methodReference(SAVE_POSITION_DESCRIPTOR),
-                    saveTimelineRegister,
-                    saveIdentityRegister,
-                    saveIndexRegister,
-                    saveOffsetRegister,
-                )
             }
         }
     }
