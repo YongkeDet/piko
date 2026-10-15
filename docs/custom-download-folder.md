@@ -15,6 +15,13 @@
 
 输入 APKM 的 SHA-256：`016a7eb2b6d8e2d6410da7f3c60e1bb46b002f6fedd797e366b068fb2897682b`。
 
+## 新版验证
+
+- [构建与测试记录](https://github.com/YongkeDet/piko/actions/runs/38703254600)：20 项 Android 模拟测试及完整扩展、补丁构建通过，源代码为 `0623ce2f437f176902f00cef6b9cd1671c80e3f6`。
+- 使用上述 SHA-256 的原版 APKM，在 Morphe Desktop 1.18.1 中按默认补丁选择完成真实打补丁与 APK 重建，无需强制兼容。
+- 核验生成 APK 包含三个媒体保存位置的创建、完成和失败清理调用、应用初始化、新设置 Activity、桌面快捷方式及对应字符串资源；原生库保持 arm64-v8a。
+- 尚未在真实设备上验证登录、桌面启动器显示及实际媒体下载。Android 模拟测试与字节码、资源核验不代替真机测试。
+
 ## X 12.19.1-release.0（原界面）
 
 1. 使用此分支生成的 `.mpp` 补丁包重新给兼容版本的 X 打补丁，包含 `Custom download folder`。使用 Piko 原生下载器时，也可以只包含 `Native downloader`。
