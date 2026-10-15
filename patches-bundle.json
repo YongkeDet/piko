@@ -1,6 +1,6 @@
 {
-  "version": "3.10.0-custom-newx.2",
-  "download_url": "https://github.com/YongkeDet/piko/releases/download/v3.10.0-custom-newx.2/patches-3.10.0-custom-newx.2.mpp",
-  "created_at": "2026-10-15T14:22:22",
-  "description": "X 12.34.0-prod.01 / 312340001（arm64-v8a，Android 10+）NewX 简体中文更新。\n设置、选项、弹窗、媒体选择器及下载通知已汉化；新增分享去追踪参数、镜像域名链接处理、外部下载器与更新日志入口。\n54 项全选、48 项默认选择均零失败并重建成功；73 项补丁测试、254 项扩展测试通过。用户已确认 .1 可用，.2 新增交互仍需手机验证。\n自定义目录：Piko 设置 → 帖子与媒体 → 下载选项，分别选择图片/视频文件夹。\n其余未可靠迁移的旧功能保留缺失，请重新载入 NewX 默认选择。\nhttps://github.com/YongkeDet/piko/releases/tag/v3.10.0-custom-newx.2"
+  "version": "3.10.0-custom-newx.3",
+  "download_url": "https://github.com/YongkeDet/piko/releases/download/v3.10.0-custom-newx.3/patches-3.10.0-custom-newx.3.mpp",
+  "created_at": "2026-10-15T14:51:11",
+  "description": "X 12.34.0-prod.01 / 312340001（arm64-v8a，Android 10+）。\n新增按作者分别建文件夹，默认开启：Piko 设置 → 帖子与媒体 → 下载选项。图片/视频保存到各自所选目录下的 @用户名 子文件夹。\n覆盖普通下载、被接管的内置下载和合并图片；只影响新下载，不移动已有文件；保留简体中文设置。\n54 项全选、48 项默认修补均零失败并重建成功；73 项补丁测试、255 项扩展测试通过。用户已实测 .2 正常，.3 新目录功能仍需手机确认。\n旧版 73 项仍是 33 项新版对应、14 项部分对应、25 项未迁移、1 项不适用。\nhttps://github.com/YongkeDet/piko/releases/tag/v3.10.0-custom-newx.3"
 }

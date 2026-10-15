@@ -1226,11 +1226,12 @@ public final class InlineDownloadButton {
         final String resolvedFileName = fileName;
         final DownloadRequest request;
         try {
-            request = new DownloadRequest(
+            request = NewXDownloadFolders.createRequest(
                     download.url,
                     fallbacks,
                     destinationTree,
-                    Collections.emptyList(),
+                    postContext,
+                    DownloadSettings.authorFolders(),
                     resolvedFileName,
                     download.mimeType,
                     policy,

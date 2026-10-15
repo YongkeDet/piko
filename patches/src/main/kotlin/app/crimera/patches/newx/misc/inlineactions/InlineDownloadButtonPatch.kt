@@ -223,6 +223,14 @@ val newXInlineDownloadButtonPatch =
                         defaultValue = "{screenName}_{id}",
                         visible = false,
                     )
+                    // Edited in Download options; kept in the registry for backup and restore.
+                    toggle(
+                        id = "newx.content.inline_download.author_folders",
+                        strings = settingStrings("piko_newx_download_author_folders"),
+                        order = 650,
+                        defaultValue = true,
+                        visible = false,
+                    )
                     // Hidden nodes store the SAF destination for each media type. They are declared
                     // as registry settings so "back up settings" carries them between installs.
                     input(

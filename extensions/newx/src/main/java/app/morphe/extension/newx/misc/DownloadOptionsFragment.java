@@ -42,6 +42,7 @@ public final class DownloadOptionsFragment extends CustomScreenFragment {
     private ListItem imagesRow;
     private ListItem videosRow;
     private ListItem filenameRow;
+    private SettingsUi.SwitchRow authorFoldersRow;
     private Theme.SettingsSnapshot themeSettings;
 
     @Override
@@ -80,6 +81,15 @@ public final class DownloadOptionsFragment extends CustomScreenFragment {
         );
         content.addView(videosRow, rowParams());
 
+        authorFoldersRow = SettingsUi.switchRow(
+                context,
+                StringRef.str("piko_newx_download_author_folders_title"),
+                StringRef.str("piko_newx_download_author_folders_summary"),
+                DownloadSettings.authorFolders()
+        );
+        authorFoldersRow.setOnCheckedChangeListener(DownloadSettings::setAuthorFolders);
+        content.addView(authorFoldersRow, rowParams());
+
         filenameRow = optionRow(
                 context,
                 StringRef.str("piko_newx_download_filename_title"),
@@ -109,6 +119,7 @@ public final class DownloadOptionsFragment extends CustomScreenFragment {
     }
 
     private void refresh() {
+        if (authorFoldersRow != null) authorFoldersRow.setChecked(DownloadSettings.authorFolders(), false);
         if (imagesRow != null) {
             imagesRow.setSubtitle(folderSubtitle(imagesRow.getContext(),
                     NewXDownloadFolders.MediaKind.IMAGES));

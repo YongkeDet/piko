@@ -2,6 +2,7 @@ package app.morphe.extension.newx.misc;
 
 import app.morphe.extension.crimera.settings.SettingsRegistry;
 import app.morphe.extension.shared.settings.Setting;
+import app.morphe.extension.shared.settings.BooleanSetting;
 import app.morphe.extension.shared.settings.StringSetting;
 
 /**
@@ -15,6 +16,7 @@ final class DownloadSettings {
     static final String VIDEOS_TREE_URI = "newx.content.inline_download.videos_tree_uri";
     static final String IMAGES_DISPLAY_PATH = "newx.content.inline_download.images_display_path";
     static final String VIDEOS_DISPLAY_PATH = "newx.content.inline_download.videos_display_path";
+    static final String AUTHOR_FOLDERS = "newx.content.inline_download.author_folders";
     static final String FILENAME_TEMPLATE = "newx.content.inline_download.filename_template";
     static final String CONFLICT_POLICY = "newx.content.inline_download_conflict";
     static final String REDIRECT_NATIVE_DOWNLOADS = "newx.content.inline_download.redirect_native";
@@ -63,6 +65,20 @@ final class DownloadSettings {
     static String conflictPolicy() {
         ensureLoaded();
         return SettingsRegistry.getStringOrDefault(CONFLICT_POLICY, CONFLICT_SKIP);
+    }
+
+    static boolean authorFolders() {
+        ensureLoaded();
+        return SettingsRegistry.getBooleanOrDefault(AUTHOR_FOLDERS, true);
+    }
+
+    static void setAuthorFolders(boolean enabled) {
+        ensureLoaded();
+        Setting<?> setting = SettingsRegistry.settingOrNull(AUTHOR_FOLDERS);
+        if (!(setting instanceof BooleanSetting toggle)) {
+            throw new IllegalStateException("Missing author-folder download setting");
+        }
+        toggle.save(enabled);
     }
 
     static boolean redirectNativeDownloads() {

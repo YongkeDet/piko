@@ -12,6 +12,7 @@ import android.content.Context;
 
 import androidx.annotation.Nullable;
 
+import java.io.IOException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -24,6 +25,8 @@ import app.morphe.extension.crimera.downloader.engine.DownloadNotifications;
 import app.morphe.extension.crimera.downloader.engine.HttpTransfer;
 import app.morphe.extension.crimera.downloader.engine.NotificationListener;
 import app.morphe.extension.crimera.downloader.engine.SafDestination;
+import app.morphe.extension.crimera.downloader.engine.DestinationWriter;
+import app.morphe.extension.crimera.downloader.engine.Reservation;
 import app.morphe.extension.crimera.downloader.events.DownloadEvent;
 import app.morphe.extension.crimera.downloader.events.DownloadEvents;
 import app.morphe.extension.crimera.downloader.events.DownloadListener;
@@ -53,6 +56,23 @@ public final class NewXDownloader {
             NewXLogger.printException(message::get, cause);
         }
     };
+
+    private static final DestinationWriter DESTINATION = new DestinationWriter() {
+        private final SafDestination delegate = new SafDestination(LOG);
+
+        @Override public synchronized Reservation reserve(Context context, DownloadRequest request)
+                throws IOException {
+            return delegate.reserve(context, request);
+        }
+
+        @Override public synchronized void discard(Context context, Reservation reservation) {
+            delegate.discard(context, reservation);
+        }
+    };
+
+    static DestinationWriter destinationWriter() {
+        return DESTINATION;
+    }
 
     private static final ExecutorService TRANSFER_EXECUTOR = Executors.newFixedThreadPool(
             TRANSFER_THREADS,
@@ -96,7 +116,7 @@ public final class NewXDownloader {
         );
         DownloadEngine created = new DownloadEngine(
                 applicationContext,
-                new SafDestination(LOG),
+                destinationWriter(),
                 new HttpTransfer(LOG),
                 events,
                 TRANSFER_EXECUTOR,

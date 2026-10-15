@@ -362,6 +362,31 @@ public final class NewXUtils {
         return sourceMediaField(postText, fieldName);
     }
 
+    /** Handle for directory attribution, or null when only a source user ID is reliable. */
+    public static String rawDownloadFolderHandle(String postText) {
+        String original = originalRepostedPostText(postText);
+        if (original != null) return rawAuthorField(original, "screenName");
+
+        String canonical = canonicalPostText(postText);
+        String sourceUser = sourceMediaField(postText, "sourceUserIdentifier");
+        String sourcePost = sourceMediaField(postText, "sourcePostIdentifier");
+        String authorId = rawAuthorField(canonical, "id");
+        String postId = ToStringParser.fieldValue(canonical, "id");
+        if (sourceUser != null ? sourceUser.equals(authorId) : sourcePost == null || sourcePost.equals(postId)) {
+            return rawAuthorField(canonical, "screenName");
+        }
+        // A first mention can be unrelated. Only a status URL for the exact source post
+        // proves this handle owns the media; otherwise the request uses sourceUserIdentifier.
+        String entities = ToStringParser.fieldValue(postText, "entityList");
+        if (sourcePost != null && entities != null) {
+            Matcher urls = STATUS_URL_PATTERN.matcher(entities);
+            while (urls.find()) {
+                if (urls.group().endsWith("/status/" + sourcePost)) return urls.group(1);
+            }
+        }
+        return null;
+    }
+
     private static String rawAuthorField(String text, String fieldName) {
         if (text == null) return null;
 

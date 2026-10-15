@@ -1,0 +1,115 @@
+{
+  "all": {
+    "applied": 54,
+    "failed": 0,
+    "rebuilt": true,
+    "bytes": 121293595,
+    "sha256": "4f6f10d68378585a9745a29707ecfdacc4893d45d332cc2110048013ccf60394"
+  },
+  "default": {
+    "applied": 48,
+    "failed": 0,
+    "rebuilt": true,
+    "bytes": 120426183,
+    "sha256": "fc21f4c843530991ac2a68cdb27ec06d9d1f094c43be61b89bff620d054ee73b"
+  },
+  "chineseResources": {
+    "expected": 573,
+    "compiled": 573,
+    "missing": [],
+    "placeholders": "match",
+    "authorFolderTitle": "按作者分别建文件夹"
+  },
+  "apk": {
+    "package": "com.twitter.android",
+    "version": "12.34.0-prod.01",
+    "versionCode": 312340001,
+    "minSdk": 29,
+    "targetSdk": 36,
+    "settingsResources": {
+      "piko_newx_settings_title": true,
+      "piko_newx_inline_download_options_title": true,
+      "piko_newx_download_options_folder_images": true,
+      "piko_newx_download_options_folder_videos": true,
+      "piko_newx_hide_community_notes_title": true,
+      "piko_newx_force_translate_title": true,
+      "piko_newx_hide_promote_title": true
+    }
+  },
+  "apkDex": {
+    "classes": 120938,
+    "extensionClasses": 3816,
+    "dexFiles": 14,
+    "methods": 600265,
+    "legacyPatchClasses": [],
+    "missingExtensionOwners": [],
+    "extensionReferences": 3490
+  },
+  "mppDex": {
+    "extensionClasses": 3816,
+    "classes": 5265,
+    "extensionReferences": 3488,
+    "missingExtensionOwners": [],
+    "legacyPatchClasses": [],
+    "methods": 33722,
+    "dexFiles": 3
+  },
+  "runtimeWiring": {
+    "sharedWriter": [
+      "Lapp/morphe/extension/newx/misc/NewXDownloader;->DESTINATION:Lapp/morphe/extension/crimera/downloader/engine/DestinationWriter;"
+    ],
+    "synchronizedReserve": [
+      "Lapp/morphe/extension/newx/misc/NewXDownloader$2;->reserve(Landroid/content/Context;Lapp/morphe/extension/crimera/downloader/model/DownloadRequest;)Lapp/morphe/extension/crimera/downloader/engine/Reservation;"
+    ],
+    "requestPolicyPresent": true,
+    "settingPresent": true,
+    "folderControlPresent": true,
+    "defaultOn": true,
+    "writerCallers": [
+      {
+        "method": "Lapp/morphe/extension/newx/misc/MediaMerger;->performMerge(Landroid/content/Context;Ljava/util/List;Ljava/lang/String;Lapp/morphe/extension/newx/misc/DownloadFileName$PostContext;)V"
+      },
+      {
+        "method": "Lapp/morphe/extension/newx/misc/NewXDownloader;->install(Landroid/content/Context;)V"
+      }
+    ],
+    "policyCallers": [
+      {
+        "checksAuthorSetting": true,
+        "method": "Lapp/morphe/extension/newx/misc/InlineDownloadButton;->enqueueDownload(Landroid/content/Context;Lapp/morphe/extension/newx/misc/InlineDownloadButton$DownloadItem;Lapp/morphe/extension/newx/misc/DownloadFileName$PostContext;Ljava/lang/String;IILapp/morphe/extension/crimera/downloader/model/ConflictPolicy;Z)Lapp/morphe/extension/crimera/downloader/model/EnqueueState;"
+      },
+      {
+        "checksAuthorSetting": true,
+        "method": "Lapp/morphe/extension/newx/misc/MediaMerger;->performMerge(Landroid/content/Context;Ljava/util/List;Ljava/lang/String;Lapp/morphe/extension/newx/misc/DownloadFileName$PostContext;)V"
+      },
+      {
+        "checksAuthorSetting": true,
+        "method": "Lapp/morphe/extension/newx/misc/NativeDownloadRouter;->enqueue(Landroid/content/Context;Lapp/morphe/extension/newx/misc/NewXDownloadFolders$MediaKind;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lapp/morphe/extension/newx/misc/DownloadFileName$PostContext;)V"
+      }
+    ]
+  },
+  "extensions": {
+    "extensions/newx.mpe": "2687c72293acf3e8f35ab01907bcf34226a62eceb91a72f967531d0f431d2934",
+    "extensions/shared.mpe": "ad486f4bf4537b12e4d0efaff8b809cf550d6f9eea4bff4549d481a9da105396"
+  },
+  "tests": [
+    {
+      "report": "patches/build/reports/tests/test/index.html",
+      "tests": 73,
+      "failures": 0,
+      "skipped": 0
+    },
+    {
+      "report": "extensions/newx/build/reports/tests/testDebugUnitTest/index.html",
+      "tests": 255,
+      "failures": 0,
+      "skipped": 0
+    }
+  ],
+  "nativeLibraries": {
+    "count": 19,
+    "architectures": [
+      "arm64-v8a"
+    ]
+  }
+}

@@ -10,6 +10,8 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import app.morphe.extension.crimera.downloader.engine.DestinationLoss;
+import app.morphe.extension.crimera.downloader.model.DownloadRequest;
+import app.morphe.extension.crimera.downloader.model.ConflictPolicy;
 import app.morphe.extension.crimera.settings.SettingsRegistry;
 import app.morphe.extension.shared.settings.BooleanSetting;
 
@@ -534,6 +536,8 @@ public final class InlineDownloadButtonTest {
         assertEquals("写真集探偵", context.name);
         assertEquals("Phot0_detective_2088553803364843766.jpg",
                 DownloadFileName.render(null, context, 0, 1, "jpg"));
+        assertEquals(Collections.singletonList("@phot0_detective"),
+                authorFolderRequest(post, true).subpath());
     }
 
     @Test
@@ -582,6 +586,42 @@ public final class InlineDownloadButtonTest {
         assertEquals("hige_hurai", context.screenName);
         assertEquals("2088221458740969716", context.id);
         assertEquals("Hige Hurai", context.name);
+        assertEquals(Collections.singletonList("@hige_hurai"),
+                authorFolderRequest(post, true).subpath());
+    }
+
+    // Guards attribution and path confinement at the real shared request boundary, rather
+    // than just testing a display-name sanitizer. All entries keep the same filename on purpose.
+    @Test
+    public void authorFolderRequestsSeparateOwnersAndRejectUntrustedPathComponents() {
+        String alice = "CanonicalPost(id=100, author=MinimalUser(id=1, screenName=Alice, name=Same))";
+        String bob = "CanonicalPost(id=101, author=MinimalUser(id=2, screenName=Bob, name=Same))";
+        DownloadRequest left = authorFolderRequest(alice, true);
+        DownloadRequest right = authorFolderRequest(bob, true);
+        assertEquals(left.fileName(), right.fileName());
+        assertNotEquals(left.subpath(), right.subpath());
+        assertEquals(left.subpath(), authorFolderRequest(alice.replace("Alice", "ALICE"), true).subpath());
+        assertTrue(authorFolderRequest(alice, false).subpath().isEmpty());
+
+        // A folded repost's source user is known, but an unrelated mention is not proof
+        // of its handle. Never put this media in the retweeter's or mentioned user's folder.
+        String folded = "CanonicalPost(id=200, author=MinimalUser(id=9, screenName=retweeter), " +
+                "media=[MediaContentImage(sourceInfo=SourceInfo(sourcePostIdentifier=100, " +
+                "sourceUserIdentifier=17))], entityList=PostEntityList(" +
+                "mentions=[MentionEntity(screenName=unrelated)], urls=[], media=[]))";
+        assertEquals(Collections.singletonList("user_17"), authorFolderRequest(folded, true).subpath());
+        String unsafe = "CanonicalPost(id=100, author=MinimalUser(id=1, screenName=../../outside))";
+        assertEquals(Collections.singletonList("unknown"), authorFolderRequest(unsafe, true).subpath());
+        assertEquals(Collections.singletonList("unknown"), authorFolderRequest("CorruptedPost()", true).subpath());
+        assertEquals(ConflictPolicy.SKIP, left.conflict());
+        assertEquals(Collections.singletonList("https://example.com/fallback.jpg"), left.fallbackUrls());
+    }
+
+    private static DownloadRequest authorFolderRequest(String post, boolean enabled) {
+        return NewXDownloadFolders.createRequest(
+                "https://example.com/media.jpg", Collections.singletonList("https://example.com/fallback.jpg"),
+                null, DownloadFileName.PostContext.fromText(post), enabled,
+                "same.jpg", "image/jpeg", ConflictPolicy.SKIP, "author");
     }
 
     @Test
