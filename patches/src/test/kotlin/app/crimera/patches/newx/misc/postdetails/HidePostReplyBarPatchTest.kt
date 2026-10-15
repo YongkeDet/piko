@@ -168,8 +168,9 @@ class HidePostReplyBarPatchTest {
         // cannot be discovered by scratchRegister, even after growing this frame.
         val implementation = method.implementation!!
         val exit = implementation.newLabelForIndex(method.instructions.lastIndex)
+        val payloadIndex = method.instructions.size
         implementation.addInstruction(BuilderPackedSwitchPayload(0, listOf(exit)))
-        val payload = implementation.newLabelForIndex(method.instructions.lastIndex)
+        val payload = implementation.newLabelForIndex(payloadIndex)
         implementation.addInstruction(2, BuilderInstruction31t(Opcode.PACKED_SWITCH, 0, payload))
         return method
     }

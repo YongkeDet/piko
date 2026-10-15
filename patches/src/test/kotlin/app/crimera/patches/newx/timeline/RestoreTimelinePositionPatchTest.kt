@@ -41,8 +41,9 @@ class RestoreTimelinePositionPatchTest {
         """.trimIndent())
         val body = original.implementation!!
         val exit = body.newLabelForIndex(original.instructions.lastIndex)
+        val payloadIndex = original.instructions.size
         body.addInstruction(BuilderPackedSwitchPayload(0, listOf(exit)))
-        val payload = body.newLabelForIndex(original.instructions.lastIndex)
+        val payload = body.newLabelForIndex(payloadIndex)
         body.addInstruction(2, BuilderInstruction31t(Opcode.PACKED_SWITCH, 3, payload))
         val map = original.instructions.first()
         original.addInstructionsWithLabels(0, "if-eqz v4, :map", ExternalLabel("map", map))
