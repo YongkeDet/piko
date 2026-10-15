@@ -11,6 +11,7 @@ import app.morphe.patcher.util.smali.toInstruction
 import app.morphe.util.getReference
 import app.morphe.util.p0Register
 import app.crimera.patches.newx.models.booleanModelFields
+import app.crimera.patches.newx.models.modelFieldsByAppendOrder
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.HiddenApiRestriction
 import com.android.tools.smali.dexlib2.Opcode
@@ -31,6 +32,55 @@ import kotlin.test.assertTrue
 
 class PostPoliciesPatchTest {
     private val owner = "Lapp/crimera/test/PostPolicyFixture;"
+
+    @Test
+    fun `outlined preferred-height formatter binds the label to the int field`() {
+        val helper = bytecodeMethod("Lapp/crimera/test/AppendHelper;", "format", listOf(
+            "I", "Ljava/lang/String;", "Ljava/lang/String;",
+        ), "Ljava/lang/String;", 4, true, """
+            new-instance v0, Ljava/lang/StringBuilder;
+            invoke-direct {v0, p1}, Ljava/lang/StringBuilder;-><init>(Ljava/lang/String;)V
+            invoke-virtual {v0, p0}, Ljava/lang/StringBuilder;->append(I)Ljava/lang/StringBuilder;
+            invoke-virtual {v0, p2}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
+            invoke-virtual {v0}, Ljava/lang/StringBuilder;->toString()Ljava/lang/String;
+            move-result-object v0
+            return-object v0
+        """.trimIndent())
+        val model = bytecodeMethod(owner, "toString", emptyList(), "Ljava/lang/String;", 4, false, """
+            iget v0, p0, $owner->height:I
+            const-string v1, "PreferredHeight(heightPx="
+            const-string v2, ")"
+            invoke-static {v0, v1, v2}, Lapp/crimera/test/AppendHelper;->format(ILjava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+            move-result-object v0
+            return-object v0
+        """.trimIndent())
+        assertEquals(mapOf("PreferredHeight(heightPx=" to "$owner->height:I"),
+            modelFieldsByAppendOrder(model) { helper }.mapValues { it.value.toString() })
+    }
+
+    @Test
+    fun `R8 object append helper preserves the rendition policy label`() {
+        val helper = bytecodeMethod("Lapp/crimera/test/AppendHelper;", "append", listOf(
+            "Ljava/lang/StringBuilder;", "Ljava/lang/Object;", "Ljava/lang/String;",
+        ), "V", 3, true, """
+            invoke-virtual {p0, p1}, Ljava/lang/StringBuilder;->append(Ljava/lang/Object;)Ljava/lang/StringBuilder;
+            invoke-virtual {p0, p2}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
+            return-void
+        """.trimIndent())
+        val model = bytecodeMethod(owner, "toString", emptyList(), "Ljava/lang/String;", 4, false, """
+            new-instance v0, Ljava/lang/StringBuilder;
+            const-string v1, ", renditionSizing="
+            invoke-direct {v0, v1}, Ljava/lang/StringBuilder;-><init>(Ljava/lang/String;)V
+            iget-object v1, p0, $owner->policy:Ljava/lang/Object;
+            const-string v2, ", next="
+            invoke-static {v0, v1, v2}, Lapp/crimera/test/AppendHelper;->append(Ljava/lang/StringBuilder;Ljava/lang/Object;Ljava/lang/String;)V
+            invoke-virtual {v0}, Ljava/lang/StringBuilder;->toString()Ljava/lang/String;
+            move-result-object v0
+            return-object v0
+        """.trimIndent())
+        assertEquals(mapOf(", renditionSizing=" to "$owner->policy:Ljava/lang/Object;"),
+            modelFieldsByAppendOrder(model) { helper }.mapValues { it.value.toString() })
+    }
 
     @Test
     fun `R8 boolean append helper keeps label and field order`() {

@@ -5,8 +5,9 @@ import app.crimera.bytecode.Target
 import app.crimera.bytecode.insertHook
 import app.crimera.bytecode.methodReference
 import app.crimera.patches.common.requireExactlyOne
+import app.crimera.patches.common.requireAtMostOne
 import app.crimera.patches.common.resolveIntegerLiteralOnCurrentPath
-import app.crimera.patches.newx.models.fieldForToStringLabel
+import app.crimera.patches.newx.models.modelFieldsByAppendOrder
 import app.crimera.patches.newx.models.requireSingle
 import app.crimera.patches.newx.utils.Constants.SETTINGS_REGISTRY_DESCRIPTOR
 import app.crimera.patches.settings.ToggleSettingDefinition
@@ -22,6 +23,7 @@ import app.morphe.util.numberOfParameterRegisters
 import app.morphe.util.p0Register
 import app.morphe.util.registersUsed
 import com.android.tools.smali.dexlib2.Opcode
+import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
@@ -34,6 +36,14 @@ private const val UNBOUNDED_PREFERRED_HEIGHT = Int.MAX_VALUE / 2
 /** Current X consumes a fixed-height rendition policy instead of the removed audio callback. */
 context(context: BytecodePatchContext)
 internal fun patchPreferredVideoResolution(setting: ToggleSettingDefinition) {
+    fun fields(method: Method) = modelFieldsByAppendOrder(method) { reference ->
+        context.classDefByOrNull(reference.definingClass)?.methods?.let { methods ->
+            requireAtMostOne("video-policy append helper $reference", methods.filter { candidate ->
+                candidate.name == reference.name && candidate.returnType == reference.returnType &&
+                    candidate.parameterTypes.map(CharSequence::toString) == reference.parameterTypes.map(CharSequence::toString)
+            })
+        }
+    }
     val preferred = Fingerprint(
         definingClass = "Lcom/x/media/playback/", name = "toString", parameters = emptyList(),
         returnType = "Ljava/lang/String;", filters = listOf(string("PreferredHeight(heightPx=")),
@@ -44,14 +54,16 @@ internal fun patchPreferredVideoResolution(setting: ToggleSettingDefinition) {
             string("PlayerConfiguration(videoScale="), string(", renditionSizing="),
         ),
     ).requireSingle("video player configuration")
-    val policyField = configuration.fieldForToStringLabel(", renditionSizing=")
+    val policyField = fields(configuration.originalMethod)[", renditionSizing="]
+        ?: throw PatchException("Missing player rendition-sizing field")
     if (policyField.type !in preferred.originalClassDef.interfaces) {
         throw PatchException("Preferred video height is not a player rendition policy: $policyField")
     }
     val preferredConstructor = requireExactlyOne("preferred video-height constructor", preferred.originalClassDef.methods.filter {
         it.name == "<init>" && it.parameterTypes.map(CharSequence::toString) == listOf("I")
     })
-    val heightField = preferred.fieldForToStringLabel("PreferredHeight(heightPx=")
+    val heightField = fields(preferred.originalMethod)["PreferredHeight(heightPx="]
+        ?: throw PatchException("Missing preferred-height value field")
     if (heightField.type != "I") throw PatchException("Preferred video height is not an int: $heightField")
     val owner = configuration.classDef
     val writers = owner.methods.filter { method -> method.instructions.any { instruction ->

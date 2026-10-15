@@ -17,8 +17,8 @@ private const val BUILDER = "Ljava/lang/StringBuilder;"
 private data class ModelLabel(val text: String)
 private class LabelBuilder(var label: String? = null)
 
-/** Follows append order through R8's small, straight-line StringBuilder/boolean helpers. */
-internal fun booleanModelFields(
+/** Follows append order through R8's small, straight-line StringBuilder helpers. */
+internal fun modelFieldsByAppendOrder(
     modelToString: Method,
     resolveHelper: (MethodReference) -> Method?,
 ): Map<String, FieldReference> {
@@ -29,7 +29,7 @@ internal fun booleanModelFields(
         var result: Any? = null
         val instructions = method.implementation?.instructions?.toList().orEmpty()
         if (instructions.any { it is OffsetInstruction }) {
-            throw PatchException("Boolean model-label helper has conditional control flow: $method")
+            throw PatchException("Model-label helper has conditional control flow: $method")
         }
         for (instruction in instructions) {
             val one = instruction as? OneRegisterInstruction
@@ -41,13 +41,15 @@ internal fun booleanModelFields(
                 Opcode.NEW_INSTANCE -> if (instruction.getReference<com.android.tools.smali.dexlib2.iface.reference.TypeReference>()?.type == BUILDER) {
                     values[one!!.registerA] = LabelBuilder()
                 }
-                Opcode.IGET_BOOLEAN -> {
+                Opcode.IGET_BOOLEAN, Opcode.IGET_OBJECT, Opcode.IGET, Opcode.IGET_WIDE,
+                Opcode.IGET_BYTE, Opcode.IGET_CHAR, Opcode.IGET_SHORT -> {
                     val field = instruction.getReference<FieldReference>()!!
                     if (field.definingClass == modelToString.definingClass) values[two!!.registerA] = field
                     else values.remove(two!!.registerA)
                 }
                 Opcode.MOVE, Opcode.MOVE_FROM16, Opcode.MOVE_16,
-                Opcode.MOVE_OBJECT, Opcode.MOVE_OBJECT_FROM16, Opcode.MOVE_OBJECT_16 -> {
+                Opcode.MOVE_OBJECT, Opcode.MOVE_OBJECT_FROM16, Opcode.MOVE_OBJECT_16,
+                Opcode.MOVE_WIDE, Opcode.MOVE_WIDE_FROM16, Opcode.MOVE_WIDE_16 -> {
                     val value = values[two!!.registerB]
                     if (value == null) values.remove(two.registerA) else values[two.registerA] = value
                 }
@@ -61,24 +63,26 @@ internal fun booleanModelFields(
                     val registers = instruction.registersUsed
                     val arguments = registers.map(values::get)
                     result = null
-                    if (reference.definingClass == BUILDER && reference.name in setOf("append", "<init>")) {
+                    if (reference.definingClass == BUILDER) {
                         val builder = arguments.getOrNull(0) as? LabelBuilder ?: continue
-                        when (val value = arguments.getOrNull(1)) {
+                        when (val value = arguments.getOrNull(1).takeIf { reference.name in setOf("append", "<init>") }) {
                             is ModelLabel -> builder.label = value.text
                             is FieldReference -> {
                                 builder.label?.let { label ->
                                     val previous = found.put(label, value)
                                     if (previous != null && previous.toString() != value.toString()) {
-                                        throw PatchException("Ambiguous boolean model label '$label': $previous, $value")
+                                        throw PatchException("Ambiguous model label '$label': $previous, $value")
                                     }
                                 }
                                 builder.label = null
                             }
                         }
                         if (reference.returnType == BUILDER) result = builder
-                    } else if (BUILDER in reference.parameterTypes.map(CharSequence::toString) && arguments.any { it is LabelBuilder }) {
+                    } else if ((arguments.any { it is LabelBuilder } ||
+                            arguments.any { it is ModelLabel } && arguments.any { it is FieldReference }) &&
+                        reference.returnType in setOf("V", "Ljava/lang/String;", BUILDER)) {
                         val helper = resolveHelper(reference)
-                            ?: throw PatchException("Cannot inspect boolean model-label helper: $reference")
+                            ?: throw PatchException("Cannot inspect model-label helper: $reference")
                         if (!AccessFlags.STATIC.isSet(helper.accessFlags)) throw PatchException("Model-label helper is not static: $helper")
                         val widths = helper.parameterTypes.map { if (it == "J" || it == "D") 2 else 1 }
                         var register = helper.implementation!!.registerCount - widths.sum()
@@ -102,3 +106,6 @@ internal fun booleanModelFields(
     walk(modelToString, mutableMapOf(), 0)
     return found
 }
+
+internal fun booleanModelFields(method: Method, resolveHelper: (MethodReference) -> Method?): Map<String, FieldReference> =
+    modelFieldsByAppendOrder(method, resolveHelper).filterValues { it.type == "Z" }
