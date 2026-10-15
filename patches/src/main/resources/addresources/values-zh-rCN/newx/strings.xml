@@ -569,4 +569,6 @@
     <string name="piko_newx_crash_channel">Piko 崩溃日志</string>
     <string name="piko_newx_share_image_chooser">将帖子分享为图片</string>
     <string name="piko_newx_crash_copy_action">复制</string>
+    <string name="piko_newx_download_author_folders_title">按作者分别建文件夹</string>
+    <string name="piko_newx_download_author_folders_summary">在所选图片、视频目录内按 @用户名 建子文件夹，仅影响之后的下载。</string>
 </resources>

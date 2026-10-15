@@ -22,35 +22,22 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.function.Supplier;
 
 import app.morphe.extension.crimera.downloader.engine.DestinationLoss;
-import app.morphe.extension.crimera.downloader.engine.DownloadLog;
 import app.morphe.extension.crimera.downloader.engine.Reservation;
-import app.morphe.extension.crimera.downloader.engine.SafDestination;
+import app.morphe.extension.crimera.downloader.engine.DestinationWriter;
 import app.morphe.extension.crimera.downloader.model.DownloadRequest;
 import app.morphe.extension.newx.settings.NewXLogger;
 import app.morphe.extension.newx.utils.NewXUtils;
 
 /**
  * Downloads multiple image slices in the background, stitches them horizontally
- * in 1-2-3-4 order, and saves the final merged image through {@link SafDestination} so a
+ * in 1-2-3-4 order, and saves the final merged image through the shared SAF destination so a
  * merge lands in the same folder, under the same filename template, as a plain download.
  * Intermediate splits are stored in cache and deleted immediately after merging.
  */
 public final class MediaMerger {
     private static final String LOG_PREFIX = "[PikoNewX][MediaMerger] ";
-    private static final DownloadLog LOG = new DownloadLog() {
-        @Override
-        public void info(Supplier<String> message) {
-            NewXLogger.printInfo(message::get);
-        }
-
-        @Override
-        public void error(Supplier<String> message, Throwable cause) {
-            NewXLogger.printException(message::get, cause);
-        }
-    };
     private static final ExecutorService MERGE_EXECUTOR = Executors.newSingleThreadExecutor();
     private static final int CONNECT_TIMEOUT_MS = 10_000;
     private static final int READ_TIMEOUT_MS = 20_000;
@@ -210,11 +197,12 @@ public final class MediaMerger {
             final Uri destinationTree = NewXDownloadFolders.treeUri(NewXDownloadFolders.MediaKind.IMAGES);
             final DownloadRequest request;
             try {
-                request = new DownloadRequest(
+                request = NewXDownloadFolders.createRequest(
                         items.get(0).url,
                         Collections.emptyList(),
                         destinationTree,
-                        Collections.emptyList(),
+                        postContext,
+                        DownloadSettings.authorFolders(),
                         fileName,
                         mimeType,
                         NewXDownloadFolders.conflictPolicy(),
@@ -227,7 +215,7 @@ public final class MediaMerger {
                 return;
             }
 
-            SafDestination destination = new SafDestination(LOG);
+            DestinationWriter destination = NewXDownloader.destinationWriter();
             final Reservation reservation;
             try {
                 reservation = destination.reserve(context, request);

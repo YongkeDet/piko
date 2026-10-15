@@ -7,6 +7,12 @@ import android.provider.DocumentsContract;
 
 import androidx.annotation.Nullable;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.Locale;
+
+import app.morphe.extension.crimera.downloader.model.DownloadRequest;
+
 import app.morphe.extension.crimera.downloader.FolderPicker;
 import app.morphe.extension.crimera.downloader.engine.DestinationCheck;
 import app.morphe.extension.crimera.downloader.model.ConflictPolicy;
@@ -34,6 +40,35 @@ public final class NewXDownloadFolders {
         LIVE,
         /** Stored folder is revoked, deleted, or from another device. */
         UNUSABLE,
+    }
+
+    /** Shared request policy for every NewX download entry point. */
+    static DownloadRequest createRequest(
+            String url, List<String> fallbacks, Uri destinationTree,
+            DownloadFileName.PostContext post, boolean authorFolders,
+            String fileName, String mimeType, ConflictPolicy conflict, String label
+    ) {
+        List<String> subpath = Collections.emptyList();
+        if (authorFolders) {
+            String handle = post == null ? null : post.folderScreenName;
+            if (handle != null) {
+                handle = handle.trim();
+                if (handle.startsWith("@")) handle = handle.substring(1);
+            }
+            final String folder;
+            if (handle != null && handle.matches("[A-Za-z0-9_]{1,64}")) {
+                folder = "@" + handle.toLowerCase(Locale.ROOT);
+            } else if (post != null && post.sourceUserIdentifier != null
+                    && post.sourceUserIdentifier.matches("[0-9]{1,32}")) {
+                folder = "user_" + post.sourceUserIdentifier;
+            } else {
+                folder = "unknown";
+            }
+            subpath = Collections.singletonList(folder);
+        }
+        // DownloadRequest also validates every path component before any provider is contacted.
+        return new DownloadRequest(url, fallbacks, destinationTree, subpath, fileName, mimeType,
+                conflict, label);
     }
 
     /** Routes a MIME type to its destination. Unknown media types fail closed. */

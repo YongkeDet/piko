@@ -570,4 +570,6 @@
     <string name="piko_newx_crash_channel">Piko crash logs</string>
     <string name="piko_newx_share_image_chooser">Share post as image</string>
     <string name="piko_newx_crash_copy_action">Copy</string>
+    <string name="piko_newx_download_author_folders_title">Create a folder for each author</string>
+    <string name="piko_newx_download_author_folders_summary">Save images and videos in an @username subfolder of each chosen download folder. Applies to new downloads.</string>
 </resources>

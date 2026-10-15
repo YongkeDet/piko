@@ -70,6 +70,7 @@ public final class DownloadFileName {
         final String sourcePostIdentifier;
         final String sourceUserIdentifier;
         final String sourceUserDisplayName;
+        final String folderScreenName;
 
         PostContext(
                 String id,
@@ -80,6 +81,13 @@ public final class DownloadFileName {
                 String sourceUserIdentifier,
                 String sourceUserDisplayName
         ) {
+            this(id, screenName, name, timestamp, sourcePostIdentifier, sourceUserIdentifier,
+                    sourceUserDisplayName, screenName);
+        }
+
+        private PostContext(String id, String screenName, String name, String timestamp,
+                String sourcePostIdentifier, String sourceUserIdentifier, String sourceUserDisplayName,
+                String folderScreenName) {
             this.id = id;
             this.screenName = screenName;
             this.name = name;
@@ -87,6 +95,7 @@ public final class DownloadFileName {
             this.sourcePostIdentifier = sourcePostIdentifier;
             this.sourceUserIdentifier = sourceUserIdentifier;
             this.sourceUserDisplayName = sourceUserDisplayName;
+            this.folderScreenName = folderScreenName;
         }
 
         public static PostContext from(Object post) {
@@ -106,7 +115,8 @@ public final class DownloadFileName {
                     normalizeTimestamp(ToStringParser.fieldValue(postText, "timestamp")),
                     NewXUtils.rawSourceMediaField(postText, "sourcePostIdentifier"),
                     NewXUtils.rawSourceMediaField(postText, "sourceUserIdentifier"),
-                    NewXUtils.rawSourceMediaField(postText, "sourceUserDisplayName")
+                    NewXUtils.rawSourceMediaField(postText, "sourceUserDisplayName"),
+                    NewXUtils.rawDownloadFolderHandle(postText)
             );
         }
 

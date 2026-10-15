@@ -109,7 +109,7 @@ public final class NativeDownloadRouter {
         Context applicationContext = context.getApplicationContext();
         Context safeContext = applicationContext != null ? applicationContext : context;
         ENQUEUE_EXECUTOR.execute(() ->
-                enqueue(safeContext, kind, fileName, url, mimeType, username));
+                enqueue(safeContext, kind, fileName, url, mimeType, username, postContext));
         return true;
     }
 
@@ -119,7 +119,8 @@ public final class NativeDownloadRouter {
             String fileName,
             String url,
             String mimeType,
-            String username
+            String username,
+            DownloadFileName.PostContext postContext
     ) {
         DownloadEngine engine = NewXDownloader.get();
         if (engine == null) {
@@ -142,11 +143,12 @@ public final class NativeDownloadRouter {
 
         final DownloadRequest request;
         try {
-            request = new DownloadRequest(
+            request = NewXDownloadFolders.createRequest(
                     url,
                     fallbacks,
                     destinationTree,
-                    Collections.emptyList(),
+                    postContext,
+                    DownloadSettings.authorFolders(),
                     fileName,
                     mimeType,
                     policy,
