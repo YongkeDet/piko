@@ -20,11 +20,11 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      SOURCE_RUN_ID: '38753930027'
-      SOURCE_SHA: bff8b9ebe05dc3a975c29ab3392ad74ca3d7f972
-      BUNDLE_SHA256: 252385529dde84c3cbe08830e252c65dfaf9769b706875227443aa52da9ecef8
-      RELEASE_TAG: v3.10.0-custom-newx.3
-      BUNDLE_NAME: patches-3.10.0-custom-newx.3.mpp
+      SOURCE_RUN_ID: '38783573757'
+      SOURCE_SHA: 9eb09ff4c5df3abb86693d4faa5532020242c78f
+      BUNDLE_SHA256: 31b9adbee0e2ab1a5200f15413eb3635233427ba719b99e7f94f2d1e93eebe9a
+      RELEASE_TAG: v3.10.0-custom-newx.4
+      BUNDLE_NAME: patches-3.10.0-custom-newx.4.mpp
     steps:
       - uses: actions/checkout@v7
       - name: Verify source build
@@ -56,6 +56,6 @@ jobs:
             "dist/$BUNDLE_NAME" dist/SHA256SUMS dist/source-provenance.json \
             --repo "$GITHUB_REPOSITORY" \
             --target "$GITHUB_SHA" \
-            --title 'Piko NewX Custom — 按作者分别保存媒体' \
-            --notes-file docs/releases/v3.10.0-custom-newx.3.md \
+            --title 'Piko NewX Custom — 去掉下载成功的底部重复提示' \
+            --notes-file docs/releases/v3.10.0-custom-newx.4.md \
             --latest

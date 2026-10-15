@@ -171,7 +171,8 @@ public final class NewXDownloader {
         @Override
         public void onCompleted(DownloadEvent.Completed event) {
             if (!DownloadNotifications.notificationsEnabled(context, CHANNEL_ID)) {
-                InlineDownloadButton.reportDownloadStatus(StringRef.str("piko_newx_download_saved", event.fileName()), event.label());
+                // Completion feedback belongs to the top in-app banner only.
+                NewXInAppNotification.tryShowForUser(StringRef.str("piko_newx_download_saved", event.fileName()), event.label());
             }
         }
 

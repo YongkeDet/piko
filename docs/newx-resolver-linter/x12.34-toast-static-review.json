@@ -1,0 +1,42 @@
+{
+  "all": {
+    "applied": 54,
+    "failed": 0,
+    "rebuilt": true,
+    "bytes": 121293595,
+    "sha256": "35cda730cc81093ae7570a2f7f39b72b82805ef71e59eccfad04c3de0907a83d"
+  },
+  "default": {
+    "applied": 48,
+    "failed": 0,
+    "rebuilt": true,
+    "bytes": 120426183,
+    "sha256": "4c331277b87622125d4576621ce07e4652fb4dab370d9216bcf71d99f49b11fe"
+  },
+  "successFeedback": {
+    "successPaths": 2,
+    "topOnly": true,
+    "toastFallback": false,
+    "errorReportingPreserved": true
+  },
+  "extensions": {
+    "extensions/newx.mpe": "3e48e05c271b75fd89d8136e76be5fc251389b49407403871d8db8a9dbafbda4",
+    "extensions/shared.mpe": "ad486f4bf4537b12e4d0efaff8b809cf550d6f9eea4bff4549d481a9da105396"
+  },
+  "tests": [
+    {
+      "report": "patches/build/reports/tests/test/index.html",
+      "tests": 73,
+      "failures": 0,
+      "skipped": 0
+    },
+    {
+      "report": "extensions/newx/build/reports/tests/testDebugUnitTest/index.html",
+      "tests": 255,
+      "failures": 0,
+      "skipped": 0
+    }
+  ],
+  "sourceSha": "9eb09ff4c5df3abb86693d4faa5532020242c78f",
+  "bundleSha256": "31b9adbee0e2ab1a5200f15413eb3635233427ba719b99e7f94f2d1e93eebe9a"
+}

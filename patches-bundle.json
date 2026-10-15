@@ -1,6 +1,6 @@
 {
-  "version": "3.10.0-custom-newx.3",
-  "download_url": "https://github.com/YongkeDet/piko/releases/download/v3.10.0-custom-newx.3/patches-3.10.0-custom-newx.3.mpp",
-  "created_at": "2026-10-15T14:51:11",
-  "description": "X 12.34.0-prod.01 / 312340001（arm64-v8a，Android 10+）。\n新增按作者分别建文件夹，默认开启：Piko 设置 → 帖子与媒体 → 下载选项。图片/视频保存到各自所选目录下的 @用户名 子文件夹。\n覆盖普通下载、被接管的内置下载和合并图片；只影响新下载，不移动已有文件；保留简体中文设置。\n54 项全选、48 项默认修补均零失败并重建成功；73 项补丁测试、255 项扩展测试通过。用户已实测 .2 正常，.3 新目录功能仍需手机确认。\n旧版 73 项仍是 33 项新版对应、14 项部分对应、25 项未迁移、1 项不适用。\nhttps://github.com/YongkeDet/piko/releases/tag/v3.10.0-custom-newx.3"
+  "version": "3.10.0-custom-newx.4",
+  "download_url": "https://github.com/YongkeDet/piko/releases/download/v3.10.0-custom-newx.4/patches-3.10.0-custom-newx.4.mpp",
+  "created_at": "2026-10-15T18:21:19",
+  "description": "X 12.34.0-prod.01 / 312340001（arm64-v8a，Android 10+）。\n修复图片、视频和合并图片保存成功时上下两处重复提示：现在只保留页面上方“已保存”横幅，移除底部 Toast。\n保留按作者建文件夹、简体中文设置和原有下载规则。\n54 项全选、48 项默认修补均零失败并重建成功；328 项测试通过，最终 APK 的两处成功反馈确认无底部 Toast 回退。实际提示位置仍需手机确认。\nhttps://github.com/YongkeDet/piko/releases/tag/v3.10.0-custom-newx.4"
 }

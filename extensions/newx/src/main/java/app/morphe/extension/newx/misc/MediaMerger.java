@@ -245,7 +245,7 @@ public final class MediaMerger {
             try {
                 writeMergedBitmap(context, mergedBitmap, reservation.documentUri(), format);
                 NewXLogger.printInfo(() -> LOG_PREFIX + "Successfully merged and saved " + reservation.fileName());
-                InlineDownloadButton.reportDownloadStatus(
+                NewXInAppNotification.tryShowForUser(
                         StringRef.str("piko_newx_merge_saved", reservation.fileName()), username);
             } catch (Exception exception) {
                 destination.discard(context, reservation);
