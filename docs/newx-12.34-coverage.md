@@ -7,7 +7,7 @@
 没有用空实现代替，也没有通过忽略异常伪装为成功。下表按仓库旧版 Twitter 源码中的公开补丁名称列出，
 不假设它与某个用户保存的 73 项选择完全一致。
 
-用户已反馈 `3.10.0-custom-newx.1` 可正常使用；这不等于逐项验证所有功能。`.2` 新增项目已做构建和整包修补验证，仍需手机验证交互。旧目标只保留原有路径及形状测试，未获得旧 APK 做整包回归。
+用户已反馈 `3.10.0-custom-newx.2` 可正常使用；这不等于逐项验证所有功能。`.3` 作者分文件夹功能已做构建和整包修补验证，仍需手机验证交互。旧目标只保留原有路径及形状测试，未获得旧 APK 做整包回归。
 
 | 旧版名称 | 状态 | 新版对应或限制 |
 | --- | --- | --- |
@@ -18,7 +18,7 @@
 | Change app icon | 部分对应 | Restore Twitter branding 提供鸟图标；旧版其他图标选项未迁移 |
 | Clear tracking params | 新版对应 | Custom sharing domain → 清除分享链接中的追踪参数；仅清理 X/Twitter 帖子链接，保留其他查询参数和编码 |
 | Control video auto scroll | 部分对应 | Disable video player scrolling 目前提供关闭滚动的控制 |
-| Custom download folder | 新版对应 | Inline download button / Redirect downloads to chosen folder；图片和视频分别使用 SAF 目录 |
+| Custom download folder | 新版对应 | Inline download button / Redirect downloads to chosen folder；图片和视频分别使用 SAF 目录，支持按作者建子文件夹 |
 | Custom emoji font | 新版对应 | Custom font → Custom emoji font |
 | Custom font | 新版对应 | Custom font |
 | Custom share menu | 部分对应 | Customize post menu items / Customize media menu items；旧版分享菜单未整体复刻 |
@@ -93,6 +93,14 @@
 - 自定义链接默认包含 `vxtwitter.com`、`fixvx.com`、`fxtwitter.com`、`fixupx.com`、`twittpr.com`、`xcancel.com` 及其子域名。可在 Morphe 的 `NewX: Handle custom links` 选项中修改域名列表，重新修补后到 **Android 应用信息 → 默认打开方式/打开支持的链接** 中启用。系统不会自动验证这些域名。
 - 追踪参数清理只针对分享路径中实际经过 `ShareUrlResolver` 的 X/Twitter 帖子链接；不改写其他网站、搜索链接或正文内容。
 - 其余未迁移项按用户“无法可靠实现就放弃”的要求保留缺失，不用空补丁或忽略异常替代。
+
+## `.3` 按作者建文件夹
+
+**Piko 设置 → 帖子与媒体 → 下载选项 → 按作者分别建文件夹**，默认开启并纳入设置备份。普通下载、被接管的 X 内置下载及合并图片均使用相同目录策略；图片和视频仍使用各自选定的根目录。作者目录形如 `@alice`，不使用可能重名的显示昵称。转帖归属通过原帖对象或与来源帖子编号匹配的链接确认；只有来源用户 ID 时使用 `user_编号`，完全无法识别时使用 `unknown`。
+
+同一作者重复下载会复用目录，文件冲突策略在该子目录内生效。目录与文件的预留串行处理，网络传输仍可并行。关闭开关恢复平铺保存，只影响之后的下载，不移动已有文件。外部下载器或未被接管的原生下载不受此设置控制。
+
+作者目录属于现有 Custom download folder 对应项，旧版 73 项覆盖数仍是 **33 项新版对应、14 项部分对应、25 项未迁移、1 项不适用**。
 
 ## 当前可选补丁
 

@@ -20,11 +20,11 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      SOURCE_RUN_ID: '38749728127'
-      SOURCE_SHA: cb0b4f39557c60328f3fcbd02ce8ebd05fc7fec5
-      BUNDLE_SHA256: c6c72af74dcdb6b172daad232b5cd2b534d617965d961103d79a102edc333085
-      RELEASE_TAG: v3.10.0-custom-newx.2
-      BUNDLE_NAME: patches-3.10.0-custom-newx.2.mpp
+      SOURCE_RUN_ID: '38753930027'
+      SOURCE_SHA: bff8b9ebe05dc3a975c29ab3392ad74ca3d7f972
+      BUNDLE_SHA256: 252385529dde84c3cbe08830e252c65dfaf9769b706875227443aa52da9ecef8
+      RELEASE_TAG: v3.10.0-custom-newx.3
+      BUNDLE_NAME: patches-3.10.0-custom-newx.3.mpp
     steps:
       - uses: actions/checkout@v7
       - name: Verify source build
@@ -56,6 +56,6 @@ jobs:
             "dist/$BUNDLE_NAME" dist/SHA256SUMS dist/source-provenance.json \
             --repo "$GITHUB_REPOSITORY" \
             --target "$GITHUB_SHA" \
-            --title 'Piko NewX Custom — 简体中文与功能补齐' \
-            --notes-file docs/releases/v3.10.0-custom-newx.2.md \
+            --title 'Piko NewX Custom — 按作者分别保存媒体' \
+            --notes-file docs/releases/v3.10.0-custom-newx.3.md \
             --latest
