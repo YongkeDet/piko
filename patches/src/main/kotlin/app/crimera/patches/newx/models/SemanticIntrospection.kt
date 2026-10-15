@@ -586,7 +586,7 @@ private fun Instruction.destinationRegister(): Int? {
 private fun Instruction.writesRegister(register: Int): Boolean =
     destinationRegister() == register
 
-private fun List<Instruction>.controlFlowPredecessors(): Array<List<Int>> {
+internal fun List<Instruction>.controlFlowPredecessors(): Array<List<Int>> {
     val predecessors = Array(size) { mutableListOf<Int>() }
     controlFlowSuccessors().forEachIndexed { index, successors ->
         successors.forEach { successor ->

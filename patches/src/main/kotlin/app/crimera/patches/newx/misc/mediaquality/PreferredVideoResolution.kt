@@ -6,7 +6,9 @@ import app.crimera.bytecode.insertHook
 import app.crimera.bytecode.methodReference
 import app.crimera.patches.common.requireExactlyOne
 import app.crimera.patches.common.requireAtMostOne
-import app.crimera.patches.common.resolveIntegerLiteralOnCurrentPath
+import app.crimera.patches.common.INTEGER_LITERAL_OPCODES
+import app.crimera.patches.common.INTEGER_MOVE_OPCODES
+import app.crimera.patches.newx.models.controlFlowPredecessors
 import app.crimera.patches.newx.models.modelFieldsByAppendOrder
 import app.crimera.patches.newx.models.requireSingle
 import app.crimera.patches.newx.utils.Constants.SETTINGS_REGISTRY_DESCRIPTOR
@@ -27,9 +29,11 @@ import com.android.tools.smali.dexlib2.builder.BuilderOffsetInstruction
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
+import java.util.ArrayDeque
 
 // The native selector minimizes abs(format.height - preferredHeight). Half MAX_VALUE stays
 // above valid video dimensions without overflowing that distance for Format.NO_VALUE (-1).
@@ -119,6 +123,36 @@ internal fun preserveSelectedVideoHeight(method: MutableMethod, settingId: Strin
         throw PatchException("NewX video-height guard has no reserved byte-sized register")
     }
     val body = method.instructions.toList()
+    val predecessors = body.controlFlowPredecessors()
+    fun hasHalfHeightDivisor(index: Int, register: Int): Boolean {
+        // R8 merges unrelated coroutines into switch arms which reuse the same registers.
+        // Only predecessors that can actually reach this division establish its divisor.
+        val pending = ArrayDeque<Pair<Int, Int>>()
+        predecessors[index].forEach { pending.add(it to register) }
+        val visited = mutableSetOf<Pair<Int, Int>>()
+        var found = false
+        while (pending.isNotEmpty()) {
+            val state = pending.removeFirst()
+            if (!visited.add(state)) continue
+            val instruction = body[state.first]
+            val destination = (instruction as? OneRegisterInstruction)?.registerA
+            var source = state.second
+            if (instruction.opcode.setsRegister() && destination == source) {
+                if (instruction.opcode in INTEGER_LITERAL_OPCODES) {
+                    if ((instruction as? NarrowLiteralInstruction)?.narrowLiteral != 2) return false
+                    found = true
+                    continue
+                }
+                if (instruction.opcode !in INTEGER_MOVE_OPCODES) return false
+                source = (instruction as TwoRegisterInstruction).registerB
+            } else if (instruction.opcode.setsWideRegister() && destination?.plus(1) == source) {
+                return false
+            }
+            if (predecessors[state.first].isEmpty()) return false
+            predecessors[state.first].forEach { pending.add(it to source) }
+        }
+        return found
+    }
     fun setterAfter(index: Int): com.android.tools.smali.dexlib2.iface.instruction.Instruction? {
         var next = index + 1
         val visited = mutableSetOf<Int>()
@@ -141,7 +175,7 @@ internal fun preserveSelectedVideoHeight(method: MutableMethod, settingId: Strin
             setter.parameterTypes.map(CharSequence::toString) == listOf("I") && setter.returnType == "V" &&
             setter.definingClass.startsWith("Landroidx/media3/") &&
             setterInstruction.registersUsed.lastOrNull() == division.registerA &&
-            body.resolveIntegerLiteralOnCurrentPath(index, division.registerB) == 2
+            hasHalfHeightDivisor(index, division.registerB)
     }
     val divisionIndex = requireExactlyOne("native half-resolution adaptive constraint", divisions)
     method.insertHook(divisionIndex, excludedRegisters = body[divisionIndex].registersUsed, relocateBranchTargets = true) {

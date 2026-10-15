@@ -11,6 +11,10 @@ import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.builder.BuilderOffsetInstruction
 import com.android.tools.smali.dexlib2.builder.MethodImplementationBuilder
+import com.android.tools.smali.dexlib2.builder.instruction.BuilderInstruction31t
+import com.android.tools.smali.dexlib2.builder.instruction.BuilderInstruction11n
+import com.android.tools.smali.dexlib2.builder.instruction.BuilderInstruction10x
+import com.android.tools.smali.dexlib2.builder.instruction.BuilderPackedSwitchPayload
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
 import kotlin.test.Test
@@ -21,8 +25,8 @@ import kotlin.test.assertSame
 class PreferredVideoResolutionTest {
     @Test
     fun `height guard supports direct and shared setters while retaining the disabled path`() {
-        for (merge in listOf(false, true)) {
-            val method = fixture(merge)
+        for (merge in listOf(false, true)) for (mergedArm in listOf(false, true)) {
+            val method = fixture(merge, mergedArm = mergedArm)
             val division = method.instructions.single { it.opcode == Opcode.DIV_INT_2ADDR }
             val continuation = method.instructions[method.instructions.indexOf(division) + 1]
             preserveSelectedVideoHeight(method, "newx.test.highest_video", 26)
@@ -40,7 +44,7 @@ class PreferredVideoResolutionTest {
         assertFailsWith<PatchException> { preserveSelectedVideoHeight(fixture(true, 3), "test", 26) }
     }
 
-    private fun fixture(sharedSetter: Boolean, divisor: Int = 2): MutableMethod {
+    private fun fixture(sharedSetter: Boolean, divisor: Int = 2, mergedArm: Boolean = false): MutableMethod {
         val implementation = MethodImplementationBuilder(26)
         val method = MutableMethod(ImmutableMethod("Lapp/crimera/test/VideoPolicy;", "apply",
             emptyList(), "V", AccessFlags.PUBLIC.value or AccessFlags.STATIC.value,
@@ -54,6 +58,18 @@ class PreferredVideoResolutionTest {
             invoke-virtual {v1, v15}, Landroidx/media3/common/TrackSelectionParametersBuilder;->minimumHeight(I)V
             return-void
         """.trimIndent())
+        if (mergedArm) {
+            // A neighboring switch arm overwrites v3 and returns, exactly like the merged
+            // coroutine in 12.34. That writer cannot reach the video-height division.
+            val body = method.implementation!!
+            val selected = body.newLabelForIndex(1)
+            val payloadIndex = method.instructions.size
+            body.addInstruction(BuilderPackedSwitchPayload(0, listOf(selected)))
+            val payload = body.newLabelForIndex(payloadIndex)
+            body.addInstruction(1, BuilderInstruction31t(Opcode.PACKED_SWITCH, 0, payload))
+            body.addInstruction(2, BuilderInstruction11n(Opcode.CONST_4, 3, 3))
+            body.addInstruction(3, BuilderInstruction10x(Opcode.RETURN_VOID))
+        }
         return method.cloneMutable(additionalRegisters = 2)
     }
 }
