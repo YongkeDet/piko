@@ -5,6 +5,7 @@ import app.crimera.bytecode.Target
 import app.crimera.bytecode.insertHook
 import app.crimera.bytecode.methodReference
 import app.crimera.patches.common.requireExactlyOne
+import app.crimera.patches.common.requireAtMostOne
 import app.crimera.patches.newx.models.fieldForToStringLabel
 import app.crimera.patches.newx.models.booleanModelFields
 import app.crimera.patches.newx.models.newXPostModelResolutionPatch
@@ -43,9 +44,11 @@ private fun applyPostPolicy(settingId: String, policies: List<PostFieldPolicy>) 
     val replacements = policies.map { policy ->
         val field = if (policy.type == "Z") {
             booleanModelFields(toStringMethod) { reference ->
-                context.classDefByOrNull(reference.definingClass)?.methods?.singleOrNull { candidate ->
-                    candidate.name == reference.name && candidate.returnType == reference.returnType &&
-                        candidate.parameterTypes.map(CharSequence::toString) == reference.parameterTypes.map(CharSequence::toString)
+                context.classDefByOrNull(reference.definingClass)?.methods?.let { methods ->
+                    requireAtMostOne("boolean post-label append helper $reference", methods.filter { candidate ->
+                        candidate.name == reference.name && candidate.returnType == reference.returnType &&
+                            candidate.parameterTypes.map(CharSequence::toString) == reference.parameterTypes.map(CharSequence::toString)
+                    })
                 }
             }[policy.label] ?: throw PatchException("Missing boolean post policy label: ${policy.label}")
         } else toStringMethod.fieldForToStringLabel(policy.label)

@@ -109,9 +109,9 @@ private object MaxBitratePolicyFingerprint : Fingerprint(
 @Suppress("unused")
 val newXForceHighestVideoQualityPatch =
     bytecodePatch(
-        name = "NewX: Force highest video/audio quality",
+        name = "NewX: Force highest video resolution",
         description =
-            "Forces video playback to always select the highest available video and audio stream quality without adaptive quality downscaling or network bitrate caps.",
+            "Selects the highest available video resolution and prevents adaptive downscaling to a lower resolution.",
     ) {
         compatibleWith(COMPATIBILITY_NEW_X)
 
@@ -125,14 +125,18 @@ val newXForceHighestVideoQualityPatch =
             )
 
         execute {
-            val audioTrackMatches = AudioTrackOverrideFingerprint.scopedMatchAll()
-            if (audioTrackMatches.size != 1) {
-                throw PatchException(
-                    "Expected exactly one AudioTrackOverride match, found ${audioTrackMatches.size}: " +
-                        audioTrackMatches.joinToString { it.originalMethod.toString() },
-                )
+            val audioTrackMatches = AudioTrackOverrideFingerprint.scopedMatchAllOrNull().orEmpty()
+            if (audioTrackMatches.isEmpty()) {
+                patchPreferredVideoResolution(forceHighestQualitySetting)
+            } else {
+                if (audioTrackMatches.size != 1) {
+                    throw PatchException(
+                        "Expected exactly one AudioTrackOverride match, found ${audioTrackMatches.size}: " +
+                            audioTrackMatches.joinToString { it.originalMethod.toString() },
+                    )
+                }
+                patchAudioTrackOverride(audioTrackMatches.single(), forceHighestQualitySetting)
             }
-            patchAudioTrackOverride(audioTrackMatches.single(), forceHighestQualitySetting)
 
             val bitrateLimiterMatches = MediaBitrateLimiterFingerprint.scopedMatchAllOrNull().orEmpty()
             if (bitrateLimiterMatches.isNotEmpty()) {

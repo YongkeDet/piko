@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="piko_newx_force_highest_video_quality_title">强制最高视频分辨率</string>
+    <string name="piko_newx_force_highest_video_quality_summary">选择可用的最高视频分辨率，并阻止自动降分辨率</string>
     <string name="piko_newx_hide_community_notes_title">隐藏社区笔记</string>
     <string name="piko_newx_hide_community_notes_summary">隐藏帖子中的社区笔记。修改后请重启 X。</string>
     <string name="piko_newx_force_translate_title">始终提供翻译选项</string>
