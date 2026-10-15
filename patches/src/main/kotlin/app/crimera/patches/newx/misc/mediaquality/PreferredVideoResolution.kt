@@ -23,6 +23,8 @@ import app.morphe.util.numberOfParameterRegisters
 import app.morphe.util.p0Register
 import app.morphe.util.registersUsed
 import com.android.tools.smali.dexlib2.Opcode
+import com.android.tools.smali.dexlib2.builder.BuilderOffsetInstruction
+import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
@@ -108,13 +110,31 @@ internal fun patchPreferredVideoResolution(setting: ToggleSettingDefinition) {
     val method = original.cloneMutable(additionalRegisters = original.numberOfParameterRegisters + 2)
     applier.classDef.methods.remove(original)
     applier.classDef.methods.add(method)
+    preserveSelectedVideoHeight(method, setting.id, original.implementation!!.registerCount)
+}
+
+/** Keep the chosen height across both the direct setter and R8's shared-setter merge shape. */
+internal fun preserveSelectedVideoHeight(method: MutableMethod, settingId: String, reservedRegister: Int) {
+    if (reservedRegister !in 0..RegisterLimit.BYTE.maximum || reservedRegister + 2 != method.p0Register) {
+        throw PatchException("NewX video-height guard has no reserved byte-sized register")
+    }
     val body = method.instructions.toList()
+    fun setterAfter(index: Int): com.android.tools.smali.dexlib2.iface.instruction.Instruction? {
+        var next = index + 1
+        val visited = mutableSetOf<Int>()
+        while (next in body.indices && visited.add(next)) {
+            val instruction = body[next]
+            if (instruction.opcode !in setOf(Opcode.GOTO, Opcode.GOTO_16, Opcode.GOTO_32)) return instruction
+            next = (instruction as? BuilderOffsetInstruction)?.target?.location?.index ?: return null
+        }
+        return null
+    }
     val divisions = body.indices.filter { index ->
         val division = body[index] as? TwoRegisterInstruction ?: return@filter false
         if (body[index].opcode != Opcode.DIV_INT_2ADDR) return@filter false
         val result = body.getOrNull(index - 1) as? OneRegisterInstruction ?: return@filter false
         val getter = body.getOrNull(index - 2)?.getReference<MethodReference>() ?: return@filter false
-        val setterInstruction = body.getOrNull(index + 1) ?: return@filter false
+        val setterInstruction = setterAfter(index) ?: return@filter false
         val setter = setterInstruction.getReference<MethodReference>() ?: return@filter false
         result.opcode == Opcode.MOVE_RESULT && result.registerA == division.registerA &&
             getter.definingClass == "Ljava/lang/Integer;" && getter.name == "intValue" &&
@@ -125,8 +145,8 @@ internal fun patchPreferredVideoResolution(setting: ToggleSettingDefinition) {
     }
     val divisionIndex = requireExactlyOne("native half-resolution adaptive constraint", divisions)
     method.insertHook(divisionIndex, excludedRegisters = body[divisionIndex].registersUsed, relocateBranchTargets = true) {
-        val enabled = scratchRegister(RegisterLimit.BYTE)
-        constString(enabled, setting.id)
+        val enabled = reservedRegister
+        constString(enabled, settingId)
         invokeStatic(methodReference("$SETTINGS_REGISTRY_DESCRIPTOR->getBooleanOrDefault(Ljava/lang/String;)Z"), enabled)
         moveResult(enabled, "Z")
         ifEqz(enabled, Target.Original)
