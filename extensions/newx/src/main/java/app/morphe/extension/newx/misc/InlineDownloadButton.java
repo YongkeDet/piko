@@ -31,7 +31,6 @@ import java.util.concurrent.Executors;
 import app.morphe.extension.crimera.downloader.DownloadEngine;
 import app.morphe.extension.crimera.downloader.EnqueueResult;
 import app.morphe.extension.crimera.downloader.messages.DownloadMessages;
-import app.morphe.extension.crimera.downloader.messages.EnglishDownloadTexts;
 import app.morphe.extension.crimera.downloader.model.BatchResult;
 import app.morphe.extension.crimera.downloader.model.ConflictPolicy;
 import app.morphe.extension.crimera.downloader.model.DownloadRequest;
@@ -1113,7 +1112,7 @@ public final class InlineDownloadButton {
                         false
                 ));
             }
-            String message = DownloadMessages.summary(result, new EnglishDownloadTexts(), username);
+            String message = DownloadMessages.summary(result, new NewXDownloadTexts(), username);
             // Only a clean outcome stays quiet (toast when the in-app host is absent); anything
             // that went wrong or was partly skipped also toasts, as before.
             boolean clean = result.failed() == 0 && result.lost() == 0

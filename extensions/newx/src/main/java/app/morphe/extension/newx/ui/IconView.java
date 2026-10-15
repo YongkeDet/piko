@@ -20,6 +20,7 @@ public class IconView extends View {
         DOWNLOAD,
         CLOSE,
         COPY_LINK,
+        EXTERNAL_LINK,
         RESOLUTION,
         CHECKBOX_CHECKED,
         CHECKBOX_UNCHECKED
@@ -88,6 +89,9 @@ public class IconView extends View {
             case COPY_LINK:
                 drawCopyLinkIcon(canvas, cx, cy, size, strokeWidth);
                 break;
+            case EXTERNAL_LINK:
+                drawExternalLinkIcon(canvas, cx, cy, size, strokeWidth);
+                break;
             case RESOLUTION:
                 drawResolutionIcon(canvas, cx, cy, size, strokeWidth);
                 break;
@@ -98,6 +102,19 @@ public class IconView extends View {
                 drawCheckboxUnchecked(canvas, cx, cy, size, strokeWidth);
                 break;
         }
+    }
+
+    private void drawExternalLinkIcon(Canvas canvas, float cx, float cy, float size, float strokeWidth) {
+        paint.setStyle(Paint.Style.STROKE);
+        paint.setStrokeWidth(strokeWidth);
+        float r = size * 0.28f;
+        canvas.drawLine(cx - r, cy - r, cx - r, cy + r, paint);
+        canvas.drawLine(cx - r, cy + r, cx + r, cy + r, paint);
+        canvas.drawLine(cx + r, cy + r, cx + r, cy + r * 0.25f, paint);
+        canvas.drawLine(cx - r, cy - r, cx - r * 0.25f, cy - r, paint);
+        canvas.drawLine(cx, cy, cx + r, cy - r, paint);
+        canvas.drawLine(cx + r * 0.25f, cy - r, cx + r, cy - r, paint);
+        canvas.drawLine(cx + r, cy - r, cx + r, cy - r * 0.25f, paint);
     }
 
     private void drawImageIcon(Canvas canvas, float cx, float cy, float size, float strokeWidth) {

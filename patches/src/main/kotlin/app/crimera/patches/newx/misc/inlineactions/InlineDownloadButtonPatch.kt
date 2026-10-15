@@ -142,6 +142,12 @@ val newXInlineDownloadButtonPatch =
                         defaultValue = true,
                     )
                     toggle(
+                        id = "newx.content.media_picker_external_downloader",
+                        strings = settingStrings("piko_newx_media_picker_external_downloader"),
+                        order = 275,
+                        defaultValue = false,
+                    )
+                    toggle(
                         id = "newx.content.media_picker_thumbnails",
                         strings = settingStrings("piko_newx_media_picker_thumbnails"),
                         order = 300,

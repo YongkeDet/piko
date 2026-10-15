@@ -1,5 +1,7 @@
 package app.morphe.extension.newx.timeline;
 
+import app.morphe.extension.shared.StringRef;
+
 import android.app.Activity;
 import android.content.Context;
 import android.os.Looper;
@@ -57,8 +59,8 @@ final class ForYouTopicFilterSheet {
             LinkedHashSet<String> selected = new LinkedHashSet<>(storedSelection);
 
             BottomSheetView sheet = new BottomSheetView(activity);
-            sheet.setTitle("For You topics");
-            sheet.setSubtitle("Select topics to show in your For You timeline");
+            sheet.setTitle(StringRef.str("piko_newx_topic_sheet_title"));
+            sheet.setSubtitle(StringRef.str("piko_newx_topic_sheet_summary"));
 
             LinearLayout body = new LinearLayout(activity);
             body.setOrientation(LinearLayout.VERTICAL);
@@ -120,12 +122,10 @@ final class ForYouTopicFilterSheet {
 
     private static void updateActionButton(ButtonView button, int selectedCount) {
         if (selectedCount > 0) {
-            button.setText(selectedCount == 1
-                    ? "Show only 1 topic"
-                    : "Show only " + selectedCount + " topics");
+            button.setText(StringRef.str("piko_newx_topic_sheet_show_count", selectedCount));
             button.setButtonStyle(ButtonView.ButtonStyle.FILLED);
         } else {
-            button.setText("Reset");
+            button.setText(StringRef.str("piko_newx_profile_tabs_editor_reset_confirm"));
             button.setButtonStyle(ButtonView.ButtonStyle.TONAL);
         }
     }

@@ -8,6 +8,8 @@ on:
 
 jobs:
   release:
+    # Custom forks publish only an explicitly verified bundle through the dedicated workflow.
+    if: github.repository == 'crimera/piko'
     name: Release
     permissions:
       contents: write

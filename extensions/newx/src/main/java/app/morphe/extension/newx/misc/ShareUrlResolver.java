@@ -2,6 +2,10 @@ package app.morphe.extension.newx.misc;
 
 import java.net.URI;
 import java.net.URL;
+import java.net.URLDecoder;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
 
 import app.morphe.extension.newx.settings.NewXLogger;
 import app.morphe.extension.crimera.settings.SettingsRegistry;
@@ -34,6 +38,9 @@ public final class ShareUrlResolver {
 
     public static String changeDomain(String urlString) {
         try {
+            if (SettingsRegistry.getBooleanOrDefault("newx.content.clear_tracking_params", true)) {
+                urlString = removeTrackingParameters(urlString);
+            }
             String customDomain = normalizeCustomDomain(
                     SettingsRegistry.getStringOrDefault(CUSTOM_DOMAIN_SETTING, "")
             );
@@ -50,6 +57,38 @@ public final class ShareUrlResolver {
             return urlString;
         }
         return urlString;
+    }
+
+    /** Only X post-sharing URLs are rewritten; raw path, retained query and fragment stay intact. */
+    static String removeTrackingParameters(String input) {
+        if (input == null) return null;
+        try {
+            URI uri = new URI(input);
+            String host = uri.getHost();
+            if (host == null || !(host.equalsIgnoreCase("x.com") || host.equalsIgnoreCase("twitter.com") ||
+                    host.equalsIgnoreCase("www.x.com") || host.equalsIgnoreCase("www.twitter.com") ||
+                    host.equalsIgnoreCase("mobile.x.com") || host.equalsIgnoreCase("mobile.twitter.com"))) return input;
+            String path = uri.getPath();
+            if (path == null || !path.matches("/(?:[^/]+/status|i/status)/[0-9]+(?:/.*)?")) return input;
+            String query = uri.getRawQuery();
+            if (query == null) return input;
+            List<String> retained = new ArrayList<>();
+            boolean changed = false;
+            for (String part : query.split("&", -1)) {
+                int equals = part.indexOf('=');
+                String key = URLDecoder.decode(equals < 0 ? part : part.substring(0, equals), "UTF-8").toLowerCase(Locale.ROOT);
+                if (key.equals("s") || key.equals("t") || key.equals("ref_src") || key.equals("ref_url") || key.startsWith("utm_")) {
+                    changed = true;
+                } else retained.add(part);
+            }
+            if (!changed) return input;
+            int start = input.indexOf('?');
+            int fragment = input.indexOf('#', start);
+            return input.substring(0, start) + (retained.isEmpty() ? "" : "?" + String.join("&", retained)) +
+                    (fragment < 0 ? "" : input.substring(fragment));
+        } catch (Exception ignored) {
+            return input;
+        }
     }
 
     private static String normalizeCustomDomain(String input) {
