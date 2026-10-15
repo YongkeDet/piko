@@ -15,6 +15,25 @@ import org.w3c.dom.Element
 internal val settingsResourcePatch =
     resourcePatch {
         execute {
+            document("AndroidManifest.xml").use { editor ->
+                val application = editor.getElementsByTagName("application").item(0) as Element
+                val receiver = editor.createElement("receiver").apply {
+                    setAttribute("android:name", "app.morphe.extension.twitter.downloads.DownloadCompleteReceiver")
+                    setAttribute("android:exported", "true")
+                    appendChild(editor.createElement("intent-filter").apply {
+                        appendChild(editor.createElement("action").apply {
+                            setAttribute("android:name", "android.intent.action.DOWNLOAD_COMPLETE")
+                        })
+                    })
+                }
+                application.appendChild(receiver)
+                application.appendChild(editor.createElement("service").apply {
+                    setAttribute("android:name", "app.morphe.extension.twitter.downloads.DownloadCopyJob")
+                    setAttribute("android:permission", "android.permission.BIND_JOB_SERVICE")
+                    setAttribute("android:exported", "true")
+                })
+            }
+
             // replace the keyword `ripped` from version name back to original format.
             val versionName = packageMetadata.versionName
             val rippedKeyword = "-ripped"

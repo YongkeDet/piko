@@ -14,6 +14,10 @@
 
 </div>
 
+## X 自定义下载目录
+
+此分支增加了系统文件夹选择器，可自行指定 X 图片和视频的保存目录。详见[使用与构建说明](docs/custom-download-folder.md)。
+
 ## 🕹️ Usage
 
 Starting with patches v3.0.0, Piko patches use [Morphe](https://morphe.software).

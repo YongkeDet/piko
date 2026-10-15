@@ -40,6 +40,7 @@ import static app.morphe.extension.shared.StringRef.str;
 import app.morphe.extension.crimera.settings.BooleanSetting;
 import app.morphe.extension.crimera.settings.StringSetting;
 import app.morphe.extension.twitter.settings.Settings;
+import app.morphe.extension.twitter.downloads.DownloadFolder;
 import app.morphe.extension.shared.ResourceUtils;
 import app.morphe.extension.shared.settings.preference.PikoSharedPrefCategory;
 
@@ -286,6 +287,10 @@ public class Utils {
     @SuppressLint("UnspecifiedRegisterReceiverFlag")
     public static void downloadFile(String url, String mediaName, String ext) {
         String filename = sanitizeFilename(mediaName + "." + ext);
+        if (DownloadFolder.isCustomFolderEnabled(ctx)) {
+            DownloadFolder.downloadFile(ctx, url, filename);
+            return;
+        }
         boolean isPhoto = ext.equals("jpg");
 
         DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));

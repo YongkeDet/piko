@@ -1,0 +1,73 @@
+import org.gradle.api.artifacts.transform.TransformAction
+import org.gradle.api.artifacts.transform.TransformOutputs
+import org.gradle.api.artifacts.transform.TransformParameters
+import org.gradle.api.artifacts.transform.InputArtifact
+import org.gradle.api.artifacts.type.ArtifactTypeDefinition
+import java.util.zip.ZipFile
+
+plugins { id 'java' }
+
+repositories {
+    google()
+    mavenCentral()
+}
+
+// These tests exercise the real downloader against Robolectric's Android framework,
+// without needing credentials for the production Morphe build plugin.
+abstract class AarClasses implements TransformAction<TransformParameters.None> {
+    @InputArtifact
+    abstract Provider<FileSystemLocation> getInputArtifact()
+
+    @Override
+    void transform(TransformOutputs outputs) {
+        File input = inputArtifact.get().asFile
+        File output = outputs.file(input.name.replace('.aar', '.jar'))
+        new ZipFile(input).withCloseable { archive ->
+            archive.getInputStream(archive.getEntry('classes.jar')).withCloseable { stream ->
+                output.withOutputStream { it << stream }
+            }
+        }
+    }
+}
+
+dependencies {
+    registerTransform(AarClasses) {
+        from.attribute(ArtifactTypeDefinition.ARTIFACT_TYPE_ATTRIBUTE, 'aar')
+        to.attribute(ArtifactTypeDefinition.ARTIFACT_TYPE_ATTRIBUTE, 'jar')
+    }
+    implementation 'org.robolectric:android-all:14-robolectric-10818077'
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.robolectric:robolectric:4.17'
+}
+
+configurations.configureEach {
+    if (canBeResolved) attributes.attribute(ArtifactTypeDefinition.ARTIFACT_TYPE_ATTRIBUTE, 'jar')
+}
+
+sourceSets.main.java {
+    srcDirs = [
+            '../../extensions/twitter/src/main/java',
+            '../../extensions/shared/library/src/main/java',
+            'src/support/java'
+    ]
+    include 'app/morphe/extension/twitter/downloads/**'
+    include 'app/morphe/extension/twitter/settings/Settings.java'
+    include 'app/morphe/extension/twitter/settings/fragments/DownloadFolderPickerFragment.java'
+    ['Setting', 'StringSetting', 'BooleanSetting'].each {
+        include "app/morphe/extension/crimera/settings/${it}.java"
+    }
+    ['Utils', 'ResourceUtils'].each { include "app/morphe/extension/shared/${it}.java" }
+    ['Nullable', 'NonNull'].each { include "androidx/annotation/${it}.java" }
+}
+
+tasks.withType(JavaCompile).configureEach { options.release = 17 }
+
+test {
+    useJUnit()
+    maxHeapSize = '1g'
+    systemProperty 'robolectric.dependency.repo.url', 'https://repo.maven.apache.org/maven2'
+    ['http.proxyHost', 'http.proxyPort', 'https.proxyHost', 'https.proxyPort'].each { key ->
+        if (System.getProperty(key)) systemProperty key, System.getProperty(key)
+    }
+    testLogging { events 'passed', 'failed'; exceptionFormat = 'full' }
+}

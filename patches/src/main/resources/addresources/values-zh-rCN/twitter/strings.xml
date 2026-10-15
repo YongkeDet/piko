@@ -16,6 +16,12 @@
     <string name="piko_title_download">下载</string>
     <string name="piko_pref_video_download">视频下载</string>
     <string name="piko_pref_download">更改下载目录</string>
+    <string name="piko_pref_download_custom_folder">选择自定义下载文件夹</string>
+    <string name="piko_pref_download_custom_folder_desc">选择图片和视频的保存位置，覆盖主文件夹和子文件夹设置。</string>
+    <string name="piko_pref_download_reset_folder">恢复默认下载文件夹</string>
+    <string name="piko_pref_download_folder_saved">下载文件夹已更新</string>
+    <string name="piko_pref_download_folder_failed">无法访问下载文件夹，请重新选择。</string>
+    <string name="piko_pref_download_save_failed">无法保存下载文件，请打开 Piko 下载设置重试。</string>
     <string name="piko_pref_download_path">主文件夹</string>
     <string name="piko_pref_download_path_desc">下载视频的主文件夹</string>
     <string name="piko_pref_download_folder">子文件夹</string>

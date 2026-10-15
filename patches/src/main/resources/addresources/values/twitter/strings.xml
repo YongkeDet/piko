@@ -18,6 +18,12 @@
     <string name="piko_title_download">Download</string>
     <string name="piko_pref_video_download">Video downloading</string>
     <string name="piko_pref_download">Change download directory</string>
+    <string name="piko_pref_download_custom_folder">Choose custom download folder</string>
+    <string name="piko_pref_download_custom_folder_desc">Choose where to save photos and videos. This overrides the public folder and subfolder.</string>
+    <string name="piko_pref_download_reset_folder">Use default download folders</string>
+    <string name="piko_pref_download_folder_saved">Download folder updated</string>
+    <string name="piko_pref_download_folder_failed">Could not access the download folder. Please choose it again.</string>
+    <string name="piko_pref_download_save_failed">Could not save the download. Open Piko download settings to retry.</string>
     <string name="piko_pref_download_path">Public folder</string>
     <string name="piko_pref_download_path_desc">The public folder to use for video downloads</string>
     <string name="piko_pref_download_folder">Download subfolder</string>

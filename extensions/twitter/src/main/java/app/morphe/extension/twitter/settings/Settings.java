@@ -18,6 +18,9 @@ public class Settings {
 
     public static final StringSetting VID_PUBLIC_FOLDER = new StringSetting("vid_public_folder", "Movies");
     public static final StringSetting VID_SUBFOLDER = new StringSetting("vid_subfolder", "Twitter");
+    public static final StringSetting DOWNLOAD_TREE_URI = new StringSetting("download_tree_uri", "");
+    public static final String SELECT_DOWNLOAD_FOLDER = "select_download_folder";
+    public static final String RESET_DOWNLOAD_FOLDER = "reset_download_folder";
     public static final StringSetting VID_MEDIA_HANDLE = new StringSetting("vid_media_handle", "download_media");
     public static final StringSetting CUSTOM_SHARING_DOMAIN = new StringSetting("misc_custom_sharing_domain", "x.com");
     public static final BooleanSetting EXTERNAL_DOWNLOADER = new BooleanSetting("external_downloader", true);

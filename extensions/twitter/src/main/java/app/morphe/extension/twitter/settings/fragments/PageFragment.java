@@ -18,6 +18,7 @@ import app.morphe.extension.twitter.settings.SettingsSearchNavigator;
 import app.morphe.extension.twitter.settings.widgets.Helper;
 import app.morphe.extension.twitter.settings.ScreenBuilder;
 import app.morphe.extension.twitter.settings.Settings;
+import app.morphe.extension.twitter.downloads.DownloadFolder;
 
 @SuppressWarnings("deprecation")
 public class PageFragment extends PreferenceFragment {
@@ -56,6 +57,26 @@ public class PageFragment extends PreferenceFragment {
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         scrollToSearchTarget();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        refreshDownloadFolderPreferences();
+        DownloadFolder.resumePendingDownloads(context);
+    }
+
+    public void refreshDownloadFolderPreferences() {
+        Preference chooser = findPreference(Settings.SELECT_DOWNLOAD_FOLDER);
+        if (chooser == null) return;
+        chooser.setSummary(DownloadFolder.getFolderSummary(context));
+        boolean useDefault = !DownloadFolder.isCustomFolderEnabled(context);
+        Preference publicFolder = findPreference(Settings.VID_PUBLIC_FOLDER.key);
+        Preference subfolder = findPreference(Settings.VID_SUBFOLDER.key);
+        if (publicFolder != null) publicFolder.setEnabled(useDefault);
+        if (subfolder != null) subfolder.setEnabled(useDefault);
+        Preference reset = findPreference(Settings.RESET_DOWNLOAD_FOLDER);
+        if (reset != null) reset.setEnabled(!useDefault);
     }
 
     private void scrollToSearchTarget() {

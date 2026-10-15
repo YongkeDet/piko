@@ -14,11 +14,18 @@ import app.morphe.patcher.Fingerprint
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.extensions.InstructionExtensions.instructions
+import app.morphe.patcher.extensions.InstructionExtensions.replaceInstruction
+import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.opcode
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.string
+import app.morphe.util.getReference
+import app.morphe.util.registersUsed
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.reference.MethodReference
+
+private const val DOWNLOAD_FOLDER = "Lapp/morphe/extension/twitter/downloads/DownloadFolder;"
 
 internal object DownloadPathFingerprint : Fingerprint(
     returnType = "V",
@@ -34,7 +41,7 @@ internal object DownloadPathFingerprint : Fingerprint(
 val changeDownloadDirPatch =
     bytecodePatch(
         name = "Custom download folder",
-        description = "Change the download directory for video downloads",
+        description = "Choose a custom download folder using the system folder picker",
         default = true,
     ) {
         compatibleWith(COMPATIBILITY_X)
@@ -67,6 +74,35 @@ val changeDownloadDirPatch =
                     move-result-object v$fileNameReg
                     """.trimIndent(),
                 )
+
+                // Keep X's request headers and download ID while redirecting its destination.
+                listOf(
+                    Triple(
+                        "Landroid/app/DownloadManager\$Request;",
+                        "setDestinationInExternalPublicDir",
+                        "configureDestination(Landroid/app/DownloadManager\$Request;Ljava/lang/String;Ljava/lang/String;)Landroid/app/DownloadManager\$Request;",
+                    ),
+                    Triple(
+                        "Landroid/app/DownloadManager;",
+                        "enqueue",
+                        "enqueue(Landroid/app/DownloadManager;Landroid/app/DownloadManager\$Request;)J",
+                    ),
+                ).forEach { (owner, name, hook) ->
+                    val matches = instructions.withIndex().filter { (_, instruction) ->
+                        val reference = instruction.getReference<MethodReference>()
+                        instruction.opcode in setOf(Opcode.INVOKE_VIRTUAL, Opcode.INVOKE_VIRTUAL_RANGE) &&
+                            reference?.definingClass == owner && reference.name == name
+                    }
+                    val match = matches.singleOrNull()
+                        ?: throw PatchException("Could not uniquely resolve download call: $name")
+                    val registers = match.value.registersUsed
+                    val invocation = if (match.value.opcode == Opcode.INVOKE_VIRTUAL_RANGE) {
+                        "invoke-static/range {v${registers.first()} .. v${registers.last()}}"
+                    } else {
+                        "invoke-static {${registers.joinToString(", ") { "v$it" }}}"
+                    }
+                    replaceInstruction(match.index, "$invocation, $DOWNLOAD_FOLDER->$hook")
+                }
                 enableSettings("enableDownloadFolder")
             }
         }

@@ -426,7 +426,7 @@ public class SettingsStatus {
     }
 
     public static boolean enableDownloadSection() {
-        return (externalDownloader || changeDownloadEnabled || mediaLinkHandle);
+        return (externalDownloader || changeDownloadEnabled || mediaLinkHandle || nativeDownloader);
     }
 
     public static boolean enablePremiumSection() {
