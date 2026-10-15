@@ -1,0 +1,17 @@
+SEVERE: An unexpected error occurred: Failed to recursively delete tmp_ab733c8b_1 
+java.lang.RuntimeException: Failed to recursively delete tmp_ab733c8b_1
+	at app.morphe.patcher.util.FileUtils.safelyDelete$morphe_patcher(FileUtils.kt:20)
+	at app.morphe.patcher.apk.ApkMerger.merge(ApkMerger.kt:88)
+	at app.morphe.patcher.apk.ApkMerger.merge$default(ApkMerger.kt:47)
+	at app.morphe.desktop.command.PatchCommand.call(PatchCommand.kt:607)
+	at app.morphe.desktop.command.PatchCommand.call(PatchCommand.kt:55)
+	at picocli.CommandLine.executeUserObject(CommandLine.java:2031)
+	at picocli.CommandLine.access$1500(CommandLine.java:148)
+	at picocli.CommandLine$RunLast.executeUserObjectOfLastSubcommandWithSameParent(CommandLine.java:2469)
+	at picocli.CommandLine$RunLast.handle(CommandLine.java:2461)
+	at picocli.CommandLine$RunLast.handle(CommandLine.java:2423)
+	at picocli.CommandLine$AbstractParseResultHandler.execute(CommandLine.java:2277)
+	at picocli.CommandLine$RunLast.execute(CommandLine.java:2425)
+	at picocli.CommandLine.execute(CommandLine.java:2174)
+	at app.morphe.MorpheLauncherKt.main(MorpheLauncher.kt:85)
+INFO: Patching result saved to /workspace/scratch/558c083b636f/verification/toast-all/newx-toast-all-result.json 
