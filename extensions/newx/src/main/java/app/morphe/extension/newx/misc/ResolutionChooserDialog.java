@@ -1,5 +1,7 @@
 package app.morphe.extension.newx.misc;
 
+import app.morphe.extension.shared.StringRef;
+
 import android.app.Activity;
 import android.content.Context;
 import android.widget.LinearLayout;
@@ -49,7 +51,7 @@ public final class ResolutionChooserDialog {
         }
 
         BottomSheetView dialog = new BottomSheetView(current);
-        dialog.setTitle(isImage(item) ? "Choose resolution" : "Choose quality");
+        dialog.setTitle(isImage(item) ? StringRef.str("piko_newx_media_resolution_choose") : StringRef.str("piko_newx_media_quality_choose"));
         dialog.setSubtitle(subtitleFor(item, username));
 
         Theme.SettingsSnapshot themeSettings = Theme.snapshot();
@@ -58,7 +60,7 @@ public final class ResolutionChooserDialog {
 
         for (InlineDownloadButton.DownloadItem option : item.resolutionOptions) {
             ListItem row = new ListItem(current, themeSettings);
-            row.setTitle(option.label);
+            row.setTitle(MediaLabels.localized(option.label));
             row.setSubtitle(option.detail != null ? option.detail : option.resolution);
             row.setLeadingIcon(
                     resolveIconType(item),
@@ -84,7 +86,7 @@ public final class ResolutionChooserDialog {
     ) {
         StringBuilder builder = new StringBuilder();
         if (username != null && !username.trim().isEmpty()) {
-            builder.append("From @").append(username.trim());
+            builder.append(StringRef.str("piko_newx_media_picker_from", username.trim()));
         }
         if (item.resolution != null) {
             if (builder.length() > 0) builder.append(" · ");

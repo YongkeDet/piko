@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="piko_newx_hide_community_notes_title">Hide Community Notes</string>
     <string name="piko_newx_hide_community_notes_summary">Hide notes on posts. Restart X after changing this setting.</string>
@@ -25,7 +25,6 @@
     <string name="piko_newx_category_advanced_summary">Power-user tools, debugging, and settings maintenance</string>
     <string name="piko_newx_backup_restore_title">Backup and restore</string>
     <string name="piko_newx_backup_restore_summary">Save or restore your Piko NewX settings</string>
-
     <string name="piko_newx_disable_timeline_refresh_title">Disable automatic timeline refresh</string>
     <string name="piko_newx_disable_timeline_refresh_summary">Prevents timeline jumps when NewX starts or returns to the foreground</string>
     <string name="piko_newx_restore_timeline_position_title">Restore timeline position</string>
@@ -161,12 +160,10 @@
     <string name="piko_newx_dynamic_color_like_summary">Uses the dynamic accent for liked posts. Warning: This disables the heart Lottie animation.</string>
     <string name="piko_newx_disable_blur_title">Disable Compose blur</string>
     <string name="piko_newx_disable_blur_summary">Removes blur from NewX Compose UI while keeping configured background tint and scrim effects</string>
-
     <string name="piko_newx_share_image_title">Share post as image</string>
     <string name="piko_newx_share_image_summary">Adds a rendered-image share action to post menus</string>
     <string name="piko_newx_browse_tweet_object_title">Browse tweet object</string>
     <string name="piko_newx_browse_tweet_object_summary">Adds a debug option to inspect the tweet object in post menus</string>
-
     <string name="piko_newx_group_inline_download_title">Inline download</string>
     <string name="piko_newx_group_inline_download_summary">Customize the inline media download picker</string>
     <string name="piko_newx_inline_download_button_title">Show inline download button</string>
@@ -216,7 +213,6 @@
     <string name="piko_newx_inline_download_images_display_path_summary">Human-readable path of the images download folder</string>
     <string name="piko_newx_inline_download_videos_display_path_title">Videos download folder path</string>
     <string name="piko_newx_inline_download_videos_display_path_summary">Human-readable path of the videos download folder</string>
-
     <string name="piko_newx_download_options_folders">Folders</string>
     <string name="piko_newx_download_options_folder_images">Images</string>
     <string name="piko_newx_download_options_folder_videos">Videos</string>
@@ -230,14 +226,12 @@
     <string name="piko_newx_download_options_filename_reset">Reset</string>
     <string name="piko_newx_download_options_changed">Download folder updated</string>
     <string name="piko_newx_download_options_cancelled">No folder selected</string>
-
     <string name="piko_newx_download_filename_title">Filename template</string>
     <string name="piko_newx_download_filename_tokens">Tokens</string>
     <string name="piko_newx_download_filename_error_empty">Enter a filename template</string>
     <string name="piko_newx_download_filename_error_unclosed">A brace was opened but never closed</string>
     <string name="piko_newx_download_filename_error_static">Add {id} or {timestamp} so different posts do not overwrite each other</string>
     <string name="piko_newx_download_filename_error_unknown">Unknown token {%1$s}</string>
-
     <string name="piko_newx_download_first_run_title">Choose a download folder</string>
     <string name="piko_newx_download_first_run_images">Downloaded images need a folder. Pick one so they are saved where you can find them.</string>
     <string name="piko_newx_download_first_run_videos">Downloaded videos need a folder. Pick one so they are saved where you can find them.</string>
@@ -245,7 +239,6 @@
     <string name="piko_newx_download_first_run_images_action">Choose images folder</string>
     <string name="piko_newx_download_first_run_videos_action">Choose videos folder</string>
     <string name="piko_newx_download_first_run_retry">Tap download again once the folder is set.</string>
-
     <string name="piko_newx_inline_actions_title">Inline actions to hide</string>
     <string name="piko_newx_inline_actions_summary">Choose which actions are hidden below NewX posts</string>
     <string name="piko_newx_inline_action_reply">Reply</string>
@@ -255,19 +248,15 @@
     <string name="piko_newx_inline_action_view_count">View count</string>
     <string name="piko_newx_inline_action_bookmark">Bookmark</string>
     <string name="piko_newx_inline_action_share">Share</string>
-
     <string name="piko_newx_native_inline_action_spacing_title">Native action bar spacing</string>
     <string name="piko_newx_native_inline_action_spacing_summary">On: NewX\'s packed action spacing (12.28.0-alpha.04 and newer). Off: the even spacing older NewX releases used, where hiding an action leaves no gap.</string>
-
     <string name="piko_newx_nav_bar_home">Home</string>
     <string name="piko_newx_nav_bar_explore">Explore</string>
     <string name="piko_newx_nav_bar_grok">Grok</string>
     <string name="piko_newx_nav_bar_notifications">Notifications</string>
     <string name="piko_newx_nav_bar_dm">Messages</string>
-
     <string name="piko_newx_nav_badges_title">Hide badges</string>
     <string name="piko_newx_nav_badges_summary">Choose which navigation bar items hide their notification dots</string>
-
     <string name="piko_newx_nav_editor_title">Navigation bar</string>
     <string name="piko_newx_nav_editor_summary">Choose up to five destinations for the NewX bottom navigation bar</string>
     <string name="piko_newx_nav_editor_hint">Drag destinations between sections. Hold near the top or bottom to scroll. Changes apply after an app restart.</string>
@@ -278,7 +267,6 @@
     <string name="piko_newx_nav_editor_restart_title">Restart app?</string>
     <string name="piko_newx_nav_editor_restart_message">The navigation bar changes take effect after the app restarts.</string>
     <string name="piko_newx_nav_editor_restart_confirm">Restart</string>
-
     <string name="piko_newx_profile_tabs_editor_title">Profile tabs</string>
     <string name="piko_newx_profile_tabs_editor_summary">Choose which profile tabs are shown and in what order</string>
     <string name="piko_newx_profile_tabs_editor_hint">Drag a tab by its handle to reorder it. Use the switches to hide tabs. Changes apply after an app restart.</string>
@@ -291,7 +279,6 @@
     <string name="piko_newx_profile_tabs_editor_reset_title">Reset profile tabs?</string>
     <string name="piko_newx_profile_tabs_editor_reset_message">This restores the default tab order and shows every profile tab again. Changes apply after an app restart.</string>
     <string name="piko_newx_profile_tabs_editor_reset_confirm">Reset</string>
-
     <string name="piko_newx_drawer_title">Drawer items to hide</string>
     <string name="piko_newx_drawer_summary">Choose which items are hidden from the NewX navigation drawer</string>
     <string name="piko_newx_show_piko_settings_in_drawer_title">Show Piko Settings in the drawer footer</string>
@@ -313,7 +300,6 @@
     <string name="piko_newx_drawer_editor_restart_confirm">Restart</string>
     <string name="piko_newx_drawer_grok">Grok</string>
     <string name="piko_newx_drawer_theme_toggle">Theme toggle</string>
-
     <string name="piko_newx_post_options_title">Post menu items to hide</string>
     <string name="piko_newx_post_options_summary">Choose which items are hidden from the NewX post menu</string>
     <string name="piko_newx_post_option_copy_link">Copy link</string>
@@ -341,7 +327,6 @@
     <string name="piko_newx_post_option_community_note">Community note</string>
     <string name="piko_newx_post_option_boost">Boost</string>
     <string name="piko_newx_post_option_highlight">Highlight</string>
-
     <string name="piko_newx_media_sheet_items_title">Media menu items to hide</string>
     <string name="piko_newx_media_sheet_items_summary">Choose which items are hidden from the NewX photo and video long-press menu</string>
     <string name="piko_newx_media_sheet_post_photo">Post photo</string>
@@ -360,7 +345,6 @@
     <string name="piko_newx_media_sheet_add_to_offline_videos">Add to offline videos</string>
     <string name="piko_newx_media_sheet_reload_to_offline_videos">Reload to offline videos</string>
     <string name="piko_newx_media_sheet_remove_from_offline_videos">Remove from offline videos</string>
-
     <string name="piko_newx_post_filtering_title">Post filtering</string>
     <string name="piko_newx_post_filtering_summary">Hide posts containing user-defined words and phrases</string>
     <string name="piko_newx_post_filtering_enabled_title">Enable post filtering</string>
@@ -410,7 +394,6 @@
     <string name="piko_newx_filtered_replies_whitelisted">Whitelisted ✓</string>
     <string name="piko_newx_filtered_replies_whitelist_added">Added @%s to whitelist</string>
     <string name="piko_newx_filtered_replies_copied">Copied reply text</string>
-
     <string name="piko_newx_feature_switches_title">Feature switches</string>
     <string name="piko_newx_feature_switches_summary">Manage, import, or export feature switch overrides</string>
     <string name="piko_newx_feature_switch_manage_title">Manage feature switches</string>
@@ -453,7 +436,6 @@
     <string name="piko_newx_feature_switch_type_double">Double</string>
     <string name="piko_newx_feature_switch_type_string">String</string>
     <string name="piko_newx_feature_switch_type_list">List</string>
-
     <string name="piko_newx_backup_title">Back up settings</string>
     <string name="piko_newx_backup_summary">Save your Piko NewX settings to a JSON file</string>
     <string name="piko_newx_restore_title">Restore settings</string>
@@ -465,7 +447,6 @@
     <string name="morphe_settings_import_reset">NewX settings reset to defaults</string>
     <string name="morphe_settings_import_success">Restored %1$d NewX settings</string>
     <string name="morphe_settings_import_failure_parse">Could not restore NewX settings: %1$s</string>
-
     <string name="piko_newx_font_title">Font style</string>
     <string name="piko_newx_font_summary">Customise the app and emoji font style</string>
     <string name="piko_newx_custom_font_title">Custom font</string>
@@ -486,13 +467,11 @@
     <string name="piko_newx_font_deleted">Font deleted successfully</string>
     <string name="piko_newx_font_delete_failed">Font deletion failed</string>
     <string name="piko_newx_font_not_found">No custom font found to be deleted</string>
-
     <string name="piko_newx_custom_sharing_domain_title">Custom sharing domain</string>
     <string name="piko_newx_custom_sharing_domain_summary">Replace x.com with a custom domain (like fxtwitter.com) when sharing posts</string>
     <string name="piko_newx_custom_sharing_domain_invalid">Malformed custom sharing domain</string>
     <string name="piko_newx_canonical_urls_title">Use canonical URLs</string>
     <string name="piko_newx_canonical_urls_summary">Shows expanded URL names in posts and profiles and opens them instead of shortened t.co URLs</string>
-
     <string name="piko_newx_restart_title">Restart X?</string>
     <string name="piko_newx_restart_summary">Restart the app now to apply this change.</string>
     <string name="piko_newx_restart_now">Restart now</string>
@@ -501,5 +480,94 @@
     <string name="piko_newx_settings_search_hint">Search settings</string>
     <string name="piko_newx_settings_search_clear">Clear search</string>
     <string name="piko_newx_settings_search_no_results">No results for \"%s\"</string>
-
+    <string name="piko_newx_clear_tracking_params_title">Remove sharing tracking parameters</string>
+    <string name="piko_newx_clear_tracking_params_summary">Remove tracking tokens from X post links while preserving functional parameters</string>
+    <string name="piko_newx_changelog_title">Changelog</string>
+    <string name="piko_newx_changelog_summary">Open release notes for Piko NewX Custom</string>
+    <string name="piko_newx_custom_link_failed">Could not open this custom X link</string>
+    <string name="piko_newx_media_picker_external_downloader_title">Show external downloader button</string>
+    <string name="piko_newx_media_picker_external_downloader_summary">Send a direct media URL to another app through the Android chooser</string>
+    <string name="piko_newx_external_downloader_chooser">Open with an external downloader</string>
+    <string name="piko_newx_external_downloader_failed">Could not open an external downloader</string>
+    <string name="piko_newx_media_picker_title">Download media</string>
+    <string name="piko_newx_media_picker_select_title">Select media</string>
+    <string name="piko_newx_media_picker_from">From @%1$s</string>
+    <string name="piko_newx_media_picker_subtitle">Select media to save to your device</string>
+    <string name="piko_newx_media_picker_merge">Download and merge</string>
+    <string name="piko_newx_media_picker_download_all">Download all (%1$d)</string>
+    <string name="piko_newx_media_picker_download_count">Download (%1$d)</string>
+    <string name="piko_newx_media_picker_selected_count">%1$d of %2$d selected</string>
+    <string name="piko_newx_media_picker_merge_count">Merge (%1$d)</string>
+    <string name="piko_newx_media_picker_link_copied">Link copied</string>
+    <string name="piko_newx_media_type_image">Image</string>
+    <string name="piko_newx_media_type_video">Video</string>
+    <string name="piko_newx_media_resolution_choose">Choose resolution</string>
+    <string name="piko_newx_media_quality_choose">Choose quality</string>
+    <string name="piko_newx_topic_sheet_title">For You topics</string>
+    <string name="piko_newx_topic_sheet_summary">Select topics to show in your For You timeline</string>
+    <string name="piko_newx_topic_sheet_show_count">Show only %1$d topics</string>
+    <string name="piko_newx_filtered_replies_count">%1$d replies hidden by verified accounts filter</string>
+    <string name="piko_newx_filtered_replies_no_text">(No text content)</string>
+    <string name="piko_newx_filtered_replies_already_whitelisted">@%1$s is already whitelisted</string>
+    <string name="piko_newx_filtered_replies_whitelist_failed">Failed to whitelist: %1$s</string>
+    <string name="piko_newx_selected_post_not_found">Could not find the selected post</string>
+    <string name="piko_newx_selected_post_unidentified">Could not identify the selected post</string>
+    <string name="piko_newx_active_screen_not_found">Could not find the active screen</string>
+    <string name="piko_newx_filtered_replies_open_failed">Could not open filtered replies</string>
+    <string name="piko_newx_share_image_capture_failed">Could not capture the rendered post</string>
+    <string name="piko_newx_share_image_post_gone">Post is no longer rendered</string>
+    <string name="piko_newx_share_image_entire_post">Make the entire post visible before sharing</string>
+    <string name="piko_newx_share_image_too_large">Rendered post is too large to capture</string>
+    <string name="piko_newx_share_image_allocate_failed">Could not allocate the post image</string>
+    <string name="piko_newx_share_image_save_failed">Could not save the post image</string>
+    <string name="piko_newx_crash_test_failed">Could not crash the app</string>
+    <string name="piko_newx_crash_log_expired">Crash log is no longer available</string>
+    <string name="piko_newx_crash_log_read_failed">Could not read crash log</string>
+    <string name="piko_newx_crash_log_copied">Crash log copied to clipboard</string>
+    <string name="piko_newx_crash_log_copy_failed">Could not copy crash log</string>
+    <string name="piko_newx_download_started">Download started</string>
+    <string name="piko_newx_downloads_started">%1$d downloads started</string>
+    <string name="piko_newx_download_already_downloaded">Already downloaded</string>
+    <string name="piko_newx_download_media_already_downloaded">%1$d media already downloaded</string>
+    <string name="piko_newx_download_folder_lost">Download folder is no longer available — tap download again to choose a new one</string>
+    <string name="piko_newx_download_start_failed">Could not start download</string>
+    <string name="piko_newx_download_part_skipped">%1$d already downloaded</string>
+    <string name="piko_newx_download_part_failed">%1$d failed</string>
+    <string name="piko_newx_download_part_lost">%1$d need a new folder</string>
+    <string name="piko_newx_download_post_missing">Could not find the selected post</string>
+    <string name="piko_newx_download_media_failed">Could not download post media</string>
+    <string name="piko_newx_download_media_empty">No downloadable media found</string>
+    <string name="piko_newx_download_folder_required">Set a download folder in Download options</string>
+    <string name="piko_newx_download_cancelled">Download cancelled</string>
+    <string name="piko_newx_download_saved">Saved %s</string>
+    <string name="piko_newx_download_save_failed">Could not save %s</string>
+    <string name="piko_newx_download_no_connection">No connection — tap Retry when online</string>
+    <string name="piko_newx_merge_too_few">At least 2 images are required to merge</string>
+    <string name="piko_newx_merge_started">Downloading and merging %d images…</string>
+    <string name="piko_newx_merge_slice_download_failed">Failed to download image slice %d</string>
+    <string name="piko_newx_merge_slice_size_failed">Failed to read dimensions of slice %d</string>
+    <string name="piko_newx_merge_memory_failed">Out of memory while stitching images</string>
+    <string name="piko_newx_merge_slice_decode_failed">Failed to decode image slice %d</string>
+    <string name="piko_newx_merge_save_failed">Failed to save merged image: %s</string>
+    <string name="piko_newx_merge_exists">Merged image already exists: %s</string>
+    <string name="piko_newx_merge_saved">Merged image saved: %s</string>
+    <string name="piko_newx_merge_failed">Failed to merge images</string>
+    <string name="piko_newx_download_channel">Downloads</string>
+    <string name="piko_newx_download_waiting">Waiting for connection</string>
+    <string name="piko_newx_download_cancel_action">Cancel</string>
+    <string name="piko_newx_download_share_action">Share</string>
+    <string name="piko_newx_download_delete_action">Delete</string>
+    <string name="piko_newx_download_retry_action">Retry</string>
+    <string name="piko_newx_download_completed">Download completed</string>
+    <string name="piko_newx_download_failed">Download failed</string>
+    <string name="piko_newx_download_share_file">Share %s</string>
+    <string name="piko_newx_crash_saved_file">Piko crash log saved: %s</string>
+    <string name="piko_newx_crash_detected_file">Piko crash detected, log saved: %s</string>
+    <string name="piko_newx_crash_share_subject">Piko crash log: %s</string>
+    <string name="piko_newx_crash_share_chooser">Share crash log</string>
+    <string name="piko_newx_crash_notification_title">Piko crash detected</string>
+    <string name="piko_newx_crash_notification_file">Crash log saved: %s</string>
+    <string name="piko_newx_crash_channel">Piko crash logs</string>
+    <string name="piko_newx_share_image_chooser">Share post as image</string>
+    <string name="piko_newx_crash_copy_action">Copy</string>
 </resources>

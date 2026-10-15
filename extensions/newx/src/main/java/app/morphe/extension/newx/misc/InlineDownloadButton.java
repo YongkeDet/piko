@@ -31,7 +31,6 @@ import java.util.concurrent.Executors;
 import app.morphe.extension.crimera.downloader.DownloadEngine;
 import app.morphe.extension.crimera.downloader.EnqueueResult;
 import app.morphe.extension.crimera.downloader.messages.DownloadMessages;
-import app.morphe.extension.crimera.downloader.messages.EnglishDownloadTexts;
 import app.morphe.extension.crimera.downloader.model.BatchResult;
 import app.morphe.extension.crimera.downloader.model.ConflictPolicy;
 import app.morphe.extension.crimera.downloader.model.DownloadRequest;
@@ -62,8 +61,9 @@ public final class InlineDownloadButton {
     private static final String[] NAMED_IMAGE_SIZES = {"4096x4096", "large", "medium", "small"};
     private static final int[] NAMED_IMAGE_CAPS = {4096, 2048, 1200, 680};
     /** Shown when the stored folder was refused and cleared; retapping opens the picker. */
-    static final String FOLDER_LOST_MESSAGE =
-            "Download folder is no longer available \u2014 tap download again to choose a new one";
+    static String folderLostMessage() {
+        return StringRef.str("piko_newx_download_folder_lost");
+    }
     // Click-time parsing and enqueue run here so the tap handler returns immediately.
     private static final ExecutorService CLICK_EXECUTOR = Executors.newSingleThreadExecutor();
     // Timeline/profile scrolling creates a new action object per composition. Keep weak identity
@@ -287,7 +287,7 @@ public final class InlineDownloadButton {
             Context context = NewXUtils.findUsableActivity(null);
             Object post = getPresenterPost(presenter);
             if (context == null || post == null) {
-                NewXInAppNotification.show("Could not find the selected post");
+                NewXInAppNotification.show(StringRef.str("piko_newx_download_post_missing"));
                 return true;
             }
 
@@ -300,7 +300,7 @@ public final class InlineDownloadButton {
             return true;
         } catch (RuntimeException exception) {
             NewXLogger.printException(() -> "Failed to process inline download action", exception);
-            NewXInAppNotification.show("Could not download post media");
+            NewXInAppNotification.show(StringRef.str("piko_newx_download_media_failed"));
             return true;
         }
     }
@@ -316,12 +316,12 @@ public final class InlineDownloadButton {
             username = NewXUtils.sourceUsername(postText);
         } catch (RuntimeException exception) {
             NewXLogger.printException(() -> "Failed to process inline download action", exception);
-            NewXUtils.runOnUiThread(() -> NewXInAppNotification.show("Could not download post media"));
+            NewXUtils.runOnUiThread(() -> NewXInAppNotification.show(StringRef.str("piko_newx_download_media_failed")));
             return;
         }
         if (downloads.isEmpty()) {
             NewXUtils.runOnUiThread(() ->
-                    NewXInAppNotification.showForUser("No downloadable media found", username));
+                    NewXInAppNotification.showForUser(StringRef.str("piko_newx_download_media_empty"), username));
             return;
         }
 
@@ -1094,7 +1094,7 @@ public final class InlineDownloadButton {
             } catch (RuntimeException exception) {
                 NewXLogger.printException(() -> "Unsupported NewX download conflict policy", exception);
                 NewXUtils.runOnUiThread(() ->
-                        NewXInAppNotification.showForUser("Could not start download", username));
+                        NewXInAppNotification.showForUser(StringRef.str("piko_newx_download_start_failed"), username));
                 return;
             }
 
@@ -1113,7 +1113,7 @@ public final class InlineDownloadButton {
                         false
                 ));
             }
-            String message = DownloadMessages.summary(result, new EnglishDownloadTexts(), username);
+            String message = DownloadMessages.summary(result, new NewXDownloadTexts(), username);
             // Only a clean outcome stays quiet (toast when the in-app host is absent); anything
             // that went wrong or was partly skipped also toasts, as before.
             boolean clean = result.failed() == 0 && result.lost() == 0
@@ -1167,7 +1167,7 @@ public final class InlineDownloadButton {
             } catch (RuntimeException exception) {
                 NewXLogger.printException(() -> "Failed to start NewX media download", exception);
                 NewXUtils.runOnUiThread(() ->
-                        reportDownloadStatus("Could not start download", username));
+                        reportDownloadStatus(StringRef.str("piko_newx_download_start_failed"), username));
                 return;
             }
             NewXUtils.runOnUiThread(() -> reportEnqueueResult(state, username));
@@ -1267,7 +1267,7 @@ public final class InlineDownloadButton {
     ) {
         Activity activity = currentActivity();
         if (activity == null) {
-            NewXInAppNotification.show("Set a download folder in Download options");
+            NewXInAppNotification.show(StringRef.str("piko_newx_download_folder_required"));
             return;
         }
 
@@ -1383,10 +1383,10 @@ public final class InlineDownloadButton {
 
     private static void reportEnqueueResult(EnqueueState state, String username) {
         switch (state) {
-            case QUEUED -> NewXInAppNotification.showForUser("Download started", username);
-            case SKIPPED -> NewXInAppNotification.showForUser("Already downloaded", username);
-            case FAILED -> reportDownloadStatus("Could not start download", username);
-            case DESTINATION_LOST -> reportDownloadStatus(FOLDER_LOST_MESSAGE, username);
+            case QUEUED -> NewXInAppNotification.showForUser(StringRef.str("piko_newx_download_started"), username);
+            case SKIPPED -> NewXInAppNotification.showForUser(StringRef.str("piko_newx_download_already_downloaded"), username);
+            case FAILED -> reportDownloadStatus(StringRef.str("piko_newx_download_start_failed"), username);
+            case DESTINATION_LOST -> reportDownloadStatus(folderLostMessage(), username);
         }
     }
 

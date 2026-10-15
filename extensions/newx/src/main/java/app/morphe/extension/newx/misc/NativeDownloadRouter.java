@@ -1,5 +1,7 @@
 package app.morphe.extension.newx.misc;
 
+import app.morphe.extension.shared.StringRef;
+
 import android.content.Context;
 import android.net.Uri;
 
@@ -121,7 +123,7 @@ public final class NativeDownloadRouter {
     ) {
         DownloadEngine engine = NewXDownloader.get();
         if (engine == null) {
-            postStatus("Could not start download", username);
+            postStatus(StringRef.str("piko_newx_download_start_failed"), username);
             return;
         }
 
@@ -130,7 +132,7 @@ public final class NativeDownloadRouter {
             policy = NewXDownloadFolders.conflictPolicy();
         } catch (RuntimeException exception) {
             NewXLogger.printException(() -> "Unsupported NewX download conflict policy", exception);
-            postStatus("Could not start download", username);
+            postStatus(StringRef.str("piko_newx_download_start_failed"), username);
             return;
         }
 
@@ -152,19 +154,19 @@ public final class NativeDownloadRouter {
             );
         } catch (IllegalArgumentException exception) {
             NewXLogger.printException(() -> "Invalid NewX download request: " + fileName, exception);
-            postStatus("Could not start download", username);
+            postStatus(StringRef.str("piko_newx_download_start_failed"), username);
             return;
         }
 
         EnqueueResult result = engine.enqueue(request);
         switch (result.state()) {
-            case QUEUED -> postStatus("Download started", username);
-            case SKIPPED -> postStatus("Already downloaded", username);
+            case QUEUED -> postStatus(StringRef.str("piko_newx_download_started"), username);
+            case SKIPPED -> postStatus(StringRef.str("piko_newx_download_already_downloaded"), username);
             case DESTINATION_LOST -> {
                 NewXDownloadFolders.invalidate(kind);
-                postStatus(InlineDownloadButton.FOLDER_LOST_MESSAGE, username);
+                postStatus(InlineDownloadButton.folderLostMessage(), username);
             }
-            case FAILED -> postStatus("Could not start download", username);
+            case FAILED -> postStatus(StringRef.str("piko_newx_download_start_failed"), username);
         }
     }
 

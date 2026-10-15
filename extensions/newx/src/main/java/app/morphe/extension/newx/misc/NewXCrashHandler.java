@@ -92,7 +92,7 @@ public final class NewXCrashHandler implements Thread.UncaughtExceptionHandler {
     public void uncaughtException(Thread thread, Throwable throwable) {
         try {
             File report = saveCrashReport(context, throwable);
-            showToast(context, "Piko crash log saved: " + report.getName());
+            showToast(context, localized(context, "piko_newx_crash_saved_file", "Piko crash log saved: %s", report.getName()));
             showCrashNotification(context, report);
         } catch (Throwable ignored) {
             // The original handler must still run even if reporting fails.
@@ -207,9 +207,9 @@ public final class NewXCrashHandler implements Thread.UncaughtExceptionHandler {
         String text = shareText(report);
         Intent share = new Intent(Intent.ACTION_SEND);
         share.setType("text/plain");
-        share.putExtra(Intent.EXTRA_SUBJECT, "Piko crash log: " + report.getName());
+        share.putExtra(Intent.EXTRA_SUBJECT, localized(context, "piko_newx_crash_share_subject", "Piko crash log: %s", report.getName()));
         share.putExtra(Intent.EXTRA_TEXT, text != null ? text : report.getName());
-        Intent chooser = Intent.createChooser(share, "Share crash log");
+        Intent chooser = Intent.createChooser(share, localized(context, "piko_newx_crash_share_chooser", "Share crash log"));
         return PendingIntent.getActivity(context, 1, chooser, pendingIntentFlags());
     }
 
@@ -262,7 +262,7 @@ public final class NewXCrashHandler implements Thread.UncaughtExceptionHandler {
             exportToDownloads(context, pending);
         } catch (Throwable ignored) {
         }
-        showToast(context, "Piko crash detected, log saved: " + pending.getName());
+        showToast(context, localized(context, "piko_newx_crash_detected_file", "Piko crash detected, log saved: %s", pending.getName()));
         try {
             showCrashNotification(context, pending);
         } catch (Throwable ignored) {
@@ -274,7 +274,7 @@ public final class NewXCrashHandler implements Thread.UncaughtExceptionHandler {
         NotificationManager manager =
                 (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
         if (manager == null || !notificationsAllowed(context)) return;
-        createChannel(manager);
+        createChannel(context, manager);
         Notification.Builder builder;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             builder = new Notification.Builder(context, CHANNEL_ID);
@@ -283,13 +283,13 @@ public final class NewXCrashHandler implements Thread.UncaughtExceptionHandler {
         }
         String preview = readBounded(report, 512);
         builder.setSmallIcon(android.R.drawable.stat_notify_error)
-                .setContentTitle("Piko crash detected")
-                .setContentText("Crash log saved: " + report.getName())
+                .setContentTitle(localized(context, "piko_newx_crash_notification_title", "Piko crash detected"))
+                .setContentText(localized(context, "piko_newx_crash_notification_file", "Crash log saved: %s", report.getName()))
                 .setStyle(new Notification.BigTextStyle().bigText(
                         preview != null ? preview : report.getName()))
-                .addAction(android.R.drawable.ic_menu_share, "Share",
+                .addAction(android.R.drawable.ic_menu_share, localized(context, "piko_newx_download_share_action", "Share"),
                         shareIntent(context, report))
-                .addAction(android.R.drawable.ic_menu_edit, "Copy",
+                .addAction(android.R.drawable.ic_menu_edit, localized(context, "piko_newx_crash_copy_action", "Copy"),
                         actionIntent(context, NewXCrashCopyReceiver.class, report, 2))
                 .setAutoCancel(true);
         PendingIntent content = launchIntent(context);
@@ -324,12 +324,26 @@ public final class NewXCrashHandler implements Thread.UncaughtExceptionHandler {
         }
     }
 
-    private static void createChannel(NotificationManager manager) {
+    private static void createChannel(Context context, NotificationManager manager) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return;
         try {
             manager.createNotificationChannel(new NotificationChannel(
-                    CHANNEL_ID, "Piko crash logs", NotificationManager.IMPORTANCE_HIGH));
+                    CHANNEL_ID, localized(context, "piko_newx_crash_channel", "Piko crash logs"), NotificationManager.IMPORTANCE_HIGH));
         } catch (Throwable ignored) {
+        }
+    }
+
+    private static String localized(Context context, String key, String fallback, Object... args) {
+        try {
+            int id = context.getResources().getIdentifier(key, "string", context.getPackageName());
+            if (id != 0) return context.getString(id, args);
+        } catch (Throwable ignored) {
+            // Reporting must survive early startup and unavailable app resources.
+        }
+        try {
+            return String.format(Locale.getDefault(), fallback, args);
+        } catch (Throwable ignored) {
+            return fallback;
         }
     }
 

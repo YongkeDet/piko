@@ -1,5 +1,7 @@
 package app.morphe.extension.newx.filteredreplies;
 
+import app.morphe.extension.shared.StringRef;
+
 import android.app.Activity;
 import android.content.Context;
 import android.content.res.ColorStateList;
@@ -51,17 +53,15 @@ public final class FilteredRepliesDialog {
                 FilteredRepliesStore.shared().getReplies(postId);
 
         if (replies.isEmpty()) {
-            Utils.showToastShort("No filtered replies for this post");
+            Utils.showToastShort(StringRef.str("piko_newx_filtered_replies_empty"));
             return;
         }
 
         BottomSheetView sheet = new BottomSheetView(activity);
-        sheet.setTitle("Filtered replies");
+        sheet.setTitle(StringRef.str("piko_newx_filtered_replies_dialog_title"));
 
         int count = replies.size();
-        String subtitle = count == 1
-                ? "1 reply hidden by verified accounts filter"
-                : count + " replies hidden by verified accounts filter";
+        String subtitle = StringRef.str("piko_newx_filtered_replies_count", count);
         sheet.setSubtitle(subtitle);
 
         LinearLayout listContainer = new LinearLayout(activity);
@@ -116,7 +116,7 @@ public final class FilteredRepliesDialog {
             String text = reply.getPostText();
             if (!text.isEmpty()) {
                 Utils.setClipboard(text);
-                Utils.showToastShort("Copied reply text");
+                Utils.showToastShort(StringRef.str("piko_newx_filtered_replies_copied"));
             }
             return true;
         });
@@ -177,7 +177,7 @@ public final class FilteredRepliesDialog {
         TextView textView = new TextView(context);
         String postText = reply.getPostText();
         if (postText.isEmpty()) {
-            textView.setText("(No text content)");
+            textView.setText(StringRef.str("piko_newx_filtered_replies_no_text"));
             textView.setTypeface(UpdateFont.customTypefaceOr(Typeface.defaultFromStyle(Typeface.ITALIC)));
         } else {
             textView.setText(postText);
@@ -223,7 +223,7 @@ public final class FilteredRepliesDialog {
     }
 
     private static void setWhitelistedState(ButtonView button) {
-        button.setText("Whitelisted ✓");
+        button.setText(StringRef.str("piko_newx_filtered_replies_whitelisted"));
         button.setButtonStyle(ButtonView.ButtonStyle.TONAL);
         button.setEnabled(false);
         button.setOnClickListener(null);
@@ -234,17 +234,17 @@ public final class FilteredRepliesDialog {
             String screenName,
             Map<String, List<ButtonView>> authorButtons
     ) {
-        button.setText("+ Whitelist");
+        button.setText(StringRef.str("piko_newx_filtered_replies_whitelist_add"));
         button.setButtonStyle(ButtonView.ButtonStyle.FILLED);
         button.setEnabled(true);
         button.setOnClickListener(v -> {
             try {
                 VerifiedAccountWhitelistStore.shared().add(screenName);
-                Utils.showToastShort("Added @" + screenName + " to whitelist");
+                Utils.showToastShort(StringRef.str("piko_newx_filtered_replies_whitelist_added", screenName));
             } catch (VerifiedAccountWhitelistStore.ValidationException e) {
-                Utils.showToastShort("@" + screenName + " is already whitelisted");
+                Utils.showToastShort(StringRef.str("piko_newx_filtered_replies_already_whitelisted", screenName));
             } catch (Exception e) {
-                Utils.showToastShort("Failed to whitelist: " + e.getMessage());
+                Utils.showToastShort(StringRef.str("piko_newx_filtered_replies_whitelist_failed", e.getMessage()));
             }
             updateAuthorButtons(authorButtons, screenName);
         });

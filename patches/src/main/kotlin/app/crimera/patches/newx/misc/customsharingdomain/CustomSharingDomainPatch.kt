@@ -3,6 +3,7 @@ package app.crimera.patches.newx.misc.customsharingdomain
 import app.crimera.patches.newx.misc.extension.newXExtensionPatch
 import app.crimera.patches.newx.settings.Categories
 import app.crimera.patches.newx.settings.newXTextInput
+import app.crimera.patches.newx.settings.newXToggle
 import app.crimera.patches.settings.settingStrings
 import app.crimera.patches.newx.utils.Constants.COMPATIBILITY_NEW_X
 import app.crimera.bytecode.Block
@@ -284,6 +285,14 @@ val newXCustomSharingDomainPatch =
             order = 500,
             defaultValue = "",
             validatorClassDescriptor = CUSTOM_DOMAIN_VALIDATOR_DESCRIPTOR,
+        )
+
+        newXToggle(
+            id = "newx.content.clear_tracking_params",
+            category = Categories.CONTENT,
+            strings = settingStrings("piko_newx_clear_tracking_params"),
+            order = 510,
+            defaultValue = true,
         )
 
         dependsOn(newXExtensionPatch)

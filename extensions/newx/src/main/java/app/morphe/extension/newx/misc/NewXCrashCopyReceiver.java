@@ -1,5 +1,7 @@
 package app.morphe.extension.newx.misc;
 
+import app.morphe.extension.shared.StringRef;
+
 import android.content.BroadcastReceiver;
 import android.content.ClipData;
 import android.content.ClipboardManager;
@@ -15,12 +17,12 @@ public final class NewXCrashCopyReceiver extends BroadcastReceiver {
         if (context == null) return;
         File report = NewXCrashHandler.reportForIntent(context, intent);
         if (report == null) {
-            NewXCrashHandler.showToast(context, "Crash log is no longer available");
+            NewXCrashHandler.showToast(context, StringRef.str("piko_newx_crash_log_expired"));
             return;
         }
         String text = NewXCrashHandler.readBounded(report, NewXCrashHandler.MAX_REPORT_CHARS);
         if (text == null || text.isEmpty()) {
-            NewXCrashHandler.showToast(context, "Could not read crash log");
+            NewXCrashHandler.showToast(context, StringRef.str("piko_newx_crash_log_read_failed"));
             return;
         }
         try {
@@ -28,9 +30,9 @@ public final class NewXCrashCopyReceiver extends BroadcastReceiver {
                     (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
             if (clipboard == null) throw new IllegalStateException("No clipboard service");
             clipboard.setPrimaryClip(ClipData.newPlainText("Piko crash log", text));
-            NewXCrashHandler.showToast(context, "Crash log copied to clipboard");
+            NewXCrashHandler.showToast(context, StringRef.str("piko_newx_crash_log_copied"));
         } catch (Throwable ignored) {
-            NewXCrashHandler.showToast(context, "Could not copy crash log");
+            NewXCrashHandler.showToast(context, StringRef.str("piko_newx_crash_log_copy_failed"));
         }
     }
 }
