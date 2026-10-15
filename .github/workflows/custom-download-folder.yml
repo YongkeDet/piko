@@ -29,7 +29,11 @@ jobs:
       - name: Build patch bundle
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: ./gradlew clean buildAndroid build
+        run: >-
+          ./gradlew --no-daemon --max-workers=2
+          -Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8"
+          -Pkotlin.compiler.execution.strategy=in-process
+          clean buildAndroid :patches:build
       - uses: actions/upload-artifact@v7
         with:
           name: piko-custom-download-folder

@@ -28,7 +28,10 @@
 完整构建：
 
 ```sh
-./gradlew clean buildAndroid build
+./gradlew --no-daemon --max-workers=2 \
+  '-Dorg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8' \
+  -Pkotlin.compiler.execution.strategy=in-process \
+  clean buildAndroid :patches:build
 ```
 
 ## 实现与验证范围
