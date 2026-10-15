@@ -18,6 +18,8 @@ import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.SupportedAbi
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.patch.resourcePatch
+import app.morphe.patches.all.misc.resources.addAppResources
+import app.morphe.patches.all.misc.resources.addResourcesPatch
 import app.morphe.util.getReference
 import app.morphe.util.registersUsed
 import com.android.tools.smali.dexlib2.Opcode
@@ -54,14 +56,9 @@ private object ExportedVideoSaveFingerprint : Fingerprint(
 )
 
 private val modernFolderResources = resourcePatch {
+    dependsOn(addResourcesPatch)
     execute {
-        get("res/values/piko_modern.xml").writeText(
-            """<resources><string name="piko_modern_download_folder">Download folder</string></resources>""",
-        )
-        get("res/values-zh-rCN/piko_modern.xml").apply {
-            parentFile.mkdirs()
-            writeText("""<resources><string name="piko_modern_download_folder">下载文件夹</string></resources>""")
-        }
+        addAppResources("modern")
         document("AndroidManifest.xml").use { editor ->
             val application = editor.getElementsByTagName("application").item(0) as Element
             application.appendChild(editor.createElement("activity").apply {
