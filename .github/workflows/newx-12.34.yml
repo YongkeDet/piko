@@ -24,6 +24,8 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+      - name: Cache Gradle
+        uses: burrunan/gradle-cache-action@v3
       - uses: android-actions/setup-android@v4
         with:
           packages: ''
@@ -39,8 +41,12 @@ jobs:
       - name: Record bundle provenance
         run: |
           python3 - <<'PY'
-          import hashlib, json, os, pathlib
-          bundle, = pathlib.Path('patches/build/libs').glob('*.mpp')
+          import hashlib, json, os, pathlib, re, zipfile
+          version = re.search(r'^version\s*=\s*(.+)$', pathlib.Path('gradle.properties').read_text(), re.M).group(1).strip()
+          bundle = pathlib.Path('patches/build/libs') / f'patches-{version}.mpp'
+          with zipfile.ZipFile(bundle) as archive:
+              assert 'classes.dex' in archive.namelist(), 'Manager requires the Android DEX patch bundle'
+              assert not any(n.startswith(('app/crimera/patches/twitter/', 'app/crimera/patches/instagram/', 'app/revanced/patches/')) for n in archive.namelist())
           provenance = {'source_sha': os.environ['GITHUB_SHA'], 'bundle': bundle.name,
                         'sha256': hashlib.sha256(bundle.read_bytes()).hexdigest()}
           bundle.with_name('source-provenance.json').write_text(json.dumps(provenance, indent=2) + '\n')
@@ -50,6 +56,8 @@ jobs:
           name: piko-newx-12.34
           path: |
             patches/build/libs/*.mpp
+            !patches/build/libs/*-sources.mpp
+            !patches/build/libs/*-javadoc.mpp
             patches/build/libs/source-provenance.json
           if-no-files-found: error
       - name: Upload test reports
