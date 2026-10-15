@@ -46,7 +46,7 @@
 | Enable Undo Posts | 尚未迁移 | 本次 NewX 补丁包不提供此旧版功能 |
 | Force enable translate | 新版对应 | Force translate option |
 | Handle custom twitter links | 尚未迁移 | 本次 NewX 补丁包不提供此旧版功能 |
-| Hide badges from navigation bar icons | 尚未迁移 | 本次 NewX 补丁包不提供此旧版功能 |
+| Hide badges from navigation bar icons | 新版对应 | Customize navigation bar → Hide badges（导航栏编辑器内） |
 | Hide Banner | 新版对应 | Hide new posts pill |
 | Hide bookmark icon in timeline | 新版对应 | Customize inline actions → AddRemoveBookmarks |
 | Hide community badges | 尚未迁移 | 本次 NewX 补丁包不提供此旧版功能 |
