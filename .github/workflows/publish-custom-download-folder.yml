@@ -20,11 +20,15 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      SOURCE_RUN_ID: '38681543014'
-      SOURCE_SHA: dbb5a6dd23886423b18fff832c5a8ebfdba0a48f
-      BUNDLE_SHA256: bc45e94eca4d845a535c33238a8cc3d6a14c4c2ff27789dd59bd0cd106878a78
-      RELEASE_TAG: v3.10.0-custom-download.1
+      SOURCE_RUN_ID: '38703254600'
+      SOURCE_SHA: 0623ce2f437f176902f00cef6b9cd1671c80e3f6
+      BUNDLE_SHA256: b0996cb80b48076c9c564dae8e850f73994086370cbc9ee4d1dbf4e186c5cb1f
+      RELEASE_TAG: v3.10.0-custom-download.2
     steps:
+      - name: Verify source build
+        run: |
+          test "$(gh run view "$SOURCE_RUN_ID" --repo "$GITHUB_REPOSITORY" --json headSha --jq '.headSha')" = "$SOURCE_SHA"
+          test "$(gh run view "$SOURCE_RUN_ID" --repo "$GITHUB_REPOSITORY" --json conclusion --jq '.conclusion')" = success
       - name: Download the verified build
         run: >-
           gh run download "$SOURCE_RUN_ID"
@@ -39,17 +43,26 @@ jobs:
       - name: Publish bundle
         run: |
           cat > dist/RELEASE_NOTES.md <<'NOTES'
-          Adds a system folder picker for custom X/Twitter photo and video download destinations.
-          Open Piko settings > Downloads > Choose custom download folder after patching X.
+          Supports X 12.34.0-prod.01 (312340001), arm64-v8a, Android 10+.
+          Select "Custom download folder (modern X)" when patching the original APKM.
+          Long-press the X launcher icon > Download folder to choose a directory.
+          中文入口：长按 X 图标 > 下载文件夹 > 选择下载文件夹。
 
-          Built from dbb5a6dd23886423b18fff832c5a8ebfdba0a48f.
-          Validation: 11 download-folder tests and the full Android/patch bundle build passed in run 38681543014.
+          The rewritten X app receives the custom folder feature only. Other Piko features remain available on legacy X 12.19.1-release.0.
+          Normal media saving, direct-message attachments and exported videos are covered. X retains its existing download permissions and streaming/error handling.
+
+          Validation: 20 Android tests and the full extension/patch bundle build passed in run 38703254600.
+          The exact uploaded arm64 APKM was patched and rebuilt successfully using default patch selection, without forcing compatibility.
+          Verified the three save paths, application initialization, settings Activity, launcher shortcut and arm64-only native libraries in the rebuilt APK.
           Device testing is still pending.
+
+          Source build: 0623ce2f437f176902f00cef6b9cd1671c80e3f6.
+          Input APKM SHA-256: 016a7eb2b6d8e2d6410da7f3c60e1bb46b002f6fedd797e366b068fb2897682b.
           NOTES
           gh release create "$RELEASE_TAG" \
             dist/patches-3.10.0.mpp dist/SHA256SUMS \
             --repo "$GITHUB_REPOSITORY" \
             --target "$GITHUB_SHA" \
-            --title 'Piko 3.10.0 - Custom download folder' \
+            --title 'Piko custom download folder - X 12.34 arm64' \
             --notes-file dist/RELEASE_NOTES.md \
             --latest
