@@ -1,0 +1,61 @@
+name: Publish verified NewX 12.34 bundle
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [feat/x-12.34-full]
+    paths:
+      - .github/workflows/publish-custom-download-folder.yml
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: publish-newx-custom
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      SOURCE_RUN_ID: '38742137984'
+      SOURCE_SHA: f5ca7bbd864db688d7d2eceab0e86125e29ec971
+      BUNDLE_SHA256: 936f9edb68a4ecad1a77266e70bd02fa3cddfd6bcf1a2437700e2e80cf6f8016
+      RELEASE_TAG: v3.10.0-custom-newx.1
+      BUNDLE_NAME: patches-3.10.0-custom-newx.1.mpp
+    steps:
+      - uses: actions/checkout@v7
+      - name: Verify source build
+        run: |
+          test "$(gh run view "$SOURCE_RUN_ID" --repo "$GITHUB_REPOSITORY" --json headSha --jq '.headSha')" = "$SOURCE_SHA"
+          test "$(gh run view "$SOURCE_RUN_ID" --repo "$GITHUB_REPOSITORY" --json conclusion --jq '.conclusion')" = success
+      - name: Download the verified build
+        run: >-
+          gh run download "$SOURCE_RUN_ID"
+          --repo "$GITHUB_REPOSITORY"
+          --name piko-newx-12.34
+          --dir dist
+      - name: Verify bundle and provenance
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib
+          root = pathlib.Path('dist')
+          bundle = root / os.environ['BUNDLE_NAME']
+          record = json.loads((root / 'source-provenance.json').read_text())
+          assert record['source_sha'] == os.environ['SOURCE_SHA']
+          assert record['bundle'] == bundle.name
+          digest = hashlib.sha256(bundle.read_bytes()).hexdigest()
+          assert record['sha256'] == digest == os.environ['BUNDLE_SHA256']
+          (root / 'SHA256SUMS').write_text(f'{digest}  {bundle.name}\n')
+          PY
+      - name: Publish bundle
+        run: |
+          gh release create "$RELEASE_TAG" \
+            "dist/$BUNDLE_NAME" dist/SHA256SUMS dist/source-provenance.json \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title 'Piko NewX Custom — X 12.34 arm64' \
+            --notes-file docs/releases/v3.10.0-custom-newx.1.md \
+            --latest

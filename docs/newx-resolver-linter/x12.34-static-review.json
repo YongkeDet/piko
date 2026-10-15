@@ -1,0 +1,39 @@
+{
+  "mpp": {
+    "extensionClasses": 3807,
+    "classes": 5252,
+    "extensionReferences": 3482,
+    "missingExtensionOwners": [],
+    "legacyPatchClasses": [],
+    "methods": 33664,
+    "dexFiles": 3
+  },
+  "defaultApk": {
+    "legacyPatchClasses": [],
+    "methods": 600225,
+    "dexFiles": 14,
+    "extensionClasses": 3807,
+    "classes": 120929,
+    "extensionReferences": 3484,
+    "missingExtensionOwners": []
+  },
+  "resources": {
+    "package": "com.twitter.android",
+    "version": "12.34.0-prod.01",
+    "versionCode": 312340001,
+    "minSdk": 29,
+    "targetSdk": 36,
+    "settingsResources": {
+      "piko_newx_settings_title": true,
+      "piko_newx_inline_download_options_title": true,
+      "piko_newx_download_options_folder_images": true,
+      "piko_newx_download_options_folder_videos": true,
+      "piko_newx_hide_community_notes_title": true,
+      "piko_newx_force_translate_title": true,
+      "piko_newx_hide_promote_title": true
+    },
+    "arm64NativeLibraries": 19,
+    "settingsActivityDeclared": true,
+    "folderPickerDeclared": true
+  }
+}

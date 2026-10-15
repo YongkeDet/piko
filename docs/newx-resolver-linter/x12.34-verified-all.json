@@ -1,0 +1,184 @@
+{
+  "source_sha": "f5ca7bbd864db688d7d2eceab0e86125e29ec971",
+  "bundle_sha256": "936f9edb68a4ecad1a77266e70bd02fa3cddfd6bcf1a2437700e2e80cf6f8016",
+  "input_sha256": "016a7eb2b6d8e2d6410da7f3c60e1bb46b002f6fedd797e366b068fb2897682b",
+  "appliedPatches": [
+    {
+      "name": "NewX: Browse tweet object"
+    },
+    {
+      "name": "NewX: Classic inline action spacing"
+    },
+    {
+      "name": "NewX: Clone",
+      "options": [
+        {
+          "key": "packageName",
+          "value": "com.twitter.android.piko"
+        },
+        {
+          "key": "appName",
+          "value": "X Piko"
+        }
+      ]
+    },
+    {
+      "name": "NewX: Crash logs"
+    },
+    {
+      "name": "NewX: Custom font"
+    },
+    {
+      "name": "NewX: Custom sharing domain"
+    },
+    {
+      "name": "NewX: Customize drawer items"
+    },
+    {
+      "name": "NewX: Customize inline actions"
+    },
+    {
+      "name": "NewX: Customize media menu items"
+    },
+    {
+      "name": "NewX: Customize navigation bar"
+    },
+    {
+      "name": "NewX: Customize post menu items"
+    },
+    {
+      "name": "NewX: Customize profile tabs"
+    },
+    {
+      "name": "NewX: Customize timeline tabs"
+    },
+    {
+      "name": "NewX: Disable automatic timeline refresh"
+    },
+    {
+      "name": "NewX: Disable blur effects"
+    },
+    {
+      "name": "NewX: Disable video player scrolling"
+    },
+    {
+      "name": "NewX: Feature switch overrides"
+    },
+    {
+      "name": "NewX: Filter For You by topic"
+    },
+    {
+      "name": "NewX: Filter posts by keyword"
+    },
+    {
+      "name": "NewX: Force highest video resolution"
+    },
+    {
+      "name": "NewX: Force translate option"
+    },
+    {
+      "name": "NewX: Gallery profile Photos tab"
+    },
+    {
+      "name": "NewX: Hide AI-generated posts"
+    },
+    {
+      "name": "NewX: Hide Community Notes"
+    },
+    {
+      "name": "NewX: Hide Discover more"
+    },
+    {
+      "name": "NewX: Hide Spaces bar"
+    },
+    {
+      "name": "NewX: Hide compose button"
+    },
+    {
+      "name": "NewX: Hide new posts pill"
+    },
+    {
+      "name": "NewX: Hide post dividers"
+    },
+    {
+      "name": "NewX: Hide post reply bar"
+    },
+    {
+      "name": "NewX: Hide posts by verified account type"
+    },
+    {
+      "name": "NewX: Hide premium upsell"
+    },
+    {
+      "name": "NewX: Hide promote button"
+    },
+    {
+      "name": "NewX: Hide timeline tabs bar"
+    },
+    {
+      "name": "NewX: Hide who to follow"
+    },
+    {
+      "name": "NewX: Inline download button"
+    },
+    {
+      "name": "NewX: Open canonical URLs"
+    },
+    {
+      "name": "NewX: Redirect downloads to chosen folder"
+    },
+    {
+      "name": "NewX: Remove ads"
+    },
+    {
+      "name": "NewX: Restore Twitter branding"
+    },
+    {
+      "name": "NewX: Restore pinned home tab"
+    },
+    {
+      "name": "NewX: Restore timeline position"
+    },
+    {
+      "name": "NewX: Server error logging"
+    },
+    {
+      "name": "NewX: Set default media tab"
+    },
+    {
+      "name": "NewX: Set default profile post sorting"
+    },
+    {
+      "name": "NewX: Set default reply sorting"
+    },
+    {
+      "name": "NewX: Share post as image"
+    },
+    {
+      "name": "NewX: Show poll results"
+    },
+    {
+      "name": "NewX: Show sensitive media"
+    },
+    {
+      "name": "NewX: Theme"
+    },
+    {
+      "name": "NewX: Unlock color customization"
+    },
+    {
+      "name": "NewX: Unlock downloads"
+    }
+  ],
+  "failedPatches": [],
+  "patchingSteps": [
+    {
+      "step": "PATCHING",
+      "success": true
+    },
+    {
+      "step": "REBUILDING",
+      "success": true
+    }
+  ]
+}
