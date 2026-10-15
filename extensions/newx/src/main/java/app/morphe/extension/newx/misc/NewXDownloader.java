@@ -6,6 +6,8 @@
 
 package app.morphe.extension.newx.misc;
 
+import app.morphe.extension.shared.StringRef;
+
 import android.content.Context;
 
 import androidx.annotation.Nullable;
@@ -19,7 +21,6 @@ import app.morphe.extension.crimera.downloader.DownloadEngine;
 import app.morphe.extension.crimera.downloader.engine.DownloadControllers;
 import app.morphe.extension.crimera.downloader.engine.DownloadLog;
 import app.morphe.extension.crimera.downloader.engine.DownloadNotifications;
-import app.morphe.extension.crimera.downloader.engine.EnglishNotificationTexts;
 import app.morphe.extension.crimera.downloader.engine.HttpTransfer;
 import app.morphe.extension.crimera.downloader.engine.NotificationListener;
 import app.morphe.extension.crimera.downloader.engine.SafDestination;
@@ -37,7 +38,6 @@ import app.morphe.extension.shared.Utils;
  */
 public final class NewXDownloader {
     public static final String CHANNEL_ID = "piko_newx_downloads";
-    private static final String CHANNEL_NAME = "Downloads";
     private static final int TRANSFER_THREADS = 4;
 
     private static volatile DownloadEngine engine;
@@ -106,8 +106,8 @@ public final class NewXDownloader {
                 new NotificationListener(
                         applicationContext,
                         CHANNEL_ID,
-                        CHANNEL_NAME,
-                        new EnglishNotificationTexts(),
+                        StringRef.str("piko_newx_download_channel"),
+                        new NewXNotificationTexts(),
                         created::requestFor
                 ),
                 NOTIFICATION_EXECUTOR
@@ -151,7 +151,7 @@ public final class NewXDownloader {
         @Override
         public void onCompleted(DownloadEvent.Completed event) {
             if (!DownloadNotifications.notificationsEnabled(context, CHANNEL_ID)) {
-                InlineDownloadButton.reportDownloadStatus("Saved " + event.fileName(), event.label());
+                InlineDownloadButton.reportDownloadStatus(StringRef.str("piko_newx_download_saved", event.fileName()), event.label());
             }
         }
 
@@ -169,19 +169,19 @@ public final class NewXDownloader {
                         NewXLogger.printException(() -> "Could not invalidate lost destination", e);
                     }
                 }
-                InlineDownloadButton.reportDownloadStatus(InlineDownloadButton.FOLDER_LOST_MESSAGE, label);
+                InlineDownloadButton.reportDownloadStatus(InlineDownloadButton.folderLostMessage(), label);
             } else if (event.reason() == FailureReason.NO_CONNECTION) {
-                InlineDownloadButton.reportDownloadStatus("No connection — tap Retry when online", label);
+                InlineDownloadButton.reportDownloadStatus(StringRef.str("piko_newx_download_no_connection"), label);
             } else {
                 DownloadRequest request = engine.requestFor(event.id());
                 String fileName = request != null ? request.fileName() : "";
-                InlineDownloadButton.reportDownloadStatus("Could not save " + fileName, label);
+                InlineDownloadButton.reportDownloadStatus(StringRef.str("piko_newx_download_save_failed", fileName), label);
             }
         }
 
         @Override
         public void onCancelled(DownloadEvent.Cancelled event) {
-            NewXInAppNotification.showForUser("Download cancelled", event.label());
+            NewXInAppNotification.showForUser(StringRef.str("piko_newx_download_cancelled"), event.label());
         }
     }
 }

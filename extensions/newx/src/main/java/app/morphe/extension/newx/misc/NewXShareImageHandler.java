@@ -159,7 +159,7 @@ public final class NewXShareImageHandler {
     }
 
     public static String labelFor(Object action, Object originalLabel) {
-        if (isShareImageAction(action)) return "Share Tweet as Image";
+        if (isShareImageAction(action)) return StringRef.str("piko_newx_share_image_chooser");
         return originalLabel instanceof String ? (String) originalLabel : null;
     }
 
@@ -825,7 +825,7 @@ public final class NewXShareImageHandler {
                 .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
         intent.setClipData(ClipData.newRawUri("image", uri));
 
-        Intent chooser = Intent.createChooser(intent, "Share Tweet as Image");
+        Intent chooser = Intent.createChooser(intent, StringRef.str("piko_newx_share_image_chooser"));
         if (!(context instanceof Activity)) chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         context.startActivity(chooser);
     }
