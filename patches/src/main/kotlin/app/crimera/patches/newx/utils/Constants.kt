@@ -3,6 +3,7 @@ package app.crimera.patches.newx.utils
 import app.morphe.patcher.patch.ApkFileType
 import app.morphe.patcher.patch.AppTarget
 import app.morphe.patcher.patch.Compatibility
+import app.morphe.patcher.patch.SupportedAbi
 
 internal object Constants {
     val COMPATIBILITY_NEW_X =
@@ -21,6 +22,11 @@ internal object Constants {
                 AppTarget(version = "12.33.0-alpha.02", isExperimental = true),
                 AppTarget(version = "12.33.0-prod.01"),
                 AppTarget(version = "12.33.1-prod.01"),
+                AppTarget(
+                    version = "12.34.0-prod.01",
+                    versionCodes = mapOf(SupportedAbi.ARM64_V8A to 312340001),
+                    minSdk = 29,
+                ),
             ),
         )
 

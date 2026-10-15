@@ -1,169 +1,82 @@
-# Patch Twitter/X with the unified NewX patch bundle.
+#!/usr/bin/env bash
+# Build or verify the current NewX bundle, then patch an explicitly supplied original APKM.
 set -euo pipefail
 
 ROOT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 cd "$ROOT_DIR"
 
-INSTALL=false
-# Morphe Manager's adaptive default is higher, but 512 MB is its supported heap floor. Keeping
-# local patch runs at that floor catches memory regressions that a desktop-sized heap would hide.
-PATCHER_MAX_HEAP_MB="${PATCHER_MAX_HEAP_MB:-512}"
-# Overridable so the bundle can also be exercised against a pre-release/manager patcher build,
-# which is the ABI the shipped manager app actually executes.
-MORPHE_CLI_JAR="${MORPHE_CLI_JAR:-../piko/morphe-desktop-1.11.0-all.jar}"
-FASTDEPLOY_PLATFORM_TOOLS_VERSION="${FASTDEPLOY_PLATFORM_TOOLS_VERSION:-36.0.0}"
-FASTDEPLOY_PLATFORM_TOOLS_DIR="${FASTDEPLOY_PLATFORM_TOOLS_DIR:-${HOME}/.cache/piko/platform-tools-${FASTDEPLOY_PLATFORM_TOOLS_VERSION}}"
-
-if [[ ! "$PATCHER_MAX_HEAP_MB" =~ ^[1-9][0-9]*$ ]]; then
-  echo "PATCHER_MAX_HEAP_MB must be a positive integer: $PATCHER_MAX_HEAP_MB" >&2
-  exit 1
-fi
-
-VER=$(grep "^version" gradle.properties | cut -d= -f2 | tr -d ' ')
-MPP="patches/build/libs/patches-${VER}.mpp"
-if [[ ! -f "$MPP" ]]; then
-  echo "Missing patch bundle: $MPP" >&2
-  echo "Build it first with: ./gradlew :patches:build" >&2
-  exit 1
-fi
-
-DEFAULT_APK="./apks/12.31.0-alpha.02.apk"
-OUTPUT_APK="$HOME/Downloads/piko-twitter-patched.apk"
-APK="$DEFAULT_APK"
+JAVA_BIN="${PATCHER_JAVA:-java}"
+CLI_JAR="${MORPHE_CLI_JAR:?Set MORPHE_CLI_JAR to an official Morphe Desktop jar}"
+PATCHER_MAX_HEAP_MB="${PATCHER_MAX_HEAP_MB:-4096}"
+OUTPUT_APK="${PATCHER_OUTPUT_APK:-$ROOT_DIR/build/newx-patched.apk}"
+RESULT_FILE="${PATCHER_RESULT_FILE:-${OUTPUT_APK%.apk}-result.json}"
+APK=""
+ALL_NEWX=false
 FLAGS=()
+
 for arg in "$@"; do
   case "$arg" in
+    --all-newx) ALL_NEWX=true ;;
     --install|--fastdeploy)
-      INSTALL=true
+      echo 'This validation script does not install or control devices.' >&2
+      exit 2
       ;;
-    *.apk|*.apkm|*.apks)
-      APK="$arg"
-      ;;
-    *)
-      FLAGS+=("$arg")
-      ;;
+    *.apk|*.apkm|*.apks) APK="$arg" ;;
+    *) FLAGS+=("$arg") ;;
   esac
 done
-
-echo "Patcher JVM heap limit: ${PATCHER_MAX_HEAP_MB} MB"
-java "-Xmx${PATCHER_MAX_HEAP_MB}m" -jar "$MORPHE_CLI_JAR" patch \
-  -p "$MPP" \
-  --keystore Morphe.keystore \
-  --exclusive \
-  -e "NewX: Remove ads" \
-  -e "NewX: Browse tweet object" \
-  -e "NewX: Share post as image" \
-  -e "NewX: Customize inline actions" \
-  -e "NewX: Classic inline action spacing" \
-  -e "NewX: Unlock downloads" \
-  -e "NewX: Hide new posts pill" \
-  -e "NewX: Customize navigation bar" \
-  -e "NewX: Hide premium upsell" \
-  -e "NewX: Unlock color customization" \
-  -e "NewX: Disable blur effects" \
-  -e "NewX: Hide compose button" \
-  -e "NewX: Hide post dividers" \
-  -e "NewX: Customize drawer items" \
-  -e "NewX: Hide Spaces bar" \
-  -e "NewX: Feature switch overrides" \
-  -e "NewX: Show sensitive media" \
-  -e "NewX: Hide Discover more" \
-  -e "NewX: Hide who to follow" \
-  -e "NewX: Hide AI-generated posts" \
-  -e "NewX: Hide posts by verified account type" \
-  -e "NewX: Set default media tab" \
-  -e "NewX: Gallery profile Photos tab" \
-  -e "NewX: Set default profile post sorting" \
-  -e "NewX: Custom font" \
-  -e "NewX: Custom sharing domain" \
-  -e "NewX: Inline download button" \
-  -e "NewX: Redirect downloads to chosen folder" \
-  -e "NewX: Theme" \
-  -e "NewX: Set default reply sorting" \
-  -e "NewX: Server error logging" \
-  -e "NewX: Crash logs" \
-  -e "NewX: Filter posts by keyword" \
-  -e "NewX: Force highest video/audio quality" \
-  -e "NewX: Filter For You by topic" \
-  -e "NewX: Hide timeline tabs bar" \
-  -e "NewX: Customize timeline tabs" \
-  -e "NewX: Disable video player scrolling" \
-  -e "NewX: Restore video picture-in-picture" \
-  -e "NewX: Disable automatic timeline refresh" \
-  -e "NewX: Restore timeline position" \
-  -e "NewX: Open canonical URLs" \
-  -e "NewX: Restore Twitter branding" \
-  -e "NewX: Hide post reply bar" \
-  -e "NewX: Show poll results" \
-  -e "NewX: Customize post menu items" \
-  -e "NewX: Customize media menu items" \
-  --striplibs=arm64-v8a \
-  --force \
-  -o "$OUTPUT_APK" \
-  ${FLAGS[@]+"${FLAGS[@]}"} \
-  -- \
-  "$APK"
-  # -e "NewX: Collect AI-filter training posts" \
-
-if [[ "$INSTALL" != true ]]; then
-  exit 0
+if [[ ! -f "$APK" || ! -f "$CLI_JAR" || ! "$PATCHER_MAX_HEAP_MB" =~ ^[1-9][0-9]*$ ]]; then
+  echo 'Usage: ./patch-twitter.sh ORIGINAL.apkm [--all-newx] [Morphe patch options]' >&2
+  exit 2
 fi
 
-if [[ -n "${ADB:-}" ]]; then
-  ADB_BIN="$ADB"
+VERSION=$(awk -F= '/^version[[:space:]]*=/ {gsub(/[[:space:]]/, "", $2); print $2}' gradle.properties)
+MPP="patches/build/libs/patches-${VERSION}.mpp"
+PROVENANCE="patches/build/libs/source-provenance.json"
+if [[ -f "$PROVENANCE" ]]; then
+  # CI builds the exact commit before uploading this pair. Refuse stale bundles after edits.
+  python3 - "$MPP" "$PROVENANCE" <<'PY'
+import hashlib, json, pathlib, subprocess, sys
+bundle, record = map(pathlib.Path, sys.argv[1:])
+metadata = json.loads(record.read_text())
+head = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
+if metadata['source_sha'] != head or metadata['sha256'] != hashlib.sha256(bundle.read_bytes()).hexdigest():
+    raise SystemExit('Bundle provenance differs from the current checkout; rebuild before testing.')
+sources = ['patches/src', 'extensions', 'gradle', 'gradle.properties', 'settings.gradle.kts', 'build.gradle.kts']
+subprocess.run(['git', 'diff', '--quiet', 'HEAD', '--', *sources], check=True)
+untracked = subprocess.check_output(['git', 'ls-files', '--others', '--exclude-standard', '--', *sources], text=True)
+if untracked.strip():
+    raise SystemExit('Unbuilt source files are present; commit and rebuild before testing.')
+PY
 else
-  ADB_BIN="$FASTDEPLOY_PLATFORM_TOOLS_DIR/adb"
+  ./gradlew :patches:build --no-daemon
+fi
 
-  if [[ ! -x "$ADB_BIN" ]]; then
-    case "$(uname -s)" in
-      Darwin) PLATFORM_TOOLS_OS=darwin ;;
-      Linux) PLATFORM_TOOLS_OS=linux ;;
-      *)
-        echo "Unsupported host OS; set ADB=/path/to/adb" >&2
-        exit 1
-        ;;
-    esac
-
-    if ! command -v curl >/dev/null || ! command -v unzip >/dev/null; then
-      echo "curl and unzip are required to download pinned adb" >&2
-      exit 1
-    fi
-
-    DOWNLOAD_DIR=$(mktemp -d "${TMPDIR:-/tmp}/piko-platform-tools.XXXXXX")
-    trap 'rm -rf "$DOWNLOAD_DIR"' EXIT
-    mkdir -p "$(dirname "$FASTDEPLOY_PLATFORM_TOOLS_DIR")"
-
-    echo "Downloading platform-tools ${FASTDEPLOY_PLATFORM_TOOLS_VERSION}"
-    curl -fsSL --retry 3 \
-      -o "$DOWNLOAD_DIR/platform-tools.zip" \
-      "https://dl.google.com/android/repository/platform-tools_r${FASTDEPLOY_PLATFORM_TOOLS_VERSION}-${PLATFORM_TOOLS_OS}.zip"
-    unzip -q "$DOWNLOAD_DIR/platform-tools.zip" -d "$DOWNLOAD_DIR"
-    rm -rf "$FASTDEPLOY_PLATFORM_TOOLS_DIR"
-    mv "$DOWNLOAD_DIR/platform-tools" "$FASTDEPLOY_PLATFORM_TOOLS_DIR"
-    ADB_BIN="$FASTDEPLOY_PLATFORM_TOOLS_DIR/adb"
+mkdir -p "$(dirname -- "$OUTPUT_APK")" "$(dirname -- "$RESULT_FILE")"
+SELECTION=()
+if [[ "$ALL_NEWX" == true ]]; then
+  PATCH_LIST=$(mktemp)
+  trap 'rm -f "$PATCH_LIST"' EXIT
+  "$JAVA_BIN" -jar "$CLI_JAR" list-patches --patches "$MPP" -f com.twitter.android --out "$PATCH_LIST"
+  mapfile -t PATCH_NAMES < <(sed -n 's/^Name: \(NewX: .*\)/\1/p' "$PATCH_LIST")
+  if [[ "${#PATCH_NAMES[@]}" -eq 0 ]]; then
+    echo 'No NewX patches were found in the built bundle.' >&2
+    exit 1
   fi
+  SELECTION+=(--exclusive)
+  for patch_name in "${PATCH_NAMES[@]}"; do SELECTION+=(-e "$patch_name"); done
 fi
 
-if [[ ! -x "$ADB_BIN" ]]; then
-  echo "adb not found or not executable: $ADB_BIN" >&2
-  echo "Unset ADB to let the script download platform-tools ${FASTDEPLOY_PLATFORM_TOOLS_VERSION}." >&2
-  exit 1
-fi
+"$JAVA_BIN" "-Xmx${PATCHER_MAX_HEAP_MB}m" -jar "$CLI_JAR" patch \
+  -p "$MPP" "${SELECTION[@]}" --striplibs=arm64-v8a \
+  -o "$OUTPUT_APK" -r "$RESULT_FILE" "${FLAGS[@]}" -- "$APK"
 
-ADB_VERSION=$("$ADB_BIN" version | awk '/^Version / { version=$2; sub(/-.*/, "", version); print version; exit }')
-if [[ "$ADB_VERSION" != "$FASTDEPLOY_PLATFORM_TOOLS_VERSION" ]]; then
-  echo "Wrong adb version: ${ADB_VERSION:-unknown} (need $FASTDEPLOY_PLATFORM_TOOLS_VERSION)" >&2
-  echo "Use ADB=/path/to/adb or unset ADB for the pinned copy." >&2
-  exit 1
-fi
-
-echo "Checking fast deploy support"
-FASTDEPLOY_PROBE=$("$ADB_BIN" install --fastdeploy -r "${OUTPUT_APK}.probe.apk" 2>&1 || true)
-if grep -Eq 'Fast Deploy .*ignoring|fastdeploy is disabled' <<<"$FASTDEPLOY_PROBE"; then
-  printf '%s\n' "$FASTDEPLOY_PROBE" >&2
-  echo "This adb cannot use fast deploy; refusing a full APK transfer." >&2
-  exit 1
-fi
-
-echo "Installing APK with fast deploy: $OUTPUT_APK"
-"$ADB_BIN" install --fastdeploy -r "$OUTPUT_APK"
+python3 - "$RESULT_FILE" <<'PY'
+import json, sys
+result = json.load(open(sys.argv[1]))
+if result.get('failedPatches') or not result.get('appliedPatches'):
+    raise SystemExit('Patch verification failed; inspect the result report.')
+if not any(s['step'] == 'REBUILDING' and s['success'] for s in result['patchingSteps']):
+    raise SystemExit('The APK was not rebuilt successfully.')
+print(f"Verified {len(result['appliedPatches'])} applied patches and a successful APK rebuild.")
+PY

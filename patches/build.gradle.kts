@@ -6,14 +6,27 @@ group = "crimera"
 
 patches {
     about {
-        name = "Piko"
-        description = "Morphe patches focused on Twitter/X"
-        source = "git@github.com:crimera/piko.git"
+        name = "Piko NewX Custom"
+        description = "NewX patches and custom download folders for X 12.34 arm64"
+        source = "git@github.com:YongkeDet/piko.git"
         author = "crimera"
         contact = "na"
-        website = "https://github.com/crimera/piko"
+        website = "https://github.com/YongkeDet/piko"
         license = "GNU General Public License v3.0"
     }
+}
+
+// This source is for the rewritten X app. Keep the legacy patch implementations in the
+// repository, but do not offer them beside NewX patches in Manager: selecting them on 12.34
+// would enter the removed settings_root.xml / legacy model code paths.
+tasks.withType<Jar>().configureEach {
+    exclude(
+        "app/crimera/patches/twitter/**",
+        "app/crimera/patches/instagram/**",
+        "app/revanced/patches/**",
+        "extensions/twitter.mpe",
+        "extensions/instagram.mpe",
+    )
 }
 
 dependencies {
