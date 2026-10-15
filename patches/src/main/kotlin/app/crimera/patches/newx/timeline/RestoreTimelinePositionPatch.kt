@@ -71,6 +71,33 @@ private const val SAVE_LOADED_POSITION_LABEL = "piko_newx_restore_position_save_
 private const val RESTORE_TEMPORARY_REGISTER_COUNT = 2
 private const val FALLBACK_RESTORE_TEMPORARY_REGISTER_COUNT = 3
 
+/** Fresh locals avoid the allocator's conservative stop at native switch instructions. */
+internal fun insertTimelinePositionCapture(
+    method: MutableMethod,
+    index: Int,
+    capture: MethodReference,
+    timelineRegister: Int,
+    holderRegister: Int,
+    reservedStart: Int,
+) {
+    if (reservedStart < 0 || reservedStart > RegisterLimit.BYTE.maximum ||
+        reservedStart + 3 != method.p0Register ||
+        timelineRegister in reservedStart until method.p0Register ||
+        holderRegister in reservedStart until method.p0Register ||
+        capture.parameterTypes.size != 3 || capture.returnType != "Z") {
+        throw PatchException("NewX timeline capture has no byte-sized reserved result register")
+    }
+    method.insertHook(index, relocateBranchTargets = true) {
+        move(reservedStart, method.p0Register, capture.parameterTypes[0].toString())
+        move(reservedStart + 1, timelineRegister, capture.parameterTypes[1].toString())
+        move(reservedStart + 2, holderRegister, capture.parameterTypes[2].toString())
+        invokeStatic(capture, reservedStart, reservedStart + 1, reservedStart + 2)
+        moveResult(reservedStart, "Z")
+        ifNez(reservedStart, Target.Original)
+        goto(Target.AfterOriginal(1))
+    }
+}
+
 private object NewXScrollPositionHolderFingerprint : Fingerprint(
     definingClass = "Lcom/x/urt/",
     name = "toString",
@@ -757,15 +784,7 @@ val restoreTimelinePositionPatch =
                 constInt(0, 0)
                 returnValue(0)
             }
-            saveMethod.insertHook(mapPutIndex,
-                excludedRegisters = listOf(saveTimelineRegister, saveHolderRegister, saveMapRegister, saveMethod.p0Register),
-                relocateBranchTargets = true,
-            ) {
-                val captured = scratchRegister(RegisterLimit.BYTE)
-                invokeStatic(capture, saveMethod.p0Register, saveTimelineRegister, saveHolderRegister)
-                moveResult(captured, "Z")
-                ifNez(captured, Target.Original)
-                goto(Target.AfterOriginal(1))
-            }
+            insertTimelinePositionCapture(saveMethod, mapPutIndex, capture, saveTimelineRegister,
+                saveHolderRegister, originalSaveMethod.implementation!!.registerCount)
         }
     }

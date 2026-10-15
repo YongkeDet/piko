@@ -123,6 +123,7 @@ internal data class ImmersiveActionBarSafeAreaHook(
     val windowInsetsHolderProvider: MethodReference,
     val navigationBarsField: FieldReference,
     val insetsPaddingCall: MethodReference,
+    val stagingRegister: Int? = null,
 )
 
 /**
@@ -788,7 +789,8 @@ private const val INSETS_BRIDGE = "Lapp/morphe/extension/newx/misc/ReplyBarInset
 internal fun reserveImmersiveInsetsCall(hook: ImmersiveActionBarSafeAreaHook): ImmersiveActionBarSafeAreaHook {
     val expanded = hook.method.cloneMutable(additionalRegisters = hook.method.numberOfParameterRegisters + 2)
     val index = hook.actionBarCallIndex + hook.method.numberOfParameterRegistersLogical
-    return hook.copy(method = expanded, actionBarCallIndex = index, actionBarCall = expanded.instructions[index])
+    return hook.copy(method = expanded, actionBarCallIndex = index, actionBarCall = expanded.instructions[index],
+        stagingRegister = hook.method.implementation!!.registerCount)
 }
 
 // Keep the field access in a small bridge. The target's Compose frame can have every low
@@ -817,12 +819,22 @@ internal fun emitImmersiveInsetsBridge(
 }
 
 internal fun applyImmersiveActionBarSafeAreaHook(hook: ImmersiveActionBarSafeAreaHook) {
+    // reserveImmersiveInsetsCall owns exactly these two new locals. The generic liveness
+    // search stops at switches before it can classify unused fresh registers as free.
+    val staging = hook.stagingRegister ?: throw PatchException("NewX reply-bar call frame was not expanded")
+    if (staging < 0 || staging + 2 != hook.method.p0Register ||
+        hook.modifierRegister in staging until staging + 2 ||
+        hook.composerRegister in staging until staging + 2) {
+        throw PatchException("NewX reply-bar bridge has no reserved argument registers")
+    }
     hook.method.insertHook(
         index = hook.actionBarCallIndex,
         excludedRegisters = listOf(hook.modifierRegister, hook.composerRegister),
         relocateBranchTargets = true,
     ) {
-        invokeStatic(methodReference(INSETS_BRIDGE), hook.modifierRegister, hook.composerRegister)
+        move(staging, hook.modifierRegister, MODIFIER_DESCRIPTOR)
+        move(staging + 1, hook.composerRegister, COMPOSER_DESCRIPTOR)
+        invokeStatic(methodReference(INSETS_BRIDGE), staging, staging + 1)
         moveResult(hook.modifierRegister, "Ljava/lang/Object;")
         checkCast(hook.modifierRegister, MODIFIER_DESCRIPTOR)
     }

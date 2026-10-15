@@ -15,6 +15,8 @@ import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.HiddenApiRestriction
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.builder.MethodImplementationBuilder
+import com.android.tools.smali.dexlib2.builder.instruction.BuilderInstruction31t
+import com.android.tools.smali.dexlib2.builder.instruction.BuilderPackedSwitchPayload
 import com.android.tools.smali.dexlib2.immutable.ImmutableAnnotation
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethodParameter
@@ -162,6 +164,13 @@ class HidePostReplyBarPatchTest {
                 invoke-static/range {v0 .. v31}, Lapp/crimera/test/Sink;->consume($consumeSignature)V
             """.trimIndent(),
         )
+        // The allocator intentionally stops at a switch. A fresh but unused local therefore
+        // cannot be discovered by scratchRegister, even after growing this frame.
+        val implementation = method.implementation!!
+        val exit = implementation.newLabelForIndex(method.instructions.lastIndex)
+        implementation.addInstruction(BuilderPackedSwitchPayload(0, listOf(exit)))
+        val payload = implementation.newLabelForIndex(method.instructions.lastIndex)
+        implementation.addInstruction(2, BuilderInstruction31t(Opcode.PACKED_SWITCH, 0, payload))
         return method
     }
 
