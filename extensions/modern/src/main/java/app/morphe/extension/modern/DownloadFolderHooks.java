@@ -113,7 +113,7 @@ public final class DownloadFolderHooks {
     public static int update(ContentResolver resolver, Uri document, ContentValues values,
             String selection, String[] selectionArgs) {
         // DocumentsProvider has no MediaStore IS_PENDING column. X calls this after closing output.
-        if (PENDING_DOCUMENTS.contains(document) && values != null && values.size() == 1
+        if (PENDING_DOCUMENTS.contains(document) && values != null
                 && Integer.valueOf(0).equals(values.getAsInteger(MediaStore.MediaColumns.IS_PENDING))) {
             PENDING_DOCUMENTS.remove(document);
             return 1;

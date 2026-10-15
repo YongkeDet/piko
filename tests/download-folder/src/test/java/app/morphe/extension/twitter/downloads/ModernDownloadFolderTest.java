@@ -133,6 +133,21 @@ public class ModernDownloadFolderTest {
     }
 
     @Test
+    public void completionAcceptsTheOriginalMediaMetadataAlongsideThePendingFlag() throws Exception {
+        DownloadFolderHooks.saveFolder(context, first, READ_WRITE);
+        ContentValues metadata = values("video.mp4", "video/mp4");
+        Uri document = DownloadFolderHooks.insert(resolver, VIDEOS, metadata);
+        try (OutputStream output = resolver.openOutputStream(document)) {
+            assertNotNull(output);
+            output.write(new byte[]{4, 7}, 0, 2);
+        }
+        metadata.put(MediaStore.MediaColumns.IS_PENDING, 0);
+        assertEquals(1, DownloadFolderHooks.update(resolver, document, metadata, null, null));
+        assertEquals(0, media.updates);
+        assertArrayEquals(new byte[]{4, 7}, Files.readAllBytes(documents.file("first/video.mp4").toPath()));
+    }
+
+    @Test
     public void changingTheFolderDoesNotMoveAnInFlightSave() throws Exception {
         DownloadFolderHooks.saveFolder(context, first, READ_WRITE);
         Uri document = DownloadFolderHooks.insert(resolver, VIDEOS, values("video.mp4", "video/mp4"));
@@ -227,6 +242,9 @@ public class ModernDownloadFolderTest {
         boolean writable = true;
         int deletes;
         Documents(File root) { super(root); }
+        @Override public boolean isChildDocument(String parent, String document) {
+            return document.startsWith(parent + "/");
+        }
         @Override public Cursor queryDocument(String id, String[] projection) {
             MatrixCursor cursor = new MatrixCursor(new String[]{DocumentsContract.Document.COLUMN_FLAGS});
             cursor.addRow(new Object[]{writable ? DocumentsContract.Document.FLAG_DIR_SUPPORTS_CREATE : 0});
