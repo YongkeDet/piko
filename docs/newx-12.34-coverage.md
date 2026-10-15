@@ -1,14 +1,13 @@
 # X 12.34 迁移范围与验证边界
 
-本分支发布的是 NewX 补丁集，包含 52 个可选择补丁，默认启用 46 个。
+本分支发布的是 NewX 补丁集，包含 54 个可选择补丁，默认启用 48 个。
 旧版 Piko 的设置、View 和模型接口已发生变化，不能把旧版 73 项选择原封不动用于新版。
 
 “新版对应”表示有相应新版实现；“部分对应”明确列出范围差异；“尚未迁移”的功能
 没有用空实现代替，也没有通过忽略异常伪装为成功。下表按仓库旧版 Twitter 源码中的公开补丁名称列出，
 不假设它与某个用户保存的 73 项选择完全一致。
 
-补丁应用、APK 重建、静态字节码检查均不能代替手机上的功能验证。登录、下载、滚动、主题等
-真实操作尚未在设备上测试；旧目标只保留原有路径及形状测试，未获得旧 APK 做整包回归。
+用户已反馈 `3.10.0-custom-newx.1` 可正常使用；这不等于逐项验证所有功能。`.2` 新增项目已做构建和整包修补验证，仍需手机验证交互。旧目标只保留原有路径及形状测试，未获得旧 APK 做整包回归。
 
 | 旧版名称 | 状态 | 新版对应或限制 |
 | --- | --- | --- |
@@ -17,7 +16,7 @@
 | Block update screen | 尚未迁移 | 本次 NewX 补丁包不提供此旧版功能 |
 | Bring back twitter | 新版对应 | Restore Twitter branding（可选） |
 | Change app icon | 部分对应 | Restore Twitter branding 提供鸟图标；旧版其他图标选项未迁移 |
-| Clear tracking params | 尚未迁移 | 本次 NewX 补丁包不提供此旧版功能 |
+| Clear tracking params | 新版对应 | Custom sharing domain → 清除分享链接中的追踪参数；仅清理 X/Twitter 帖子链接，保留其他查询参数和编码 |
 | Control video auto scroll | 部分对应 | Disable video player scrolling 目前提供关闭滚动的控制 |
 | Custom download folder | 新版对应 | Inline download button / Redirect downloads to chosen folder；图片和视频分别使用 SAF 目录 |
 | Custom emoji font | 新版对应 | Custom font → Custom emoji font |
@@ -45,7 +44,7 @@
 | Enable PiP mode automatically | 尚未迁移 | 本次 NewX 补丁包不提供此旧版功能 |
 | Enable Undo Posts | 尚未迁移 | 本次 NewX 补丁包不提供此旧版功能 |
 | Force enable translate | 新版对应 | Force translate option |
-| Handle custom twitter links | 尚未迁移 | 本次 NewX 补丁包不提供此旧版功能 |
+| Handle custom twitter links | 新版对应 | Handle custom links；注册镜像域名并通过原生入口打开，需在 Android 的默认打开方式中启用这些链接 |
 | Hide badges from navigation bar icons | 新版对应 | Customize navigation bar → Hide badges（导航栏编辑器内） |
 | Hide Banner | 新版对应 | Hide new posts pill |
 | Hide bookmark icon in timeline | 新版对应 | Customize inline actions → AddRemoveBookmarks |
@@ -54,7 +53,7 @@
 | Hide FAB | 新版对应 | Hide compose button |
 | Hide FAB Menu Buttons | 部分对应 | Hide compose button 可隐藏整体；旧版各子按钮开关尚未迁移 |
 | Hide followed by context | 尚未迁移 | 本次 NewX 补丁包不提供此旧版功能 |
-| Hide hidden replies | 尚未迁移 | 本次 NewX 补丁包不提供此旧版功能 |
+| Hide hidden replies | 尚未迁移 | 12.34 帖子模型中未发现旧 hasHiddenReplies 对应字段，本次放弃完整迁移；帖子菜单可隐藏“查看隐藏回复”入口，但范围不同 |
 | Hide immersive player | 部分对应 | Disable video player scrolling 仅控制播放器滚动 |
 | Hide Live Threads | 尚未迁移 | 本次 NewX 补丁包不提供此旧版功能 |
 | Hide nudge button | 尚未迁移 | 本次 NewX 补丁包不提供此旧版功能 |
@@ -63,7 +62,7 @@
 | Hide recommendation items | 部分对应 | Hide who to follow / Hide Discover more；旧版其他推荐项未逐一迁移 |
 | Hide Recommended Users | 部分对应 | Hide who to follow 覆盖时间线和个人资料推荐；关注后弹出入口未真机确认 |
 | Hook feature flag | 新版对应 | Feature switch overrides |
-| Import/Export login token | 尚未迁移 | 本次 NewX 补丁包不提供此旧版功能 |
+| Import/Export login token | 尚未迁移 | 未验证新版鉴权及令牌恢复接口，本次放弃迁移 |
 | Legacy share links | 尚未迁移 | 本次 NewX 补丁包不提供此旧版功能 |
 | Log server response | 部分对应 | Server error logging 记录错误；并非旧版所有响应日志 |
 | More information on profile | 尚未迁移 | 本次 NewX 补丁包不提供此旧版功能 |
@@ -76,15 +75,24 @@
 | Remove premium upsell | 新版对应 | Hide premium upsell |
 | Remove search suggestions | 尚未迁移 | 本次 NewX 补丁包不提供此旧版功能 |
 | Remove view count | 新版对应 | Customize inline actions → ViewCount |
-| Restore legacy follower lists | 尚未迁移 | 本次 NewX 补丁包不提供此旧版功能 |
+| Restore legacy follower lists | 尚未迁移 | 未发现可可靠恢复的旧版列表实现，本次放弃迁移 |
 | Round off numbers | 尚未迁移 | 本次 NewX 补丁包不提供此旧版功能 |
 | Selectable Text | 尚未迁移 | 本次 NewX 补丁包不提供此旧版功能 |
 | Share Tweet as Image | 新版对应 | Share post as image（可选） |
-| Show changelogs | 尚未迁移 | 本次 NewX 补丁包不提供此旧版功能 |
+| Show changelogs | 部分对应 | Show changelog → 高级设置中的本 fork 发布说明链接；未迁移安装新补丁后自动弹窗 |
 | Show poll results | 新版对应 | Show poll results |
 | Show post source label | 尚未迁移 | 本次 NewX 补丁包不提供此旧版功能 |
 | Show sensitive media | 新版对应 | Show sensitive media |
-| Support external downloader | 尚未迁移 | 本次 NewX 补丁包不提供此旧版功能 |
+| Support external downloader | 部分对应 | Inline download button → 显示外部下载器按钮；通过系统分享面板发送当前媒体直链，未迁移旧版按指定包名发送帖子链接的流程 |
+
+## `.2` 汉化与补齐范围
+
+- Piko 的设置标题、说明、选择项、设置编辑器和弹窗已补齐简体中文；媒体选择器、清晰度选择、下载通知、合并图片和崩溃提示也使用中文资源。汉化跟随 Android 的应用语言/系统语言，技术标识符、用户名、路径和文件名模板变量保留原值。
+- 共补齐 569 条 NewX 简体中文资源，另有 2 条共享设置资源；聚合测试要求所有可翻译默认资源都存在中文且格式占位符一致。
+- 外部下载器开关默认关闭：**Piko 设置 → 帖子与媒体 → 帖子内下载 → 显示外部下载器按钮**；在媒体选择器中点击箭头，通过系统分享面板选择支持媒体链接的下载器。
+- 自定义链接默认包含 `vxtwitter.com`、`fixvx.com`、`fxtwitter.com`、`fixupx.com`、`twittpr.com`、`xcancel.com` 及其子域名。可在 Morphe 的 `NewX: Handle custom links` 选项中修改域名列表，重新修补后到 **Android 应用信息 → 默认打开方式/打开支持的链接** 中启用。系统不会自动验证这些域名。
+- 追踪参数清理只针对分享路径中实际经过 `ShareUrlResolver` 的 X/Twitter 帖子链接；不改写其他网站、搜索链接或正文内容。
+- 其余未迁移项按用户“无法可靠实现就放弃”的要求保留缺失，不用空补丁或忽略异常替代。
 
 ## 当前可选补丁
 
@@ -101,6 +109,8 @@
 | NewX: Crash logs | 默认 |
 | NewX: Custom font | 默认 |
 | NewX: Custom sharing domain | 默认 |
+| NewX: Handle custom links | 默认 |
+| NewX: Show changelog | 默认 |
 | NewX: Customize drawer items | 默认 |
 | NewX: Theme | 默认 |
 | NewX: Feature switch overrides | 默认 |

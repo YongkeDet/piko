@@ -1,0 +1,110 @@
+{
+  "all": {
+    "applied": 54,
+    "failed": 0,
+    "rebuilding": true,
+    "bytes": 121292740,
+    "sha256": "d302973c059ca02959e63ec3c10fa187aba0011e370fab907b56b16ee9d839a6"
+  },
+  "default": {
+    "applied": 48,
+    "failed": 0,
+    "rebuilding": true,
+    "bytes": 120425112,
+    "sha256": "4d3f26e26718a6fc0da2ba2c32f686f3fcc146beb44ca0218d7b07761fe8325c"
+  },
+  "chineseResources": {
+    "expected": 571,
+    "compiled": 571,
+    "missing": [],
+    "placeholders": "match"
+  },
+  "activities": [
+    {
+      "name": "app.morphe.extension.newx.settings.NewXSettingsActivity",
+      "exported": "false",
+      "hosts": []
+    },
+    {
+      "name": "app.morphe.extension.crimera.downloader.FolderPickerActivity",
+      "exported": "false",
+      "hosts": []
+    },
+    {
+      "name": "app.morphe.extension.newx.misc.CustomLinkActivity",
+      "exported": "true",
+      "hosts": [
+        "vxtwitter.com",
+        "*.vxtwitter.com",
+        "fixvx.com",
+        "*.fixvx.com",
+        "fxtwitter.com",
+        "*.fxtwitter.com",
+        "fixupx.com",
+        "*.fixupx.com",
+        "twittpr.com",
+        "*.twittpr.com",
+        "xcancel.com",
+        "*.xcancel.com"
+      ]
+    }
+  ],
+  "apk": {
+    "package": "com.twitter.android",
+    "version": "12.34.0-prod.01",
+    "versionCode": 312340001,
+    "minSdk": 29,
+    "targetSdk": 36,
+    "settingsResources": {
+      "piko_newx_settings_title": true,
+      "piko_newx_inline_download_options_title": true,
+      "piko_newx_download_options_folder_images": true,
+      "piko_newx_download_options_folder_videos": true,
+      "piko_newx_hide_community_notes_title": true,
+      "piko_newx_force_translate_title": true,
+      "piko_newx_hide_promote_title": true
+    }
+  },
+  "nativeLibraries": {
+    "count": 19,
+    "architectures": [
+      "arm64-v8a"
+    ]
+  },
+  "mppDex": {
+    "missingExtensionOwners": [],
+    "legacyPatchClasses": [],
+    "methods": 33713,
+    "dexFiles": 3,
+    "extensionClasses": 3815,
+    "classes": 5264,
+    "extensionReferences": 3487
+  },
+  "apkDex": {
+    "legacyPatchClasses": [],
+    "methods": 600256,
+    "dexFiles": 14,
+    "extensionClasses": 3815,
+    "classes": 120937,
+    "extensionReferences": 3489,
+    "missingExtensionOwners": []
+  },
+  "extensions": {
+    "extensions/newx.mpe": "fe3e2082f6e6f64bab1f2c380a077281235208055dd71f4e6c305a26c8a29367",
+    "extensions/shared.mpe": "ad486f4bf4537b12e4d0efaff8b809cf550d6f9eea4bff4549d481a9da105396"
+  },
+  "tests": [
+    {
+      "report": "patches/build/reports/tests/test/index.html",
+      "tests": 73,
+      "failures": 0,
+      "skipped": 0
+    },
+    {
+      "report": "extensions/newx/build/reports/tests/testDebugUnitTest/index.html",
+      "tests": 254,
+      "failures": 0,
+      "skipped": 0
+    }
+  ]
+}
