@@ -49,7 +49,7 @@ jobs:
           gh release create "$RELEASE_TAG" \
             dist/patches-3.10.0.mpp dist/SHA256SUMS \
             --repo "$GITHUB_REPOSITORY" \
-            --target "$SOURCE_SHA" \
+            --target "$GITHUB_SHA" \
             --title 'Piko 3.10.0 - Custom download folder' \
             --notes-file dist/RELEASE_NOTES.md \
             --latest
