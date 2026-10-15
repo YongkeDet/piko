@@ -6,6 +6,7 @@ import app.crimera.bytecode.insertHook
 import app.crimera.bytecode.methodReference
 import app.crimera.patches.common.requireExactlyOne
 import app.crimera.patches.newx.models.fieldForToStringLabel
+import app.crimera.patches.newx.models.booleanModelFields
 import app.crimera.patches.newx.models.newXPostModelResolutionPatch
 import app.crimera.patches.newx.models.resolvedNewXPostModels
 import app.crimera.patches.newx.settings.Categories
@@ -40,7 +41,14 @@ private fun applyPostPolicy(settingId: String, policies: List<PostFieldPolicy>) 
         owner.methods.filter { it.name == "toString" && it.parameterTypes.isEmpty() && it.returnType == "Ljava/lang/String;" },
     )
     val replacements = policies.map { policy ->
-        val field = toStringMethod.fieldForToStringLabel(policy.label)
+        val field = if (policy.type == "Z") {
+            booleanModelFields(toStringMethod) { reference ->
+                context.classDefByOrNull(reference.definingClass)?.methods?.singleOrNull { candidate ->
+                    candidate.name == reference.name && candidate.returnType == reference.returnType &&
+                        candidate.parameterTypes.map(CharSequence::toString) == reference.parameterTypes.map(CharSequence::toString)
+                }
+            }[policy.label] ?: throw PatchException("Missing boolean post policy label: ${policy.label}")
+        } else toStringMethod.fieldForToStringLabel(policy.label)
         if (policy.type?.let { field.type != it } ?: !field.type.startsWith("L")) {
             throw PatchException("Unsupported NewX post policy field for ${policy.label}: $field")
         }
@@ -72,11 +80,10 @@ internal fun injectPostPolicyExit(
     settingId: String,
     replacements: List<Pair<FieldReference, Int>>,
 ) {
-    val exit = requireExactlyOne(
-        "normal NewX post constructor exit in $method",
-        method.instructions.withIndex().filter { it.value.opcode == Opcode.RETURN_VOID }.map { it.index },
-    )
-    method.insertHook(exit, excludedRegisters = listOf(method.p0Register), relocateBranchTargets = true) {
+    val exits = method.instructions.withIndex().filter { it.value.opcode == Opcode.RETURN_VOID }.map { it.index }
+    if (exits.isEmpty()) throw PatchException("NewX post constructor has no normal exit: $method")
+    exits.sortedDescending().forEach { exit ->
+      method.insertHook(exit, excludedRegisters = listOf(method.p0Register), relocateBranchTargets = true) {
         val receiver = scratchRegister(RegisterLimit.FOUR_BIT)
         val value = scratchRegister(RegisterLimit.FOUR_BIT)
         constString(value, settingId)
@@ -88,6 +95,7 @@ internal fun injectPostPolicyExit(
             constInt(value, replacement)
             iput(value, receiver, field)
         }
+      }
     }
 }
 

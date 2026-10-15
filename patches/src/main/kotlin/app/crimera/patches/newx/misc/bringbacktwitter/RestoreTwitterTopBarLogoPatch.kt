@@ -10,8 +10,16 @@ import app.crimera.bytecode.insertHook
 import app.crimera.patches.common.INTEGER_LITERAL_OPCODES
 import app.crimera.patches.common.classDefFlatMap
 import app.crimera.patches.common.requireExactlyOne
+import app.crimera.patches.utils.scopedMatchAllOrNull
 import app.crimera.patches.newx.utils.Constants.COMPATIBILITY_NEW_X
 import app.morphe.patcher.extensions.InstructionExtensions.instructions
+import app.morphe.patcher.Fingerprint
+import app.morphe.patcher.fieldAccess
+import app.morphe.patcher.literal
+import app.morphe.patches.all.misc.resources.ResourceType
+import app.morphe.patches.all.misc.resources.getResourceId
+import app.morphe.patches.all.misc.resources.resourceMappingPatch
+import app.morphe.util.getReference
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
@@ -25,6 +33,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
+import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.StringReference
 import kotlin.math.ceil
 import kotlin.math.cos
@@ -380,6 +389,46 @@ private fun mutableLogoMethod(key: LogoMethodKey): MutableMethod =
         },
     )
 
+/** The current refresh renderer consumes the shared drawable icon instead of procedural arms. */
+internal fun staticLogoFactoryField(method: Method, resourceId: Long): FieldReference {
+    val instructions = method.implementation?.instructions?.toList().orEmpty()
+    val index = requireExactlyOne("NewX static X icon resource in $method", instructions.indices.filter {
+        (instructions[it] as? NarrowLiteralInstruction)?.narrowLiteral?.toLong() == resourceId
+    })
+    val resourceRegister = (instructions[index] as? OneRegisterInstruction)?.registerA
+        ?: throw PatchException("NewX static icon resource has no destination")
+    val call = instructions.getOrNull(index + 1) as? FiveRegisterInstruction
+        ?: throw PatchException("NewX static icon has no constructor call")
+    val constructor = instructions[index + 1].getReference<MethodReference>()
+        ?: throw PatchException("NewX static icon constructor is missing")
+    val store = instructions.getOrNull(index + 2)
+    val field = store?.getReference<FieldReference>()
+        ?: throw PatchException("NewX static icon has no singleton field")
+    if (constructor.name != "<init>" || constructor.parameterTypes.map(CharSequence::toString) != listOf("I") ||
+        call.registerCount != 2 || call.registerD != resourceRegister || store.opcode != Opcode.SPUT_OBJECT ||
+        (store as? OneRegisterInstruction)?.registerA != call.registerC || field.type != constructor.definingClass) {
+        throw PatchException("Unsupported NewX drawable icon factory in $method")
+    }
+    return field
+}
+
+context(context: BytecodePatchContext)
+private fun hasStaticRefreshLogo(): Boolean {
+    val resourceId = getResourceId(ResourceType.DRAWABLE, "ic_vector_x").toLong()
+    val factories = Fingerprint(
+        definingClass = "Lcom/x/icons/", name = "<clinit>", filters = listOf(literal(resourceId)),
+    ).scopedMatchAllOrNull().orEmpty()
+    if (factories.isEmpty()) return false
+    val field = staticLogoFactoryField(requireExactlyOne("NewX drawable icon registry", factories).originalMethod, resourceId)
+    val renderers = Fingerprint(filters = listOf(fieldAccess(
+        opcode = Opcode.SGET_OBJECT, definingClass = field.definingClass, name = field.name, type = field.type,
+    )), custom = { method, _ ->
+        method.returnType == "V" && method.parameterTypes.firstOrNull()?.toString()?.startsWith(REFRESH_PACKAGE) == true &&
+            "Landroidx/compose/runtime/Composer;" in method.parameterTypes.map(CharSequence::toString)
+    }).matchAllOrNull().orEmpty()
+    return requireExactlyOne("NewX static refresh-logo renderer", renderers).originalMethod.implementation != null
+}
+
 /** Overwrites the register the original path-data `const-string` just wrote, before its consumer reads it. */
 internal fun MutableMethod.replaceGlyphPath(site: LogoHit.Glyph, pathData: String) {
     insertHook(site.index + 1, relocateBranchTargets = true) { constString(site.register, pathData) }
@@ -409,9 +458,15 @@ private class LogoEdit(val owner: LogoMethodKey, val index: Int, val apply: (Mut
 val restoreTwitterTopBarLogoPatch =
     bytecodePatch {
         compatibleWith(COMPATIBILITY_NEW_X)
+        dependsOn(resourceMappingPatch)
 
         execute {
-            val sites = requireLogoSites(scanLogo()) ?: return@execute
+            val hits = scanLogo()
+            if (hits.none { it is LogoHit.XLogoClass } && hits.any { it is LogoHit.RefreshClass } && hasStaticRefreshLogo()) {
+                // RestoreTwitterBrandingPatch replaces the same ic_vector_x resource used here.
+                return@execute
+            }
+            val sites = requireLogoSites(hits) ?: return@execute
             val pathData = birdPathData(readBirdAsset())
             val arms = birdSweepArms(pathData, sites.strokes.size)
 

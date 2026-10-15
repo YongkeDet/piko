@@ -1008,7 +1008,6 @@ private fun patchCardNavigation(
             methodCall(
                 opcode = Opcode.INVOKE_STATIC,
                 definingClass = "Lcom/x/navigation/",
-                parameters = listOf(STRING_DESCRIPTOR, "L"),
                 returnType = STRING_DESCRIPTOR,
             ),
             methodCall(
@@ -1026,7 +1025,6 @@ private fun patchCardNavigation(
         )
     val legacyMatches =
         Fingerprint(
-            definingClass = "Landroidx/compose/animation/core/",
             parameters = listOf("Ljava/lang/Object;"),
             returnType = "Ljava/lang/Object;",
             filters =
@@ -1038,10 +1036,9 @@ private fun patchCardNavigation(
                         returnType = STRING_DESCRIPTOR,
                     ),
                 ) + tailFilters,
-        ).scopedMatchAllOrNull()
+        ).matchAllOrNull()
     val inlinedMatches =
         Fingerprint(
-            definingClass = "Landroidx/compose/animation/core/",
             parameters = listOf("Ljava/lang/Object;"),
             returnType = "Ljava/lang/Object;",
             filters =
@@ -1049,7 +1046,7 @@ private fun patchCardNavigation(
                     instanceOf(cardUrlActionType),
                     fieldAccess(opcode = Opcode.IGET_OBJECT, type = STRING_DESCRIPTOR),
                 ) + tailFilters,
-        ).scopedMatchAllOrNull()
+        ).matchAllOrNull()
 
     val shapes = mutableListOf<CardNavigationShape>()
     legacyMatches?.let { matches ->
@@ -1163,6 +1160,13 @@ private fun verifyCardNavigationConsumes(
 ) {
     val navigation = instructions.getOrNull(navigationIndex)
         ?: throw PatchException("Card navigation call is missing")
+    val reference = navigation.getReference<MethodReference>()
+        ?: throw PatchException("Card navigation call has no method reference")
+    val parameters = reference.parameterTypes.map(CharSequence::toString)
+    if (parameters.size !in 2..3 || parameters[0] != STRING_DESCRIPTOR ||
+        !parameters[1].startsWith("L") || parameters.drop(2).any { it != "Z" }) {
+        throw PatchException("Unsupported card navigation parameter roles: $reference")
+    }
     val consumed = navigation.registersUsed.firstOrNull()
     if (consumed != urlRegister) {
         throw PatchException(

@@ -10,6 +10,7 @@ import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patcher.util.smali.toInstruction
 import app.morphe.util.getReference
 import app.morphe.util.p0Register
+import app.crimera.patches.newx.models.booleanModelFields
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.HiddenApiRestriction
 import com.android.tools.smali.dexlib2.Opcode
@@ -30,6 +31,46 @@ import kotlin.test.assertTrue
 
 class PostPoliciesPatchTest {
     private val owner = "Lapp/crimera/test/PostPolicyFixture;"
+
+    @Test
+    fun `R8 boolean append helper keeps label and field order`() {
+        val helper = bytecodeMethod("Lapp/crimera/test/AppendHelper;", "append", listOf(
+            "Ljava/lang/String;", "Ljava/lang/String;", "Ljava/lang/StringBuilder;", "Z", "Z",
+        ), "V", 5, true, """
+            invoke-virtual {p2, p3}, Ljava/lang/StringBuilder;->append(Z)Ljava/lang/StringBuilder;
+            invoke-virtual {p2, p0}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
+            invoke-virtual {p2, p4}, Ljava/lang/StringBuilder;->append(Z)Ljava/lang/StringBuilder;
+            invoke-virtual {p2, p1}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
+            return-void
+        """.trimIndent())
+        val model = bytecodeMethod(owner, "toString", emptyList(), "Ljava/lang/String;", 6, false, """
+            new-instance v0, Ljava/lang/StringBuilder;
+            invoke-direct {v0}, Ljava/lang/StringBuilder;-><init>()V
+            const-string v1, ", loaded="
+            invoke-virtual {v0, v1}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
+            const-string v1, ", translatable="
+            const-string v2, ", language="
+            iget-boolean v3, p0, $owner->loaded:Z
+            iget-boolean v4, p0, $owner->translatable:Z
+            invoke-static {v1, v2, v0, v3, v4}, Lapp/crimera/test/AppendHelper;->append(Ljava/lang/String;Ljava/lang/String;Ljava/lang/StringBuilder;ZZ)V
+            invoke-virtual {v0}, Ljava/lang/StringBuilder;->toString()Ljava/lang/String;
+            move-result-object v0
+            return-object v0
+        """.trimIndent())
+        val fields = booleanModelFields(model) { helper }
+        assertEquals(mapOf(
+            ", loaded=" to "$owner->loaded:Z",
+            ", translatable=" to "$owner->translatable:Z",
+        ), fields.mapValues { it.value.toString() })
+    }
+
+    @Test
+    fun `every normal serialization constructor exit applies the policy`() {
+        val method = fixture()
+        method.addInstructionsWithLabels(method.instructions.lastIndex, "return-void")
+        injectPostPolicyExit(method, "newx.test.multiple_exits", listOf(ImmutableFieldReference(owner, "flag", "Z") to 1))
+        assertEquals(2, method.instructions.count { it.opcode == Opcode.IPUT_BOOLEAN })
+    }
 
     @Test
     fun `serialization exit branches run the guard and disabled policy skips its writes`() {
@@ -94,6 +135,17 @@ class PostPoliciesPatchTest {
             if-eqz v0, :exit
             nop
         """.trimIndent(), ExternalLabel("exit", originalReturn))
+        return method
+    }
+
+    private fun bytecodeMethod(type: String, name: String, parameters: List<String>, result: String, registers: Int, static: Boolean, body: String): MutableMethod {
+        val implementation = MethodImplementationBuilder(registers)
+        val method = MutableMethod(ImmutableMethod(type, name,
+            parameters.map { ImmutableMethodParameter(it, emptySet(), null) }, result,
+            AccessFlags.PUBLIC.value or if (static) AccessFlags.STATIC.value else 0,
+            emptySet<ImmutableAnnotation>(), emptySet<HiddenApiRestriction>(), implementation.methodImplementation,
+        ))
+        method.addInstructionsWithLabels(0, body)
         return method
     }
 }

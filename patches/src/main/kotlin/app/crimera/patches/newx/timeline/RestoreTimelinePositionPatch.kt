@@ -684,9 +684,10 @@ val restoreTimelinePositionPatch =
                             }
                     },
                 )
-            // Returning before the map write must skip only that write.
-            if (saveMethod.instructions.getOrNull(mapPutIndex + 1)?.opcode != Opcode.RETURN_VOID) {
-                throw PatchException("NewX timeline-position map write is not the save branch's last action")
+            // Newer save methods also update cache/visibility bookkeeping after the map write.
+            // A non-loaded state skips this write, then continues through that native tail.
+            if (saveMethod.instructions.getOrNull(mapPutIndex + 1) == null) {
+                throw PatchException("NewX timeline-position map write has no continuation")
             }
 
             // Ranked Following uses the same shared save method as Latest Following, but
@@ -732,7 +733,7 @@ val restoreTimelinePositionPatch =
                 moveResult(saveIdentityRegister, OBJECT_DESCRIPTOR)
                 instanceOf(saveIndexRegister, saveIdentityRegister, successStateType)
                 ifNez(saveIndexRegister, Target.Local(SAVE_LOADED_POSITION_LABEL))
-                returnVoid()
+                goto(Target.AfterOriginal(1))
                 label(SAVE_LOADED_POSITION_LABEL)
                 move(saveIdentityRegister, saveMethod.p0Register, OBJECT_DESCRIPTOR)
                 iget(saveIdentityRegister, saveIdentityRegister, repositoryField)

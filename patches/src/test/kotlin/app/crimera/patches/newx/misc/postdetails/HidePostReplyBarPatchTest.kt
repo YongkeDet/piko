@@ -4,7 +4,6 @@ package app.crimera.patches.newx.misc.postdetails
 // existing inset contract, while the emitted-bytecode check proves the immersive likes/repost/share
 // row receives navigation padding before it renders rather than mutating the reply editor.
 
-import app.crimera.patches.settings.ToggleSettingDefinition
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
 import app.morphe.patcher.extensions.InstructionExtensions.instructions
 import app.morphe.patcher.patch.PatchException
@@ -78,15 +77,7 @@ class HidePostReplyBarPatchTest {
                 ),
                 "Landroidx/compose/ui/Modifier;",
             )
-        applyImmersiveActionBarSafeAreaHook(
-            ToggleSettingDefinition(
-                id = "newx.test.hide_post_reply_bar",
-                titleResourceName = "piko_newx_test_title",
-                summaryResourceName = null,
-                order = 0,
-                defaultValue = false,
-            ),
-            ImmersiveActionBarSafeAreaHook(
+        val hook = ImmersiveActionBarSafeAreaHook(
                 method = method,
                 actionBarCallIndex = 0,
                 actionBarCall = actionBarCall,
@@ -95,23 +86,34 @@ class HidePostReplyBarPatchTest {
                 windowInsetsHolderProvider = holderProvider,
                 navigationBarsField = navigationBarsField,
                 insetsPaddingCall = insetsPadding,
-            ),
         )
+        val bridgeImplementation = MethodImplementationBuilder(8)
+        bridgeImplementation.addInstruction("return-object v6".toInstruction())
+        val bridge = MutableMethod(ImmutableMethod(
+            "Lapp/morphe/extension/newx/misc/ReplyBarInsets;", "apply",
+            List(2) { ImmutableMethodParameter("Ljava/lang/Object;", emptySet(), null) },
+            "Ljava/lang/Object;", AccessFlags.PUBLIC.value or AccessFlags.STATIC.value,
+            emptySet<ImmutableAnnotation>(), emptySet<HiddenApiRestriction>(), bridgeImplementation.methodImplementation,
+        ))
+        emitImmersiveInsetsBridge(bridge, "newx.test.hide_post_reply_bar", hook)
+        applyImmersiveActionBarSafeAreaHook(hook)
 
-        val instructions = method.instructions
-        val actionBarCallIndex = instructions.indexOf(actionBarCall)
+        val instructions = bridge.instructions
         val insetFieldIndex = instructions.indexOfFirst { instruction ->
             instruction.getReference<FieldReference>() == navigationBarsField
         }
         val paddingCallIndex = instructions.indexOfFirst { instruction ->
             instruction.getReference<MethodReference>() == insetsPadding
         }
-        assertEquals(true, insetFieldIndex in 0 until actionBarCallIndex)
-        assertEquals(true, paddingCallIndex in (insetFieldIndex + 1) until actionBarCallIndex)
+        assertEquals(true, insetFieldIndex >= 0)
+        assertEquals(true, paddingCallIndex > insetFieldIndex)
         assertEquals(Opcode.MOVE_RESULT_OBJECT, instructions[paddingCallIndex + 1].opcode)
+        val caller = method.instructions
+        val bridgeCall = caller.indexOfFirst { it.getReference<MethodReference>()?.definingClass == bridge.definingClass }
+        assertEquals(true, bridgeCall in 0 until caller.indexOf(actionBarCall))
         assertEquals(
             1,
-            (instructions[paddingCallIndex + 1] as OneRegisterInstruction).registerA,
+            (caller[bridgeCall + 1] as OneRegisterInstruction).registerA,
             "the padded Modifier must replace the action row's Modifier register",
         )
     }
@@ -148,11 +150,15 @@ class HidePostReplyBarPatchTest {
     }
 
     private fun immersiveActionBarFixture(): MutableMethod {
-        val method = fixture(registerCount = 12)
+        val method = fixture(registerCount = 32)
+        // All four-bit registers are live at the action-row call on 12.34. The old inline
+        // iget-based implementation failed here while looking for a four-bit scratch register.
+        val consumeSignature = "Ljava/lang/Object;".repeat(16)
         method.addInstructionsWithLabels(
             0,
             """
                 invoke-static {v1, v8}, Lapp/crimera/test/ActionBar;->renderActionBar(Landroidx/compose/ui/Modifier;Landroidx/compose/runtime/Composer;)V
+                invoke-static/range {v0 .. v15}, Lapp/crimera/test/Sink;->consume($consumeSignature)V
             """.trimIndent(),
         )
         return method

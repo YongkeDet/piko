@@ -43,12 +43,14 @@ import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.builder.BuilderOffsetInstruction
 import com.android.tools.smali.dexlib2.iface.Method
+import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.builder.instruction.BuilderInstruction22t
 import com.android.tools.smali.dexlib2.builder.instruction.BuilderInstruction31t
 import com.android.tools.smali.dexlib2.builder.instruction.BuilderSwitchElement
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.OffsetInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.SwitchPayload
@@ -1337,7 +1339,7 @@ private fun patchXdsChromeBackground(): Pair<MutableMethod, FieldReference> {
             }
 
         val darkConstructionCount = classInitializer.findDarkSchemeConstructions(
-            schemeClass.type.toString(),
+            schemeClass,
             constructor,
         ).size == 1
         schemeResolution += "$field: singleton shape=$darkConstructionCount"
@@ -1372,7 +1374,7 @@ private fun patchXdsChromeBackground(): Pair<MutableMethod, FieldReference> {
             },
         )
     val darkSchemeConstructions =
-        classInitializer.findDarkSchemeConstructions(schemeClass.type.toString(), constructor)
+        classInitializer.findDarkSchemeConstructions(schemeClass, constructor)
     val darkConstruction =
         requireExactlyOne(
             "NewX XDS dark scheme construction for the chrome background",
@@ -1903,23 +1905,29 @@ private data class XdsDarkConstruction(
 )
 
 private fun Method.findDarkSchemeConstructions(
-    schemeDescriptor: String,
+    schemeClass: ClassDef,
     constructor: Method,
 ): List<XdsDarkConstruction> {
     val instructions = implementation?.instructions?.toList() ?: return emptyList()
-    val constructorParameters = constructor.parameterTypes.map(CharSequence::toString)
-    val firstMaskIndex = constructorParameters.indexOfFirst { parameter -> parameter == "I" }
-    if (firstMaskIndex < 0 || !constructor.hasFirstColorDefaultMaskBit()) return emptyList()
+    val factories = listOf(constructor) + schemeClass.methods.filter { candidate ->
+        candidate.toString() != constructor.toString() && candidate.delegatesFirstColorTo(constructor)
+    }
 
     return instructions.withIndex().mapNotNull { indexed ->
         val instruction = indexed.value
         val reference = instruction.getReference<MethodReference>() ?: return@mapNotNull null
-        if (reference.definingClass != schemeDescriptor ||
+        if (reference.definingClass != schemeClass.type ||
             reference.name != "<init>" ||
-            reference.returnType != "V" ||
-            reference.parameterTypes.map(CharSequence::toString) != constructorParameters ||
-            constructorParameters.firstOrNull() != "J"
+            reference.returnType != "V"
         ) {
+            return@mapNotNull null
+        }
+        val factory = requireAtMostOne("NewX XDS factory contract for $reference", factories.filter {
+            it.parameterTypes.map(CharSequence::toString) == reference.parameterTypes.map(CharSequence::toString)
+        }) ?: return@mapNotNull null
+        val constructorParameters = factory.parameterTypes.map(CharSequence::toString)
+        val firstMaskIndex = constructorParameters.indexOfFirst { parameter -> parameter == "I" }
+        if (constructorParameters.firstOrNull() != "J" || firstMaskIndex < 0 || !factory.hasFirstColorDefaultMaskBit()) {
             return@mapNotNull null
         }
 
@@ -1936,7 +1944,7 @@ private fun Method.findDarkSchemeConstructions(
         val nextInstruction = instructions.getOrNull(indexed.index + 1) ?: return@mapNotNull null
         val singletonField = nextInstruction.getReference<FieldReference>() ?: return@mapNotNull null
         if (nextInstruction.opcode != Opcode.SPUT_OBJECT ||
-            singletonField.type != schemeDescriptor ||
+            singletonField.type != schemeClass.type ||
             (nextInstruction as? OneRegisterInstruction)?.registerA != registers.startRegister
         ) {
             return@mapNotNull null
@@ -1953,6 +1961,37 @@ private fun Method.findDarkSchemeConstructions(
             return@mapNotNull null
         }
         XdsDarkConstruction(indexed.index, colorRegister)
+    }
+}
+
+/** Proves the default-mask wrapper forwards its first unmasked color to the concrete ctor. */
+internal fun Method.delegatesFirstColorTo(constructor: Method): Boolean {
+    if (name != "<init>" || parameterTypes.firstOrNull() != "J" || !hasFirstColorDefaultMaskBit()) return false
+    val body = implementation?.instructions?.toList() ?: return false
+    val calls = body.withIndex().filter { (_, instruction) ->
+        val reference = instruction.getReference<MethodReference>()
+        reference?.toString() == constructor.toString() && instruction is RegisterRangeInstruction
+    }
+    val call = requireAtMostOne("NewX XDS concrete constructor delegation in $this", calls) ?: return false
+    val colorRegister = (call.value as RegisterRangeInstruction).startRegister + 1
+    val firstParameter = implementation!!.registerCount - parameterTypes.sumOf { it.toString().registerWidth() }
+    val copies = body.withIndex().filter { (index, instruction) ->
+        val move = instruction as? TwoRegisterInstruction
+        index < call.index && instruction.opcode in setOf(Opcode.MOVE_WIDE, Opcode.MOVE_WIDE_FROM16, Opcode.MOVE_WIDE_16) &&
+            move?.registerA == colorRegister && move.registerB == firstParameter &&
+            body.subList(index + 1, call.index).none { it.writesWideRegisterPair(colorRegister) }
+    }
+    val copy = requireAtMostOne("NewX XDS unmasked first-color forwarding in $this", copies) ?: return false
+    val addresses = body.runningFold(0) { address, instruction -> address + instruction.codeUnits }
+    return body.withIndex().any { (index, instruction) ->
+        val branch = instruction as? OffsetInstruction ?: return@any false
+        if (instruction.opcode != Opcode.IF_EQZ || index == 0) return@any false
+        val mask = body[index - 1]
+        val operands = mask as? TwoRegisterInstruction ?: return@any false
+        mask.opcode in setOf(Opcode.AND_INT_LIT8, Opcode.AND_INT_LIT16) &&
+            (mask as? NarrowLiteralInstruction)?.narrowLiteral == 1 &&
+            operands.registerA == (instruction as OneRegisterInstruction).registerA &&
+            addresses[index] + branch.codeOffset == addresses[copy.index]
     }
 }
 

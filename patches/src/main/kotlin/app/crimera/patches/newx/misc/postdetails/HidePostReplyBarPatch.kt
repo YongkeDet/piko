@@ -9,8 +9,11 @@ import app.crimera.patches.newx.settings.newXToggle
 import app.crimera.patches.settings.returnVoidIfEnabled
 import app.crimera.patches.settings.settingStrings
 import app.crimera.patches.newx.utils.Constants.COMPATIBILITY_NEW_X
+import app.crimera.patches.newx.utils.Constants.SETTINGS_REGISTRY_DESCRIPTOR
+import app.crimera.patches.newx.models.patchBridge
 import app.crimera.bytecode.Target
 import app.crimera.bytecode.insertHook
+import app.crimera.bytecode.methodReference
 import app.crimera.patches.common.requireAtMostOne
 import app.crimera.patches.common.requireExactlyOne
 import app.crimera.patches.utils.scopedMatchAll
@@ -24,6 +27,8 @@ import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.util.getReference
+import app.morphe.util.cloneMutable
+import app.morphe.util.p0Register
 import app.morphe.util.registersUsed
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
@@ -776,33 +781,42 @@ private fun resolveImmersiveActionBarSafeAreaHook(
     )
 }
 
-internal fun applyImmersiveActionBarSafeAreaHook(
-    setting: ToggleSettingDefinition,
+private const val INSETS_BRIDGE = "Lapp/morphe/extension/newx/misc/ReplyBarInsets;->apply(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;"
+
+// Keep the field access in a small bridge. The target's Compose frame can have every low
+// register live, while iget needs two four-bit operands. The caller only replaces its Modifier.
+internal fun emitImmersiveInsetsBridge(
+    method: MutableMethod,
+    settingId: String,
     hook: ImmersiveActionBarSafeAreaHook,
 ) {
-    val settingRead =
-        setting.injectRead(
-            method = hook.method,
-            index = hook.actionBarCallIndex,
-            excludedRegisters = listOf(hook.modifierRegister, hook.composerRegister),
-            registerConstraint = SettingReadRegisterConstraint.FOUR_BIT,
-        )
+    method.patchBridge {
+        constString(0, settingId)
+        invokeStatic(methodReference("$SETTINGS_REGISTRY_DESCRIPTOR->getBooleanOrDefault(Ljava/lang/String;)Z"), 0)
+        moveResult(0, "Z")
+        ifEqz(0, Target.Local("unchanged"))
+        checkCast(method.p0Register, MODIFIER_DESCRIPTOR)
+        checkCast(method.p0Register + 1, COMPOSER_DESCRIPTOR)
+        invokeStatic(hook.windowInsetsHolderProvider, method.p0Register + 1)
+        moveResult(0, hook.windowInsetsHolderProvider.returnType.toString())
+        iget(0, 0, hook.navigationBarsField)
+        invokeStatic(hook.insetsPaddingCall, method.p0Register, 0)
+        moveResult(0, MODIFIER_DESCRIPTOR)
+        returnObject(0)
+        label("unchanged")
+        returnObject(method.p0Register)
+    }
+}
+
+internal fun applyImmersiveActionBarSafeAreaHook(hook: ImmersiveActionBarSafeAreaHook) {
     hook.method.insertHook(
-        index = settingRead.nextIndex,
-        // The old plain insertion left incoming labels on the action-bar call, so a path that
-        // branched straight to it still skips the padding block.
-        relocateBranchTargets = false,
+        index = hook.actionBarCallIndex,
+        excludedRegisters = listOf(hook.modifierRegister, hook.composerRegister),
+        relocateBranchTargets = true,
     ) {
-        // The toggle register doubles as the insets scratch: `if-eqz` consumed it and the
-        // setting-off path skips the block that overwrites it.
-        ifEqz(settingRead.register, Target.Original)
-        // The old smali hardcoded `invoke-static/range {vC .. vC}`; the typed API emits the 35c
-        // form while the Composer register fits four bits and that same range form when it does not.
-        invokeStatic(hook.windowInsetsHolderProvider, hook.composerRegister)
-        moveResult(settingRead.register, hook.windowInsetsHolderProvider.returnType.toString())
-        iget(settingRead.register, settingRead.register, hook.navigationBarsField)
-        invokeStatic(hook.insetsPaddingCall, hook.modifierRegister, settingRead.register)
-        moveResult(hook.modifierRegister, hook.insetsPaddingCall.returnType.toString())
+        invokeStatic(methodReference(INSETS_BRIDGE), hook.modifierRegister, hook.composerRegister)
+        moveResult(hook.modifierRegister, "Ljava/lang/Object;")
+        checkCast(hook.modifierRegister, MODIFIER_DESCRIPTOR)
     }
 }
 
@@ -949,7 +963,15 @@ val newXHidePostReplyBarPatch =
                 // 12.29's new immersive renderer owns the visible likes/repost/share row. Pad that
                 // row itself; do not force its separate no-composer spacer, which affects shared
                 // media layouts and previously introduced a blank timeline gap.
-                applyImmersiveActionBarSafeAreaHook(hidePostReplyBar, hook)
+                val bridgeOwner = mutableClassDefBy("Lapp/morphe/extension/newx/misc/ReplyBarInsets;")
+                val originalBridge = requireExactlyOne("NewX reply-bar insets bridge", bridgeOwner.methods.filter {
+                    it.name == "apply" && it.parameterTypes.map(CharSequence::toString) == listOf("Ljava/lang/Object;", "Ljava/lang/Object;")
+                })
+                val bridge = originalBridge.cloneMutable(additionalRegisters = 6)
+                bridgeOwner.methods.remove(originalBridge)
+                bridgeOwner.methods.add(bridge)
+                emitImmersiveInsetsBridge(bridge, hidePostReplyBar.id, hook)
+                applyImmersiveActionBarSafeAreaHook(hook)
             }
         }
     }
