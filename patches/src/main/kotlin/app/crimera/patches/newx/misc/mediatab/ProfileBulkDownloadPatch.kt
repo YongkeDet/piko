@@ -35,6 +35,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
+import com.android.tools.smali.dexlib2.iface.reference.StringReference
 import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 
 private const val EXTENSION = "Lapp/morphe/extension/newx/misc/ProfileBulkDownload;"
@@ -56,6 +57,20 @@ internal fun resolveBulkTimelineHost(
                 method.returnType == pagingContract && method.readFields().any { it.type == paginatorType }
         }
 })
+
+/** Native data objects keep their semantic labels when R8 renames owners and fields. */
+internal fun resolveBulkSingleton(classes: List<ClassDef>, contract: String, label: String): FieldReference =
+    requireExactlyOne("NewX bulk native $label object", classes.filter { cls ->
+        contract in cls.interfaces && cls.methods.any { method ->
+            method.name == "toString" && method.parameterTypes.isEmpty() &&
+                method.returnType == "Ljava/lang/String;" &&
+                method.implementation?.instructions?.any {
+                    it.getReference<StringReference>()?.string == label
+                } == true
+        }
+    }.flatMap { cls -> cls.fields.filter { field ->
+        AccessFlags.STATIC.isSet(field.accessFlags) && field.type == cls.type
+    } })
 
 /** All unstable native contracts are resolved here; the Java worker knows no R8 identities. */
 @Suppress("unused")
@@ -107,6 +122,16 @@ val newXProfileBulkDownloadPatch = bytecodePatch(
         val callbackField = requireExactlyOne("NewX bulk callback component field", callback.fields.filter {
             it.type == hostInterface.type && !AccessFlags.STATIC.isSet(it.accessFlags)
         })
+        val eventDispatch = requireExactlyOne("NewX bulk timeline event dispatch", callback.methods.flatMap { method ->
+            method.implementation?.instructions?.mapNotNull { instruction ->
+                instruction.getReference<MethodReference>()?.takeIf { call ->
+                    call.definingClass == hostInterface.type && call.returnType == "V" &&
+                        call.parameterTypes.size == 1 &&
+                        call.parameterTypes.single().startsWith("Lcom/x/urt/")
+                }
+            }.orEmpty()
+        }.distinctBy(MethodReference::toString))
+        val refreshEvent = resolveBulkSingleton(classes, eventDispatch.parameterTypes.single().toString(), "RefreshTimeline")
         val combinedConstructor = requireExactlyOne("NewX bulk combined media component", classes.filter {
             it.type.startsWith("Lcom/x/profile/timeline/")
         }.flatMap { cls -> cls.methods.filter { method ->
@@ -201,6 +226,8 @@ val newXProfileBulkDownloadPatch = bytecodePatch(
             }
         }.distinctBy(FieldReference::toString))
         val success = requireExactlyOne("NewX bulk timeline success", NewXTimelineSuccessFingerprint.scopedMatchAll())
+        val stateContract = requireExactlyOne("NewX bulk timeline state contract", success.originalClassDef.interfaces.toList())
+        val emptyState = resolveBulkSingleton(classes, stateContract, "Empty")
         val successToString = requireExactlyOne("NewX bulk success labels", success.originalClassDef.methods.filter {
             it.name == "toString" && it.parameterTypes.isEmpty()
         })
@@ -260,9 +287,17 @@ val newXProfileBulkDownloadPatch = bytecodePatch(
         fun field(label: String) = labels[label]
             ?: throw PatchException("NewX bulk paginator field missing: $label")
         val loading = field(", isLoading=")
+        val backingOff = field(", isBackingOff=")
         val cursor = field(", cursorToUseForLoad=")
         val fetchEvent = field(", lastKnownTimelineNetworkFetchEvent=")
-        listOf(callbackField, tabs, selected, items, timelineType, loading, cursor, fetchEvent).groupBy { it.definingClass }.forEach {
+        fun labelsOf(type: String) = requireExactlyOne("NewX bulk model labels $type", byType[type]!!.methods.filter {
+            it.name == "toString" && it.parameterTypes.isEmpty()
+        })
+        val cursorModel = labelsOf(cursor.type).fieldForToStringLabel("UrtTimelineCursor(timelineCursor=")
+        val cursorValue = labelsOf(cursorModel.type).fieldForToStringLabel(", value=")
+        if (cursorValue.type != "Ljava/lang/String;") throw PatchException("NewX bulk cursor value is no longer a string")
+        listOf(callbackField, tabs, selected, items, timelineType, loading, backingOff, cursor, fetchEvent,
+            cursorModel, cursorValue).groupBy { it.definingClass }.forEach {
             (owner, fields) -> mutableClassDefBy(owner).requirePublicFields(fields)
         }
 
@@ -322,6 +357,14 @@ val newXProfileBulkDownloadPatch = bytecodePatch(
             moveResult(0, OBJECT)
             invoke(stateValue.opcode, methodReference(stateValue.descriptor), listOf(0))
             moveResult(0, OBJECT)
+            // Empty is a real completed native state, not a missing/Loading Success. The pager
+            // still requires a successful fetch/end marker before declaring this tab done.
+            instanceOf(1, 0, emptyState.definingClass)
+            ifEqz(1, Target.Local("success"))
+            invokeStatic(methodReference("Ljava/util/Collections;->emptyList()$LIST"))
+            moveResult(0, LIST)
+            returnObject(0)
+            label("success")
             instanceOf(1, 0, success.originalClassDef.type)
             ifEqz(1, Target.Local("missing"))
             checkCast(0, success.originalClassDef.type)
@@ -357,7 +400,7 @@ val newXProfileBulkDownloadPatch = bytecodePatch(
             invoke(state.stateValueGetter.opcode, methodReference(state.stateValueGetter.descriptor), listOf(0))
             moveResult(0, OBJECT)
             checkCast(0, state.stateType)
-            constInt(1, 5)
+            constInt(1, 6)
             newArray(2, 1, "[Ljava/lang/Object;")
             listOf(state.needsMore, state.terminated).forEachIndexed { index, call ->
                 invoke(call.opcode, methodReference(call.descriptor), listOf(0))
@@ -372,12 +415,34 @@ val newXProfileBulkDownloadPatch = bytecodePatch(
             moveResult(3, OBJECT)
             constInt(1, 2)
             aputObject(3, 2, 1)
-            listOf(cursor, fetchEvent).forEachIndexed { index, value ->
-                iget(3, 0, value)
-                constInt(1, index + 3)
-                aputObject(3, 2, 1)
-            }
+            // Wrapper toString includes sort/scribe metadata; use the server cursor value as
+            // request identity so metadata changes cannot disguise a repeated cursor.
+            iget(3, 0, cursor)
+            ifEqz(3, Target.Local("cursor_ready"))
+            iget(3, 3, cursorModel)
+            ifEqz(3, Target.Local("cursor_ready"))
+            iget(3, 3, cursorValue)
+            label("cursor_ready")
+            constInt(1, 3)
+            aputObject(3, 2, 1)
+            iget(3, 0, fetchEvent)
+            constInt(1, 4)
+            aputObject(3, 2, 1)
+            iget(3, 0, backingOff)
+            invokeStatic(methodReference("Ljava/lang/Boolean;->valueOf(Z)Ljava/lang/Boolean;"), 3)
+            moveResult(3, OBJECT)
+            constInt(1, 5)
+            aputObject(3, 2, 1)
             returnObject(2)
+        }
+        replaceBulkBridge("refresh") { method ->
+            move(0, method.p0Register, OBJECT)
+            checkCast(0, combined.type)
+            invokeVirtual(methodReference(currentComponent.toString()), 0)
+            moveResult(0, OBJECT)
+            sget(1, refreshEvent)
+            invokeInterface(methodReference(eventDispatch.toString()), 0, 1)
+            returnVoid()
         }
         replaceBulkBridge("requestNext") { method ->
             readPaginator(method)

@@ -1,0 +1,22 @@
+{
+  "patches/build/reports/tests/test/index.html": {
+    "tests": 75,
+    "failures": 0,
+    "skipped": 0
+  },
+  "extensions/newx/build/reports/tests/testDebugUnitTest/index.html": {
+    "tests": 273,
+    "failures": 0,
+    "skipped": 0
+  },
+  "patches/build/reports/tests/test/app.crimera.patches.newx.misc.mediatab.ProfileBulkHostResolverTest/index.html": {
+    "tests": 2,
+    "failures": 0,
+    "skipped": 0
+  },
+  "extensions/newx/build/reports/tests/testDebugUnitTest/app.morphe.extension.newx.misc.ProfileBulkPagerTest/index.html": {
+    "tests": 15,
+    "failures": 0,
+    "skipped": 0
+  }
+}

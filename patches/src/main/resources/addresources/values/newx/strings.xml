@@ -588,7 +588,16 @@
     <string name="piko_newx_profile_bulk_progress">%1$s: %2$d pages read\nFound %3$d, saved %4$d\nSkipped %5$d, failed %6$d</string>
     <string name="piko_newx_profile_bulk_completed">Both media tabs reached the end.</string>
     <string name="piko_newx_profile_bulk_with_failures">Both media tabs reached the end; some files failed.</string>
-    <string name="piko_newx_profile_bulk_incomplete">Stopped before reaching the end. Refresh the profile after restoring access or connectivity, then retry.</string>
+    <string name="piko_newx_profile_bulk_incomplete">The task stopped before reaching the end. Previously saved files are kept.</string>
+    <string name="piko_newx_profile_bulk_network_failed">Pagination still failed after three attempts. Check your connection, then retry.</string>
+    <string name="piko_newx_profile_bulk_timed_out">X did not finish loading this media tab. Refresh the profile and retry; saved files are kept.</string>
+    <string name="piko_newx_profile_bulk_access_failed">X denied access to this media tab or it no longer exists. Check that this account can view it.</string>
+    <string name="piko_newx_profile_bulk_rate_limited">X has limited requests. Wait before retrying; saved files are kept.</string>
+    <string name="piko_newx_profile_bulk_cursor_stalled">X returned a repeated page cursor. The task stopped to avoid an endless loop; saved files are kept.</string>
+    <string name="piko_newx_profile_bulk_tab_changed">The selected media tab changed. Return to the Photos gallery and start again.</string>
+    <string name="piko_newx_profile_bulk_read_failed">The task could not read the media state. Check that you use the latest patch bundle and report this result if it repeats.</string>
+    <string name="piko_newx_profile_bulk_failure_phase">Stopped in %1$s after reading %2$d pages.</string>
+    <string name="piko_newx_profile_bulk_retry_progress">Reloading media (attempt %1$d of 3)…</string>
     <string name="piko_newx_profile_bulk_cancelled">Stopped. Previously saved files are kept.</string>
     <string name="piko_newx_profile_bulk_folder_lost">Stopped: the download folder is no longer writable. Choose the folder again.</string>
     <string name="piko_newx_profile_bulk_result">%1$s\nSaved %2$d, skipped %3$d, failed %4$d</string>

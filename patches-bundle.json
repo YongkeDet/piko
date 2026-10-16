@@ -1,6 +1,6 @@
 {
-  "version": "3.10.0-custom-newx.5",
-  "download_url": "https://github.com/YongkeDet/piko/releases/download/v3.10.0-custom-newx.5/patches-3.10.0-custom-newx.5.mpp",
-  "created_at": "2026-10-16T01:03:05",
-  "description": "X 12.34.0-prod.01 / 312340001（arm64-v8a，Android 10+）。\n新增主页一键下载：主页 → 媒体 → 照片 → 下载此主页全部图片和视频。自动分页，显示进度并支持取消，沿用保存目录、作者子文件夹和命名规则；请保持页面在前台。\n设置重排为下载与保存、个人主页、时间线、内容过滤、帖子与互动、导航、外观、高级八类，保留已有配置，新增内容已汉化。\n55 项全选、49 项默认修补均零失败并重建成功，341 项测试通过；新批量下载的真实账号分页和取消交互仍需手机验证。\nhttps://github.com/YongkeDet/piko/releases/tag/v3.10.0-custom-newx.5"
+  "version": "3.10.0-custom-newx.6",
+  "download_url": "https://github.com/YongkeDet/piko/releases/download/v3.10.0-custom-newx.6/patches-3.10.0-custom-newx.6.mpp",
+  "created_at": "2026-10-16T05:22:07",
+  "description": "X 12.34.0-prod.01 / 312340001（arm64-v8a，Android 10+）。\n修复主页批量下载失败：正确处理没有图片或视频的 Empty 标签页，区分历史失败和新请求结果；暂时性分页失败最多尝试三次，缺少首屏时自动请求原生刷新。\n进度窗口显示恢复状态；失败时区分网络、超时、访问受限、限流等原因，并显示停止阶段和累计页数。单条异常媒体不再中断整个主页。\n沿用作者子文件夹、保存目录、命名与画质规则、顶部成功提示和八类中文设置。\n348 项测试通过；55 项全选、49 项默认修补均零失败并成功重建，两份最终 APK 各通过 30 项字节码及资源检查，603 条中文资源确认存在。真实账号分页仍需手机复测。\nhttps://github.com/YongkeDet/piko/releases/tag/v3.10.0-custom-newx.6"
 }

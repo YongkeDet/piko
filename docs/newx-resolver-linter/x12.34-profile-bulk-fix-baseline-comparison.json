@@ -1,0 +1,9 @@
+{
+  "baseline_source_sha": "0221cda87bdaa5e38639b061fb1894f0ad5cbaab",
+  "baseline_probe": "cached failure immediately returns FAILED before processing cached media",
+  "baseline_failed_immediately": true,
+  "fixed_source_sha": "d55355824514c8bb4d6a25b001622cb4c2647d09",
+  "fixed_focused_tests": 15,
+  "fixed_focused_tests_failures": 0,
+  "phone_reproduction": false
+}

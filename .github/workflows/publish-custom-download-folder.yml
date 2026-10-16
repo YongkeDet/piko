@@ -20,11 +20,11 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      SOURCE_RUN_ID: '38831474537'
-      SOURCE_SHA: 0221cda87bdaa5e38639b061fb1894f0ad5cbaab
-      BUNDLE_SHA256: 38a0c46b2aa940f6b56aefebecc99b0b4178f3adb6e8b3ffdd0b50caf9dba135
-      RELEASE_TAG: v3.10.0-custom-newx.5
-      BUNDLE_NAME: patches-3.10.0-custom-newx.5.mpp
+      SOURCE_RUN_ID: '38854536272'
+      SOURCE_SHA: d55355824514c8bb4d6a25b001622cb4c2647d09
+      BUNDLE_SHA256: a5a7f85532d4c2965707eba5b104960ee29e0cb0daa38c5e8929b4dc31d77f6a
+      RELEASE_TAG: v3.10.0-custom-newx.6
+      BUNDLE_NAME: patches-3.10.0-custom-newx.6.mpp
     steps:
       - uses: actions/checkout@v7
       - name: Verify source build
@@ -56,6 +56,6 @@ jobs:
             "dist/$BUNDLE_NAME" dist/SHA256SUMS dist/source-provenance.json \
             --repo "$GITHUB_REPOSITORY" \
             --target "$GITHUB_SHA" \
-            --title 'Piko NewX Custom — 主页一键下载与设置分类优化' \
-            --notes-file docs/releases/v3.10.0-custom-newx.5.md \
+            --title 'Piko NewX Custom — 修复主页批量下载分页失败' \
+            --notes-file docs/releases/v3.10.0-custom-newx.6.md \
             --latest
