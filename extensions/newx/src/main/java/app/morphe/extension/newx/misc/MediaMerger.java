@@ -55,17 +55,17 @@ public final class MediaMerger {
             DownloadFileName.PostContext postContext
     ) {
         if (context == null || items == null || items.size() < 2) {
-            NewXInAppNotification.showForUser(StringRef.str("piko_newx_merge_too_few"), username);
+            NewXInAppNotification.showErrorForUser(StringRef.str("piko_newx_merge_too_few"), username);
             return;
         }
 
         Context applicationContext = context.getApplicationContext();
         Context safeContext = applicationContext != null ? applicationContext : context;
 
-        NewXInAppNotification.showForUser(
-                StringRef.str("piko_newx_merge_started", items.size()),
-                username
-        );
+        if (!NewXInAppNotification.hasUnifiedHost()) {
+            NewXInAppNotification.showForUser(
+                    StringRef.str("piko_newx_merge_started", items.size()), username);
+        }
         MERGE_EXECUTOR.execute(() -> performMerge(safeContext, items, username, postContext));
     }
 
@@ -91,7 +91,7 @@ public final class MediaMerger {
                 final int sliceIndex = i + 1;
                 if (!downloaded) {
                     NewXLogger.printInfo(() -> LOG_PREFIX + "Failed to download slice " + sliceIndex + " from " + item.url);
-                    NewXInAppNotification.showForUser(StringRef.str("piko_newx_merge_slice_download_failed", sliceIndex), username);
+                    NewXInAppNotification.showErrorForUser(StringRef.str("piko_newx_merge_slice_download_failed", sliceIndex), username);
                     return;
                 }
             }
@@ -108,7 +108,7 @@ public final class MediaMerger {
                 opts.inJustDecodeBounds = true;
                 BitmapFactory.decodeFile(tempFiles.get(i).getAbsolutePath(), opts);
                 if (opts.outWidth <= 0 || opts.outHeight <= 0) {
-                    NewXInAppNotification.showForUser(StringRef.str("piko_newx_merge_slice_size_failed", i + 1), username);
+                    NewXInAppNotification.showErrorForUser(StringRef.str("piko_newx_merge_slice_size_failed", i + 1), username);
                     return;
                 }
                 widths[i] = opts.outWidth;
@@ -155,7 +155,7 @@ public final class MediaMerger {
                 try {
                     mergedBitmap = Bitmap.createBitmap(totalWidth, maxHeight, Bitmap.Config.RGB_565);
                 } catch (OutOfMemoryError oom2) {
-                    NewXInAppNotification.showForUser(StringRef.str("piko_newx_merge_memory_failed"), username);
+                    NewXInAppNotification.showErrorForUser(StringRef.str("piko_newx_merge_memory_failed"), username);
                     return;
                 }
             }
@@ -168,7 +168,7 @@ public final class MediaMerger {
                 Bitmap piece = BitmapFactory.decodeFile(tempFiles.get(i).getAbsolutePath());
                 if (piece == null) {
                     mergedBitmap.recycle();
-                    NewXInAppNotification.showForUser(StringRef.str("piko_newx_merge_slice_decode_failed", i + 1), username);
+                    NewXInAppNotification.showErrorForUser(StringRef.str("piko_newx_merge_slice_decode_failed", i + 1), username);
                     return;
                 }
 
@@ -252,7 +252,7 @@ public final class MediaMerger {
             try {
                 writeMergedBitmap(context, mergedBitmap, reservation.documentUri(), format);
                 NewXLogger.printInfo(() -> LOG_PREFIX + "Successfully merged and saved " + reservation.fileName());
-                NewXInAppNotification.tryShowForUser(
+                NewXInAppNotification.tryShowSuccessForUser(
                         StringRef.str("piko_newx_merge_saved", reservation.fileName()), username);
             } catch (Exception exception) {
                 destination.discard(context, reservation);
@@ -275,7 +275,7 @@ public final class MediaMerger {
 
         } catch (Throwable t) {
             NewXLogger.printException(() -> LOG_PREFIX + "Failed to merge images", t);
-            NewXInAppNotification.showForUser(StringRef.str("piko_newx_merge_failed"), username);
+            NewXInAppNotification.showErrorForUser(StringRef.str("piko_newx_merge_failed"), username);
         } finally {
             if (progressId != 0) DownloadProgressDisplay.endLocal(progressId);
             for (File tempFile : tempFiles) {

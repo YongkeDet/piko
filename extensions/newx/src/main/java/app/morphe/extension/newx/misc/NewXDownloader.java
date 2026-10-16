@@ -175,9 +175,10 @@ public final class NewXDownloader {
         @Override
         public void onCompleted(DownloadEvent.Completed event) {
             if (ProfileBulkDownload.isBatchRequest(engine.requestFor(event.id()))) return;
-            if (!DownloadNotifications.notificationsEnabled(context, CHANNEL_ID)) {
+            if (NewXInAppNotification.hasUnifiedHost()
+                    || !DownloadNotifications.notificationsEnabled(context, CHANNEL_ID)) {
                 // Completion feedback belongs to the top in-app banner only.
-                NewXInAppNotification.tryShowForUser(StringRef.str("piko_newx_download_saved", event.fileName()), event.label());
+                NewXInAppNotification.tryShowSuccessForUser(StringRef.str("piko_newx_download_saved", event.fileName()), event.label());
             }
         }
 

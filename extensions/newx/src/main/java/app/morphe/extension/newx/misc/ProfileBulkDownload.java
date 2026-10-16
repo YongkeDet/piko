@@ -438,7 +438,11 @@ public final class ProfileBulkDownload {
             result.addButton(close);
             result.show();
             // Preserve the top-only success feedback; batch members do not toast individually.
-            NewXInAppNotification.tryShow(summary);
+            if (failed > 0 || stopped && !"piko_newx_profile_bulk_cancelled".equals(endReason)) {
+                NewXInAppNotification.tryShowError(summary);
+            } else {
+                NewXInAppNotification.tryShowSuccess(summary);
+            }
         }
     }
 
