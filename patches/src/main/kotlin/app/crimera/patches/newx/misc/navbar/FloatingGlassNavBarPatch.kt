@@ -1,6 +1,7 @@
 package app.crimera.patches.newx.misc.navbar
 
 import app.crimera.bytecode.Block
+import app.crimera.bytecode.RegisterLimit
 import app.crimera.bytecode.Target
 import app.crimera.bytecode.insertHook
 import app.crimera.bytecode.methodReference
@@ -64,6 +65,16 @@ internal fun resolveGlassPadding(
             }
     }
 })
+
+/** MOVE_RESULT and IF_NEZ both accept byte registers; no arguments need a four-bit invoke slot. */
+internal fun MutableMethod.guardGlassDivider(index: Int) {
+    insertHook(index, relocateBranchTargets = true) {
+        val enabled = scratchRegister(RegisterLimit.BYTE)
+        invokeStatic(methodReference("$GLASS->isEnabled()Z"))
+        moveResult(enabled, "Z")
+        ifNez(enabled, Target.AfterOriginal(1))
+    }
+}
 
 context(context: BytecodePatchContext)
 private fun MethodReference.mutable(): MutableMethod = requireExactlyOne(
@@ -262,12 +273,7 @@ val floatingGlassNewXNavBarPatch = bytecodePatch(
             } == true
         })
         // Mutate from high indexes downward. Only this bottom bar's divider is suppressed.
-        bar.insertHook(divider.index, relocateBranchTargets = true) {
-            val enabled = scratchRegister()
-            invokeStatic(methodReference("$GLASS->isEnabled()Z"))
-            moveResult(enabled, "Z")
-            ifNez(enabled, Target.AfterOriginal(1))
-        }
+        bar.guardGlassDivider(divider.index)
         bar.insertHook(join.index, relocateBranchTargets = true) {
             invokeStatic(methodReference("$GLASS->decorate($OBJECT)$OBJECT"), insetRegister)
             moveResult(insetRegister, OBJECT)
