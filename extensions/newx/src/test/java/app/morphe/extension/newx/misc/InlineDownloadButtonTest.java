@@ -53,6 +53,18 @@ public final class InlineDownloadButtonTest {
     private enum TimelineKind { USER_PROFILE_PHOTOS, USER_PROFILE_VIDEOS }
 
     @Test
+    public void bulkCallbacksResolveTheParentOfTheirOwnNativeChild() {
+        Object firstChild = new String("equal"), secondChild = new String("equal");
+        Object firstProfile = new Object(), secondProfile = new Object();
+        ProfileBulkDownload.bindComponent(firstChild, firstProfile);
+        ProfileBulkDownload.bindComponent(secondChild, secondProfile);
+        assertSame(firstProfile, ProfileBulkDownload.ownerOf(firstChild));
+        assertSame(secondProfile, ProfileBulkDownload.ownerOf(secondChild));
+        Object unknown = new String("equal");
+        assertSame(unknown, ProfileBulkDownload.ownerOf(unknown));
+    }
+
+    @Test
     public void bulkSnapshotsDoNotMixProfilesWhoseFilteredListsAreBothEmpty() throws Exception {
         BooleanSetting bulk = new BooleanSetting("newx.downloads.profile_bulk", true, false);
         settings().put("newx.downloads.profile_bulk", bulk);

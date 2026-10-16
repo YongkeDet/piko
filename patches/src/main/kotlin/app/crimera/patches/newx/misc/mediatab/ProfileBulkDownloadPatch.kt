@@ -140,15 +140,46 @@ val newXProfileBulkDownloadPatch = bytecodePatch(
         val autoplay = requireExactlyOne("NewX bulk autoplay controller getter", hostInterface.methods.filter {
             it.parameterTypes.isEmpty() && it.returnType == pause.definingClass
         })
+        // The profile renderer passes A(tab, sorting)'s child URT component to the timeline UI,
+        // not the combined parent. Bind the native child-creation/cache-return operation to its
+        // parent so callback lookup cannot guess the last opened account.
+        val creator = requireExactlyOne("NewX bulk profile child component creator", combined.methods.filter { method ->
+            method.parameters() == listOf(tabType, "Z") && method.returnType == hostInterface.type &&
+                method.implementation?.instructions?.any { instruction ->
+                    instruction.getReference<MethodReference>()?.returnType == nativeHost.type
+                } == true
+        })
+        val mutableCreator = requireExactlyOne("NewX bulk mutable profile child creator", mutableClassDefBy(combined.type).methods.filter {
+            it.name == creator.name && it.parameters() == creator.parameters()
+        })
+        val childReturns = mutableCreator.implementation!!.instructions.toList().withIndex().filter {
+            it.value.opcode == Opcode.RETURN_OBJECT
+        }
+        if (childReturns.isEmpty()) throw PatchException("NewX bulk child creator has no object return")
+        childReturns.sortedByDescending { it.index }.forEach { exit ->
+            val childRegister = (exit.value as OneRegisterInstruction).registerA
+            mutableCreator.insertHook(exit.index,
+                excludedRegisters = listOf(childRegister, mutableCreator.p0Register), relocateBranchTargets = true) {
+                val child = scratchRegister(RegisterLimit.FOUR_BIT)
+                val owner = scratchRegister(RegisterLimit.FOUR_BIT)
+                move(child, childRegister, OBJECT)
+                move(owner, mutableCreator.p0Register, OBJECT)
+                invokeStatic(methodReference("$EXTENSION->bindComponent($OBJECT$OBJECT)V"), child, owner)
+            }
+        }
         val tabs = requireExactlyOne("NewX bulk available tabs", combined.fields.filter {
             !AccessFlags.STATIC.isSet(it.accessFlags) && it.type == LIST
         })
         // Follow the field -> getValue -> result -> cast-to-tab chain in the native current-
         // component getter. The constructor's boolean seed may already have been rewritten by
         // the default-post-sorting patch, so it is deliberately not a discovery anchor here.
-        val selected = requireExactlyOne("NewX bulk selected tab state field", combined.methods.filter {
-            it.parameterTypes.isEmpty() && it.returnType == hostInterface.type
-        }.flatMap { method ->
+        val currentComponent = requireExactlyOne("NewX bulk selected child component getter", combined.methods.filter { method ->
+            method.parameterTypes.isEmpty() && method.returnType == hostInterface.type &&
+                method.implementation?.instructions?.any { instruction ->
+                    instruction.opcode == Opcode.CHECK_CAST && instruction.getReference<TypeReference>()?.type == tabType
+                } == true
+        })
+        val selected = requireExactlyOne("NewX bulk selected tab state field", listOf(currentComponent).flatMap { method ->
             val code = method.implementation?.instructions?.toList().orEmpty()
             code.withIndex().mapNotNull { (index, cast) ->
                 if (cast.opcode != Opcode.CHECK_CAST || cast.getReference<TypeReference>()?.type != tabType) {
@@ -241,6 +272,8 @@ val newXProfileBulkDownloadPatch = bytecodePatch(
             move(0, method.p0Register, OBJECT)
             checkCast(0, callback.type)
             iget(0, 0, callbackField)
+            invokeStatic(methodReference("$EXTENSION->ownerOf($OBJECT)$OBJECT"), 0)
+            moveResult(0, OBJECT)
             returnObject(0)
             label("missing")
             constInt(0, 0)
@@ -280,7 +313,11 @@ val newXProfileBulkDownloadPatch = bytecodePatch(
         }
         replaceBulkBridge("currentItems") { method ->
             move(0, method.p0Register, OBJECT)
-            checkCast(0, hostInterface.type)
+            checkCast(0, combined.type)
+            // Read the selected native child's live flow. The parent's derived stateIn may
+            // have no subscribers because the profile renderer composes the child directly.
+            invokeVirtual(methodReference(currentComponent.toString()), 0)
+            moveResult(0, OBJECT)
             invokeInterface(methodReference(stateInterfaceGetter.toString()), 0)
             moveResult(0, OBJECT)
             invoke(stateValue.opcode, methodReference(stateValue.descriptor), listOf(0))

@@ -38,6 +38,7 @@ public final class ProfileBulkDownload {
     private static final String SETTING = "newx.downloads.profile_bulk";
     private static volatile Session active;
     private static final List<RawPage> RAW_PAGES = new ArrayList<>();
+    private static final List<ComponentBinding> COMPONENTS = new ArrayList<>();
     private static final ThreadLocal<List<?>> PENDING_PAGE = new ThreadLocal<>();
     private static final Set<DownloadRequest> REQUESTS = Collections.newSetFromMap(new WeakHashMap<>());
 
@@ -57,6 +58,31 @@ public final class ProfileBulkDownload {
 
     static synchronized void markRequest(DownloadRequest request) { REQUESTS.add(request); }
     static synchronized boolean isBatchRequest(DownloadRequest request) { return REQUESTS.contains(request); }
+
+    /** The UI callback captures a child URT component, while tab selection belongs to its parent. */
+    public static synchronized void bindComponent(Object child, Object owner) {
+        if (child == null || owner == null || child == owner) return;
+        COMPONENTS.removeIf(binding -> binding.child.get() == null || binding.owner.get() == null
+                || binding.child.get() == child);
+        COMPONENTS.add(new ComponentBinding(child, owner));
+    }
+
+    static synchronized Object ownerOf(Object component) {
+        COMPONENTS.removeIf(binding -> binding.child.get() == null || binding.owner.get() == null);
+        for (ComponentBinding binding : COMPONENTS) {
+            if (binding.child.get() == component) return binding.owner.get();
+        }
+        return component;
+    }
+
+    private static final class ComponentBinding {
+        final WeakReference<Object> child;
+        final WeakReference<Object> owner;
+        ComponentBinding(Object child, Object owner) {
+            this.child = new WeakReference<>(child);
+            this.owner = new WeakReference<>(owner);
+        }
+    }
 
     /** Preserve the raw media for each live native Success instance before display filtering. */
     public static void rememberPage(Object type, Object raw, Object filtered) {
