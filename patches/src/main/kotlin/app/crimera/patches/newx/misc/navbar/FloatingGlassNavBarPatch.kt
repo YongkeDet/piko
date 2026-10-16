@@ -8,6 +8,7 @@ import app.crimera.patches.common.classDefFlatMap
 import app.crimera.patches.common.requireExactlyOne
 import app.crimera.patches.common.resolveIntegerLiteralOnCurrentPath
 import app.crimera.patches.common.valueReachesRegister
+import app.crimera.patches.newx.models.resolveCurrentMethod
 import app.crimera.patches.newx.settings.Categories
 import app.crimera.patches.newx.settings.newXToggle
 import app.crimera.patches.newx.utils.Constants.COMPATIBILITY_NEW_X_12_34
@@ -45,6 +46,24 @@ private fun MethodReference.isHazeWrapper() = returnType == MODIFIER &&
     types().count { it == MODIFIER } == 1 && types().count { it == COMPOSER } == 1 &&
     types().count { it.startsWith(HAZE) } == 1 && types().count { it == "I" } == 1 &&
     types().all { it == MODIFIER || it == COMPOSER || it == "I" || it.startsWith(HAZE) }
+
+/** SizeIn also has a (FFFFZ) constructor. The padding element alone validates non-negative padding. */
+internal fun resolveGlassPadding(
+    candidates: Collection<Method>,
+    constructor: (MethodReference) -> Method,
+): Method = requireExactlyOne("NewX glass relative padding", candidates.filter { method ->
+    if (method.types() != listOf(MODIFIER, "F", "F", "F", "F") || method.returnType != MODIFIER) return@filter false
+    val code = method.code()
+    code.withIndex().any { (index, instruction) ->
+        val call = instruction.call() ?: return@any false
+        call.name == "<init>" && call.types().take(5) == listOf("F", "F", "F", "F", "Z") &&
+            instruction.registersUsed.getOrNull(5)?.let {
+                code.resolveIntegerLiteralOnCurrentPath(index, it) == 1
+            } == true && constructor(call).code().any {
+                it.getReference<StringReference>()?.string == "Padding must be non-negative"
+            }
+    }
+})
 
 context(context: BytecodePatchContext)
 private fun MethodReference.mutable(): MutableMethod = requireExactlyOne(
@@ -122,18 +141,7 @@ private fun hazeBridge(name: String, target: MethodReference) {
 context(context: BytecodePatchContext)
 private fun decorationBridge(shapeType: String) {
     val layout = methods("Landroidx/compose/foundation/layout/")
-    // Both absolute and relative padding survive R8. Prove the relative=true constructor argument.
-    val padding = requireExactlyOne("NewX glass relative padding", layout.filter { method ->
-        if (method.types() != listOf(MODIFIER, "F", "F", "F", "F") || method.returnType != MODIFIER) return@filter false
-        val code = method.code()
-        code.withIndex().any { (index, instruction) ->
-            val call = instruction.call() ?: return@any false
-            call.name == "<init>" && call.types().take(5) == listOf("F", "F", "F", "F", "Z") &&
-                instruction.registersUsed.getOrNull(5)?.let {
-                    code.resolveIntegerLiteralOnCurrentPath(index, it) == 1
-                } == true
-        }
-    })
+    val padding = resolveGlassPadding(layout) { it.resolveCurrentMethod("glass padding element constructor") }
     val circle = requireExactlyOne("NewX glass 50 percent rounded shape", methods(SHAPES).filter { it.name == "<clinit>" }.flatMap { method ->
         val code = method.code()
         code.withIndex().mapNotNull { (index, instruction) ->
