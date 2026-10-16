@@ -20,12 +20,13 @@ final class DownloadBannerController {
     void start(long id, String title, String detail, Runnable cancel) {
         main.post(() -> { policy.start(id, title, detail, cancel); schedule(); });
     }
-    void progress(long id, String title, String detail) {
+    void progress(long id, String title, String detail, int percent) {
         main.post(() -> {
-            DownloadBannerPolicy.Notice notice = policy.update(id, title, detail);
+            DownloadBannerPolicy.Notice notice = policy.update(id, title, detail, percent);
             if (notice != null && notice.model != null) {
                 NewXInAppNotification.writeState(notice.titleState, title);
                 NewXInAppNotification.writeState(notice.detailState, detail == null ? "" : detail);
+                NewXInAppNotification.writeState(notice.fractionState, percent < 0 ? -1f : Math.min(99, percent) / 100f);
             }
             schedule();
         });
@@ -39,6 +40,15 @@ final class DownloadBannerController {
     void disposed(Object model, String reason, boolean current) {
         Runnable cancel = policy.disposed(model, reason, current);
         main.post(() -> { if (cancel != null) cancel.run(); schedule(); });
+    }
+
+    boolean fullContent(Object model) { return policy.fullContent(model); }
+    void drawProgress(Object model, Object composer) {
+        DownloadBannerPolicy.Notice notice = policy.progressNotice(model);
+        if (notice == null || notice.fractionState == null) return;
+        Object value = NewXInAppNotification.readValue(notice.fractionState);
+        NewXInAppNotification.drawNativeProgress(notice.provider, composer,
+                !(value instanceof Number number) || number.floatValue() < 0);
     }
 
     /** Called inside the existing native text composable so Snapshot records its read dependency. */
@@ -83,6 +93,8 @@ final class DownloadBannerController {
                                 if (notice.kind == DownloadBannerPolicy.PROGRESS) {
                                     notice.titleState = NewXInAppNotification.makeState(notice.title);
                                     notice.detailState = NewXInAppNotification.makeState(notice.detail == null ? "" : notice.detail);
+                                    notice.fractionState = NewXInAppNotification.makeState(notice.percent < 0 ? -1f : notice.percent / 100f);
+                                    notice.provider = new NewXInAppNotification.ProgressProvider(notice.fractionState);
                                     bindText(NewXInAppNotification.titleLiteral(model), notice.titleState);
                                     bindText(NewXInAppNotification.detailLiteral(model), notice.detailState);
                                 }

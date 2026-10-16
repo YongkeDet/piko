@@ -14,10 +14,13 @@ public final class NewXDownloaderTest {
         p.start(1, "download", "a.mp4", null);
         DownloadBannerPolicy.Notice first = p.next().notice;
         Object model = new Object(); p.bind(first, model);
-        for (int i = 0; i < 100; i++) { p.update(1, "download " + i, "a.mp4"); assertNull(p.next()); }
+        for (int i = 0; i < 100; i++) { p.update(1, "download " + i, "a.mp4", i); assertNull(p.next()); }
         assertEquals(DownloadBannerPolicy.NATIVE, p.decide(model, null));
         p.visible(model);
-        for (int i = 0; i < 100; i++) { p.update(1, "download " + i, "a.mp4"); assertNull(p.next()); }
+        assertTrue(p.fullContent(model));
+        assertFalse(p.fullContent(new Object()));
+        assertEquals(first, p.progressNotice(model));
+        for (int i = 0; i < 100; i++) { p.update(1, "download " + i, "a.mp4", i); assertNull(p.next()); }
         p.start(2, "download", "b.jpg", null);
         assertTrue(p.result(1, DownloadBannerPolicy.SUCCESS, "saved", "a.mp4"));
         assertFalse(p.result(1, DownloadBannerPolicy.SUCCESS, "saved", "a.mp4"));
@@ -29,6 +32,8 @@ public final class NewXDownloaderTest {
         DownloadBannerPolicy.Notice saved = p.next().notice;
         Object savedModel = new Object(); p.bind(saved, savedModel);
         assertEquals(DownloadBannerPolicy.NATIVE, p.decide(savedModel, null)); p.visible(savedModel);
+        assertTrue(p.fullContent(savedModel));
+        assertNull(p.progressNotice(savedModel));
         assertTrue(p.result(2, DownloadBannerPolicy.ERROR, "failed", "b.jpg"));
         assertNull(p.next()); // Even an error cannot overwrite an unacknowledged earlier result.
         p.disposed(savedModel, "Replaced", false); // A stale duplicate-entry cleanup is not an ACK.
@@ -65,7 +70,7 @@ public final class NewXDownloaderTest {
         Runnable cancel = p.disposed(model, "PrimaryButtonClick", true); p.visible(null);
         assertTrue(cancel != null); cancel.run(); assertEquals(1, cancelled[0]);
         assertNull(p.disposed(model, "PrimaryButtonClick", false));
-        p.update(bulk, "late tick", "must stay hidden");
+        p.update(bulk, "late tick", "must stay hidden", 50);
         DownloadBannerPolicy.Notice other = p.next().notice;
         assertEquals(7, other.id); p.rejected(other);
         p.result(bulk, DownloadBannerPolicy.INFO, "cancelled", "summary");
@@ -88,7 +93,7 @@ public final class NewXDownloaderTest {
         DownloadBannerPolicy.Notice merge = p.next().notice;
         Object late = new Object(); p.bind(merge, late);
         p.finish(-1); p.result(-1, DownloadBannerPolicy.SUCCESS, "merged", "file");
-        assertNull(p.update(-1, "late", "bytes"));
+        assertNull(p.update(-1, "late", "bytes", 99));
         assertEquals(DownloadBannerPolicy.DROP, p.decide(late, null));
         p.disposed(late, "Replaced", false);
         DownloadBannerPolicy.Notice result = p.next().notice;

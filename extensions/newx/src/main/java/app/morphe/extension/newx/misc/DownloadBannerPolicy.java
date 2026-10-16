@@ -24,9 +24,9 @@ final class DownloadBannerPolicy {
         progress.put(id, new Notice(id, PROGRESS, title, detail, cancel));
     }
 
-    synchronized Notice update(long id, String title, String detail) {
+    synchronized Notice update(long id, String title, String detail, int percent) {
         Notice notice = progress.get(id);
-        if (notice != null) { notice.title = title; notice.detail = detail; }
+        if (notice != null) { notice.title = title; notice.detail = detail; notice.percent = percent; }
         return notice;
     }
 
@@ -126,6 +126,17 @@ final class DownloadBannerPolicy {
         return null;
     }
 
+    synchronized boolean fullContent(Object model) {
+        Registration registration = lookup(model);
+        return registration != null && registration.kind != CLEAR;
+    }
+
+    synchronized Notice progressNotice(Object model) {
+        Registration registration = lookup(model);
+        Notice notice = registration == null ? null : registration.notice.get();
+        return notice != null && notice.kind == PROGRESS ? notice : null;
+    }
+
     private Registration lookup(Object model) {
         if (model == null) return null;
         Registration found = null;
@@ -143,7 +154,8 @@ final class DownloadBannerPolicy {
         final int kind;
         final Runnable cancel;
         String title, detail;
-        Object model, titleState, detailState;
+        Object model, titleState, detailState, fractionState, provider;
+        int percent = -1;
         boolean inFlight, admitted, hidden;
         Notice(long id, int kind, String title, String detail, Runnable cancel) {
             this.id = id; this.kind = kind; this.title = title; this.detail = detail; this.cancel = cancel;
@@ -159,8 +171,9 @@ final class DownloadBannerPolicy {
     private static final class Registration extends WeakReference<Object> {
         final WeakReference<Notice> notice;
         final Object clear;
+        final int kind;
         Registration(Object model, Notice notice, Object clear) {
-            super(model); this.notice = new WeakReference<>(notice); this.clear = clear;
+            super(model); this.notice = new WeakReference<>(notice); this.clear = clear; this.kind = notice == null ? CLEAR : notice.kind;
         }
     }
 }

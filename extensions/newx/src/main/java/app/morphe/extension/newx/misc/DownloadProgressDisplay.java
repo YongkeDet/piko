@@ -127,8 +127,8 @@ final class DownloadProgressDisplay implements DownloadListener {
                                 ? StringRef.str("piko_newx_download_progress_waiting", 1)
                                 : StringRef.str("piko_newx_download_progress_active", 1,
                                     item.percent < 0 ? "" : item.percent + "%");
-                        String name = item.name.length() > 60 ? item.name.substring(0, 57) + "…" : item.name;
-                        NewXInAppNotification.progress(task.id, heading, name + "\n" + amount(activity, item));
+                        NewXInAppNotification.progress(task.id, heading,
+                                item.name + "\n" + amount(activity, item), item.percent);
                     }
                 }
                 main.postDelayed(this::tick, 1000);

@@ -2,7 +2,9 @@ package app.crimera.patches.newx.misc.inlineactions
 
 // Prevents supplying the wrong Kotlin default-mask bit after R8 removes the action parameter,
 // and prevents a consumed progress event from falling through into the native message queue.
+import app.crimera.bytecode.fieldReference
 import app.crimera.bytecode.methodReference
+import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.smali.toInstruction
 import app.morphe.util.getReference
@@ -19,6 +21,8 @@ import com.android.tools.smali.dexlib2.immutable.ImmutableMethodParameter
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import kotlin.test.assertFailsWith
+import app.morphe.util.registersUsed
 
 class UnifiedDownloadNotificationPatchTest {
     @Test
@@ -105,6 +109,69 @@ class UnifiedDownloadNotificationPatchTest {
         assertEquals(Opcode.CONST_4, code[2].opcode)
         assertEquals(1, (code[2] as OneRegisterInstruction).registerA)
         assertEquals(3, method.implementation!!.registerCount)
+    }
+
+    @Test
+    fun `full banner text keeps wide operands and native fallback while expanding only owned notices`() {
+        val body = MethodImplementationBuilder(30)
+        fun add(s: String) { body.addInstruction(s.toInstruction()) }
+        add("move-object/from16 v1, v27")
+        add("iget-object v10, v1, Lfixture/Notice;->detail:Ljava/lang/String;")
+        add("move-object/from16 v18, v28")
+        add("const/4 v14, 0x2"); add("const/4 v15, 0x0"); add("const/4 v16, 0x1"); add("const/4 v17, 0x1")
+        add("invoke-static/range {v10 .. v19}, Landroidx/compose/material3/Fixture;->text(Ljava/lang/String;Landroidx/compose/ui/Modifier;JIZIILandroidx/compose/runtime/Composer;I)V")
+        add("invoke-static {v1}, Lfixture/Sink;->keep(Ljava/lang/Object;)V"); add("return-void")
+        val method = fixture("caption", listOf("Lfixture/Notice;", "Landroidx/compose/runtime/Composer;", "I"), "V", body, true)
+        val site = bannerTextCalls(method, "Lfixture/Notice;").single()
+        assertEquals(listOf(1, 18, 14, 15, 16), listOf(site.model, site.composer, site.overflow, site.wrap, site.max))
+        method.expandBannerText(site)
+        val code = method.implementation!!.instructions
+        val gate = code.indexOfFirst { it.getReference<MethodReference>()?.name == "fullContent" }
+        assertEquals(listOf(1), code[gate].registersUsed.toList())
+        assertEquals(Opcode.MOVE_RESULT, code[gate + 1].opcode)
+        val skip = code[gate + 2] as BuilderOffsetInstruction
+        assertEquals(Opcode.IF_EQZ, skip.opcode)
+        val original = code[skip.target.location.index]
+        assertEquals("text", original.getReference<MethodReference>()?.name)
+        assertEquals((10..19).toList(), original.registersUsed.toList())
+        assertEquals(listOf(14, 15, 16), code.subList(gate + 3, gate + 6).map { (it as OneRegisterInstruction).registerA })
+        assertEquals(listOf(1, 1, Int.MAX_VALUE), code.subList(gate + 3, gate + 6).map { (it as com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction).narrowLiteral })
+        assertEquals(30, method.implementation!!.registerCount)
+        // R8 reusing the model alias cannot silently expand an unrelated object.
+        method.implementation!!.addInstruction(2, "const/4 v1, 0x0".toInstruction())
+        assertFailsWith<PatchException> { bannerTextCalls(method, "Lfixture/Notice;") }
+    }
+
+    @Test
+    fun `native progress bridge preserves wide colors and chooses animated unknown total`() {
+        val function = "Lkotlin/jvm/functions/Function0;"
+        val modifier = "Landroidx/compose/ui/Modifier;"
+        val composer = "Landroidx/compose/runtime/Composer;"
+        val linearTypes = listOf(function, modifier, "J", "J", "I", "F", "Lkotlin/jvm/functions/Function1;", composer, "I", "I")
+        val linearBody = MethodImplementationBuilder(30)
+        linearBody.addInstruction("and-int/lit8 v0, v29, 0x10".toInstruction()); linearBody.addInstruction("return-void".toInstruction())
+        val linear = fixture("linear", linearTypes, "V", linearBody, true)
+        val unknownTypes = listOf("F", "I", "I", "J", "J", composer, modifier)
+        val unknownBody = MethodImplementationBuilder(20)
+        unknownBody.addInstruction("and-int/lit8 v0, v13, 0x6".toInstruction()); unknownBody.addInstruction("return-void".toInstruction())
+        val unknown = fixture("unknown", unknownTypes, "V", unknownBody, true)
+        val bridgeBody = MethodImplementationBuilder(18); bridgeBody.addInstruction("return-void".toInstruction())
+        val bridge = fixture("draw", listOf("Ljava/lang/Object;", "Ljava/lang/Object;", "Z"), "V", bridgeBody, true)
+        bridge.emitNativeProgress(linear, unknown, methodReference("Lfixture/Color;->argb(I)J"),
+            methodReference("Lfixture/Width;->fill(Landroidx/compose/ui/Modifier;F)Landroidx/compose/ui/Modifier;"),
+            fieldReference("Lfixture/Empty;->a:Lfixture/Empty;"))
+        val code = bridge.implementation!!.instructions
+        val known = code.indexOfFirst { it.getReference<MethodReference>()?.name == "linear" }
+        val animated = code.indexOfFirst { it.getReference<MethodReference>()?.name == "unknown" }
+        assertEquals((0..11).toList(), code[known].registersUsed.toList())
+        assertEquals((0..8).toList(), code[animated].registersUsed.toList())
+        val branch = code.indexOfFirst { it.opcode == Opcode.IF_NEZ }
+        assertTrue((code[branch] as BuilderOffsetInstruction).target.location.index in (known + 1)..animated)
+        assertEquals(4, code.count { it.getReference<MethodReference>()?.name == "argb" })
+        code.indices.filter { code[it].getReference<MethodReference>()?.name == "argb" }.forEach {
+            assertEquals(Opcode.MOVE_RESULT_WIDE, code[it + 1].opcode)
+        }
+        assertEquals(18, bridge.implementation!!.registerCount)
     }
 
     private fun fixture(name: String, types: List<String>, result: String, body: MethodImplementationBuilder, static: Boolean) = MutableMethod(ImmutableMethod(

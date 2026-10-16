@@ -88,8 +88,8 @@ public final class NewXInAppNotification {
     static void startProgress(long id, String title, String detail, Runnable cancel) {
         if (hasUnifiedHost()) Host.INSTANCE.start(id, title, detail, cancel);
     }
-    static void progress(long id, String title, String detail) {
-        if (hasUnifiedHost()) Host.INSTANCE.progress(id, title, detail);
+    static void progress(long id, String title, String detail, int percent) {
+        if (hasUnifiedHost()) Host.INSTANCE.progress(id, title, detail, percent);
     }
     static void finishProgress(long id) {
         if (hasUnifiedHost()) Host.INSTANCE.finish(id);
@@ -123,12 +123,29 @@ public final class NewXInAppNotification {
     static Object cancelButton(String text) { return null; }
     static Object titleLiteral(Object model) { return null; }
     static Object detailLiteral(Object model) { return null; }
-    static Object makeState(String value) { return null; }
-    static void writeState(Object state, String value) { }
+    static Object makeState(Object value) { return null; }
+    static void writeState(Object state, Object value) { }
     static String readState(Object state) { return null; }
     public static boolean interceptNative(Object manager, Object entry) { return false; }
     public static void observeNative(Object manager) { }
     public static void disposingNative(Object manager, Object entry, Object reason) { }
+
+    public static boolean fullContent(Object model) { return Host.INSTANCE.fullContent(model); }
+    public static void drawProgress(Object model, Object composer) { Host.INSTANCE.drawProgress(model, composer); }
+    static Object readValue(Object state) { return null; }
+    static void drawNativeProgress(Object provider, Object composer, boolean unknown) { }
+    static int progressAccent() { return app.morphe.extension.newx.ui.Theme.primaryAccent(Utils.getContext()); }
+    static int progressTrack() { return (progressAccent() & 0x00ffffff) | 0x33000000; }
+
+    /** Function0 is attached at patch time, keeping obfuscated Compose types out of the extension. */
+    public static final class ProgressProvider {
+        private final Object state;
+        public ProgressProvider(Object state) { this.state = state; }
+        public Object invoke() {
+            Object value = readValue(state);
+            return value instanceof Number number ? Math.max(0f, Math.min(1f, number.floatValue())) : 0f;
+        }
+    }
 
     static String formatForUser(String message, String username) {
         if (username == null) return message;

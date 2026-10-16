@@ -423,11 +423,13 @@ public final class ProfileBulkDownload {
             if (recovering) message += "\n" + StringRef.str("piko_newx_profile_bulk_retry_progress", pager.attempts());
             DownloadProgressState.Snapshot snapshot = DownloadProgressDisplay.batchSnapshot();
             if (unified) {
-                String heading = StringRef.str("piko_newx_profile_bulk_banner_progress", saved, discovered);
+                String heading = StringRef.str("piko_newx_profile_bulk_banner_progress", saved, discovered,
+                        snapshot.percent < 0 ? "" : " · " + snapshot.percent + "%");
                 String detail = StringRef.str("piko_newx_profile_bulk_banner_detail", phase, pages, skipped, failed)
-                        + "\n" + (recovering ? StringRef.str("piko_newx_profile_bulk_retry_progress", pager.attempts())
-                        : snapshot.count == 0 ? text("piko_newx_profile_bulk_keep_open") : DownloadProgressDisplay.amount(activity, snapshot));
-                NewXInAppNotification.progress(taskId, heading, detail);
+                        + "\n" + DownloadProgressDisplay.amount(activity, snapshot)
+                        + (recovering ? "\n" + StringRef.str("piko_newx_profile_bulk_retry_progress", pager.attempts())
+                        : snapshot.count == 0 ? "\n" + text("piko_newx_profile_bulk_keep_open") : "");
+                NewXInAppNotification.progress(taskId, heading, detail, snapshot.percent);
                 return;
             }
             progress.setText(message);

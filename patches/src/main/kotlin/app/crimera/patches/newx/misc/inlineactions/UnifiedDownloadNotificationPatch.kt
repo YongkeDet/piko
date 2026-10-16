@@ -116,6 +116,7 @@ val unifiedDownloadNotificationPatch = bytecodePatch(
             notificationField(model, ", buttonSpec="))
         patchPinnedSender(runtime, classes, present)
         patchReactiveText(runtime, classes, model, detail)
+        patchFullDownloadBanner(runtime, classes, model)
         patchNativeInterceptor(manager.type, current, modelGetter, dispose, dismiss, reason)
         patchNativeLifecycle(manager, current, modelGetter, dispose, present)
         val actor = requireExactlyOne("NewX mutable notification actor", mutableClassDefBy(manager.type).methods.filter { it.same(actorReference) })
@@ -164,7 +165,7 @@ private fun enumField(type: ClassDef, name: String): FieldReference {
 }
 
 context(context: BytecodePatchContext)
-private fun bridgeMethod(name: String, types: List<String>, locals: Int): MutableMethod {
+internal fun bridgeMethod(name: String, types: List<String>, locals: Int): MutableMethod {
     val owner = context.mutableClassDefBy(BRIDGE)
     val stub = requireExactlyOne("NewX unified notification bridge $name", owner.methods.filter { it.name == name && it.types() == types })
     val required = locals + types.size
@@ -316,15 +317,19 @@ private fun patchReactiveText(runtime: ResolvedNotificationRuntime, classes: Lis
     val state = nativeNotificationClass(factory.returnType)
     val get = requireExactlyOne("NewX Snapshot state read", state.methods.filter { it.name == "getValue" && it.types().isEmpty() && it.returnType == OBJECT })
     val set = requireExactlyOne("NewX Snapshot state write", state.methods.filter { it.name == "setValue" && it.types() == listOf(OBJECT) && it.returnType == "V" })
-    val make = bridgeMethod("makeState", listOf(STRING), 1)
+    val make = bridgeMethod("makeState", listOf(OBJECT), 1)
     make.insertHook(0, relocateBranchTargets = false) { invokeStatic(factory, make.p0Register); moveResult(0, factory.returnType); returnObject(0) }
     val read = bridgeMethod("readState", listOf(OBJECT), 1)
     read.insertHook(0, relocateBranchTargets = false) {
         move(0, read.p0Register, OBJECT); checkCast(0, state.type); invokeVirtual(get, 0); moveResult(0, OBJECT); checkCast(0, STRING); returnObject(0)
     }
-    val write = bridgeMethod("writeState", listOf(OBJECT, STRING), 2)
+    val value = bridgeMethod("readValue", listOf(OBJECT), 1)
+    value.insertHook(0, relocateBranchTargets = false) {
+        move(0, value.p0Register, OBJECT); checkCast(0, state.type); invokeVirtual(get, 0); moveResult(0, OBJECT); returnObject(0)
+    }
+    val write = bridgeMethod("writeState", listOf(OBJECT, OBJECT), 2)
     write.insertHook(0, relocateBranchTargets = false) {
-        move(0, write.p0Register, OBJECT); checkCast(0, state.type); move(1, write.p0Register + 1, STRING); invokeVirtual(set, 0, 1); returnVoid()
+        move(0, write.p0Register, OBJECT); checkCast(0, state.type); move(1, write.p0Register + 1, OBJECT); invokeVirtual(set, 0, 1); returnVoid()
     }
 }
 
