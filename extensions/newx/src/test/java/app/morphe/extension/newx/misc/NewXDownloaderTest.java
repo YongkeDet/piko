@@ -30,6 +30,14 @@ public final class NewXDownloaderTest {
         state.finished(1);
         assertEquals(0, state.snapshot(false, 2000).count);
         assertEquals(1, state.snapshot(true, 2000).count);
+        state.queued(-1, "merge 1/2", false, 2000);
+        state.progress(-1, 50, 100, 2500);
+        assertEquals(50, state.snapshot(false, 2500).percent);
+        state.queued(-1, "merging", false, 2600);
+        assertEquals(-1, state.snapshot(false, 2600).percent);
+        state.finished(-1);
+        assertEquals(0, state.snapshot(false, 2600).count);
+        assertEquals(1, state.snapshot(true, 2600).count);
     }
 
     @Test

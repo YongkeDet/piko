@@ -15,6 +15,7 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import app.morphe.extension.crimera.downloader.DownloadEngine;
 import app.morphe.extension.crimera.downloader.events.DownloadEvent;
@@ -28,6 +29,8 @@ import app.morphe.extension.shared.Utils;
 /** A single, non-modal foreground progress card; batch transfers use their existing dialog. */
 final class DownloadProgressDisplay implements DownloadListener {
     private static final DownloadProgressState STATE = new DownloadProgressState();
+    private static final AtomicInteger LOCAL_IDS = new AtomicInteger(-1);
+    private static volatile DownloadProgressDisplay current;
     private final DownloadEngine engine;
     private final Handler main = new Handler(Looper.getMainLooper());
     private LinearLayout card;
@@ -36,7 +39,38 @@ final class DownloadProgressDisplay implements DownloadListener {
     private FrameLayout parent;
     private boolean scheduled;
 
-    DownloadProgressDisplay(DownloadEngine engine) { this.engine = engine; }
+    DownloadProgressDisplay(DownloadEngine engine) { this.engine = engine; current = this; }
+
+    /** Local merge downloads use negative IDs, separate from the shared engine's positive IDs. */
+    static int beginLocal(String name) {
+        NewXDownloader.get();
+        int id = LOCAL_IDS.getAndDecrement();
+        localStage(id, name);
+        return id;
+    }
+
+    static void localStage(int id, String name) {
+        DownloadProgressDisplay display = current;
+        if (display == null) return;
+        display.main.post(() -> {
+            STATE.queued(id, name, false, SystemClock.elapsedRealtime());
+            display.refresh();
+        });
+    }
+
+    static void localProgress(int id, long done, long total) {
+        DownloadProgressDisplay display = current;
+        if (display == null) return;
+        display.main.post(() -> {
+            STATE.progress(id, done, total, SystemClock.elapsedRealtime());
+            display.refresh();
+        });
+    }
+
+    static void endLocal(int id) {
+        DownloadProgressDisplay display = current;
+        if (display != null) display.main.post(() -> display.end(id));
+    }
 
     static DownloadProgressState.Snapshot batchSnapshot() {
         return STATE.snapshot(true, SystemClock.elapsedRealtime());

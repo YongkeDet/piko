@@ -610,4 +610,6 @@
     <string name="piko_newx_download_progress_amount">%1$s / %2$s · %3$s/s</string>
     <string name="piko_newx_download_progress_unknown_amount">Downloaded %1$s · %2$s/s</string>
     <string name="piko_newx_download_progress_waiting">Waiting for connection (%1$d item(s))</string>
+    <string name="piko_newx_download_progress_merge_part">Downloading image %1$d of %2$d for merge</string>
+    <string name="piko_newx_download_progress_merging">Merging and saving image</string>
 </resources>

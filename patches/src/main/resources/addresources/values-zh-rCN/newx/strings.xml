@@ -609,4 +609,6 @@
     <string name="piko_newx_download_progress_amount">%1$s / %2$s · %3$s/秒</string>
     <string name="piko_newx_download_progress_unknown_amount">已下载 %1$s · %2$s/秒</string>
     <string name="piko_newx_download_progress_waiting">等待网络连接（%1$d 项）</string>
+    <string name="piko_newx_download_progress_merge_part">正在下载长图分片：%1$d / %2$d</string>
+    <string name="piko_newx_download_progress_merging">正在拼接并保存长图</string>
 </resources>
