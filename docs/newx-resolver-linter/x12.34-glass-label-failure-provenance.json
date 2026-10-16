@@ -1,0 +1,17 @@
+{
+  "source_sha": "f7cd28a4234d0240d4a948dd59404b2ff87eaa16",
+  "source_run": 38858520145,
+  "bundle": "patches-3.10.0-custom-newx.7.mpp",
+  "bundle_bytes": 9021333,
+  "bundle_sha256": "7f040084b1c00e697e32d3bfa8fd6f059e2e418ca6cf21a7a5f84d80a2648e7a",
+  "extensions": {
+    "extensions/newx.mpe": {
+      "bytes": 541884,
+      "sha256": "a9dbbfcaf3539f113f7d9b9458e99bca965d354050c764f5fd8a629acf3f9415"
+    },
+    "extensions/shared.mpe": {
+      "bytes": 3371684,
+      "sha256": "ad486f4bf4537b12e4d0efaff8b809cf550d6f9eea4bff4549d481a9da105396"
+    }
+  }
+}

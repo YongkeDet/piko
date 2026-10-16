@@ -1,0 +1,10 @@
+relocate=true reproduced
+java.lang.IllegalStateException: Cannot get the location of a label that hasn't been placed yet.
+	at com.android.tools.smali.dexlib2.builder.Label.getLocation(Label.java:50)
+	at com.android.tools.smali.dexlib2.builder.Label.getCodeAddress(Label.java:44)
+	at com.android.tools.smali.dexlib2.builder.BuilderOffsetInstruction.internalGetCodeOffset(BuilderOffsetInstruction.java:68)
+	at com.android.tools.smali.dexlib2.builder.MutableMethodImplementation.fixInstructions(MutableMethodImplementation.java:497)
+	at com.android.tools.smali.dexlib2.builder.MutableMethodImplementation.getInstructions(MutableMethodImplementation.java:222)
+	at app.crimera.bytecode.HookKt.insertHook(Hook.kt:109)
+	at GlassLabelRelocationRepro.main(GlassLabelRelocationRepro.java:22)
+relocate=false PASS
