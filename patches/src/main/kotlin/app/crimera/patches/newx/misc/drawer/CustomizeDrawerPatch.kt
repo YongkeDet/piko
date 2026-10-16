@@ -1406,7 +1406,7 @@ val customizeNewXDrawerPatch =
             id = "newx.drawer.editor",
             category = Categories.NAVIGATION,
             strings = settingStrings("piko_newx_drawer_editor"),
-            order = 90,
+            order = 200,
             fragmentClassDescriptor = DRAWER_EDITOR_DESCRIPTOR,
             iconResourceName = "ic_vector_menu",
         )

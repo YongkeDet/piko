@@ -17,6 +17,7 @@ import app.morphe.extension.crimera.settings.SettingsUi;
 import app.morphe.extension.crimera.ui.ButtonView;
 import app.morphe.extension.crimera.ui.DialogView;
 import app.morphe.extension.newx.settings.NewXLogger;
+import app.morphe.extension.newx.timeline.NewXTimelineFilter;
 import app.morphe.extension.newx.ui.Theme;
 import app.morphe.extension.newx.utils.NewXUtils;
 import app.morphe.extension.shared.StringRef;
@@ -47,6 +48,12 @@ public final class ProfileBulkDownload {
     }
 
     public static boolean isRunning() { return active != null; }
+
+    /** Native Success constructor hook: downloads must not autoplay the Videos tab behind the dialog. */
+    public static boolean allowAutoplay(Object timelineType, boolean allowed) {
+        if (!allowed || active == null || !(timelineType instanceof Enum<?> kind)) return allowed;
+        return !kind.name().equals("USER_PROFILE_PHOTOS") && !kind.name().equals("USER_PROFILE_VIDEOS");
+    }
 
     static synchronized void markRequest(DownloadRequest request) { REQUESTS.add(request); }
     static synchronized boolean isBatchRequest(DownloadRequest request) { return REQUESTS.contains(request); }
@@ -231,7 +238,7 @@ public final class ProfileBulkDownload {
 
         void process(List<?> items, String cursor) {
             try {
-                for (Object item : items) {
+                for (Object item : NewXTimelineFilter.mediaItemsForProfileDownload(items)) {
                     if (stopped) break;
                     List<?> media = ProfilePhotosGallery.getDownloadMedia(item);
                     if (media == null || media.isEmpty()) continue;
@@ -332,8 +339,9 @@ public final class ProfileBulkDownload {
             worker.shutdown();
             try { selectTab(component, originalTab); }
             catch (RuntimeException error) { NewXLogger.printException(() -> "Cannot restore profile tab", error); }
-            dialog.dismiss();
             active = null;
+            try { dialog.dismiss(); }
+            catch (RuntimeException error) { NewXLogger.printException(() -> "Cannot close profile progress dialog", error); }
             if (activity.isDestroyed() || activity.isFinishing()) return;
             String reason = text(endReason == null ? "piko_newx_profile_bulk_cancelled" : endReason);
             String summary = StringRef.str("piko_newx_profile_bulk_result", reason, saved, skipped, failed);

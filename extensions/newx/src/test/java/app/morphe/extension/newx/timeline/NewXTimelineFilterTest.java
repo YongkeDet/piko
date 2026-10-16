@@ -31,6 +31,15 @@ public class NewXTimelineFilterTest {
     }
 
     @Test
+    public void profileBatchIncludesNestedMediaModulesAndUnwrapsChildrenInOrder() {
+        Object first = post("first"), last = post("last"), media = new Object();
+        List<Object> tree = items(module("outer", item(first),
+                item(module("inner", item(media), item(last)))), first);
+        assertEquals(Arrays.asList(first, media, last),
+                NewXTimelineFilter.mediaItemsForProfileDownload(tree, MODELS));
+    }
+
+    @Test
     public void disabledFilterReturnsOriginalList() {
         List<Object> items = items(module("who-to-follow-1", item(post("safe"))));
         assertSame(items, NewXTimelineFilter.filterWhoToFollow(items, false, MODELS));

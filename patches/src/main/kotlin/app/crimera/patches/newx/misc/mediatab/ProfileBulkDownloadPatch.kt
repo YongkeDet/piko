@@ -112,6 +112,19 @@ val newXProfileBulkDownloadPatch = bytecodePatch(
         val select = requireExactlyOne("NewX bulk native tab selection", controller.methods.filter {
             it.parameters() == listOf(tabType) && it.returnType == "V"
         })
+        // Reuse the native tab-switch pause operation. Switching to Videos behind a progress
+        // dialog must not start playback while a profile is being downloaded.
+        val pause = requireExactlyOne("NewX bulk native autoplay pause", combined.methods.filter {
+            it.parameters() == listOf(tabType) && it.returnType == "V"
+        }.flatMap { method -> method.implementation?.instructions?.mapNotNull {
+            it.getReference<MethodReference>()?.takeIf { call ->
+                call.definingClass.startsWith("Lcom/x/media/autoplay/") &&
+                    call.parameterTypes.map(CharSequence::toString) == listOf("Z") && call.returnType == "V"
+            }
+        }.orEmpty() }.distinctBy(MethodReference::toString))
+        val autoplay = requireExactlyOne("NewX bulk autoplay controller getter", hostInterface.methods.filter {
+            it.parameterTypes.isEmpty() && it.returnType == pause.definingClass
+        })
         val tabs = requireExactlyOne("NewX bulk available tabs", combined.fields.filter {
             !AccessFlags.STATIC.isSet(it.accessFlags) && it.type == LIST
         })
@@ -147,6 +160,22 @@ val newXProfileBulkDownloadPatch = bytecodePatch(
         })
         val items = successToString.fieldForToStringLabel(", timelineItems=")
         val timelineType = successToString.fieldForToStringLabel("Success(timelineType=")
+        val autoplayAllowed = successToString.fieldForToStringLabel(", isAutoPlayAllowed=")
+        val constructor = success.method
+        val autoplayStore = requireExactlyOne("NewX bulk autoplay permission store", constructor.implementation!!.instructions
+            .toList().withIndex().filter { (_, instruction) ->
+                instruction.opcode == Opcode.IPUT_BOOLEAN &&
+                    instruction.getReference<FieldReference>()?.toString() == autoplayAllowed.toString()
+            })
+        val autoplayRegister = (autoplayStore.value as TwoRegisterInstruction).registerA
+        if (autoplayRegister != constructor.p0Register + 4) {
+            throw PatchException("NewX bulk autoplay flag is no longer the constructor boolean parameter")
+        }
+        constructor.insertHook(autoplayStore.index, relocateBranchTargets = true) {
+            invokeStatic(methodReference("$EXTENSION->allowAutoplay(${OBJECT}Z)Z"),
+                constructor.p0Register + 1, autoplayRegister)
+            moveResult(autoplayRegister, "Z")
+        }
         val pagingStateClass = byType[paging.state.stateType]!!
         val pagingToString = requireExactlyOne("NewX bulk paginator labels", pagingStateClass.methods.filter {
             it.name == "toString" && it.parameterTypes.isEmpty()
@@ -204,6 +233,11 @@ val newXProfileBulkDownloadPatch = bytecodePatch(
             checkCast(0, controller.type)
             checkCast(1, tabType)
             invokeInterface(methodReference(select.toString()), 0, 1)
+            checkCast(0, hostInterface.type)
+            invokeInterface(methodReference(autoplay.toString()), 0)
+            moveResult(0, OBJECT)
+            constInt(1, 0)
+            invokeVirtual(pause, 0, 1)
             returnVoid()
         }
         replaceBulkBridge("currentItems") { method ->
