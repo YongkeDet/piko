@@ -160,7 +160,7 @@ public final class ProfileBulkDownload {
         } catch (RuntimeException exception) {
             NewXLogger.printException(() -> "Cannot start profile media download", exception);
             Session session = active;
-            if (session != null) session.stop("piko_newx_profile_bulk_incomplete");
+            if (session != null) session.stop("piko_newx_profile_bulk_read_failed");
             else NewXInAppNotification.show(StringRef.str("piko_newx_profile_bulk_unavailable"));
         }
     }
@@ -183,6 +183,7 @@ public final class ProfileBulkDownload {
         volatile boolean stopped;
         volatile int saved, skipped, failed, discovered;
         boolean processing;
+        boolean recovering;
         boolean finished;
         String endReason;
         int pages;
@@ -229,28 +230,32 @@ public final class ProfileBulkDownload {
             if (processing) { main.postDelayed(this::tick, 500); return; }
             try {
                 if (selectedTab(component) != desiredTab) {
-                    stop("piko_newx_profile_bulk_incomplete");
+                    stop("piko_newx_profile_bulk_tab_changed");
                     return;
                 }
                 List<?> items = currentItems(component);
                 Object[] snapshot = pagingSnapshot(component);
-                if (snapshot == null || snapshot.length != 5) throw new IllegalStateException("Missing native paging state");
-                String cursor = snapshot[3] == null ? null : snapshot[3].toString();
-                Object event = snapshot[4];
-                // Native network event labels are preserved data-model contracts, as with media.
-                boolean networkFailed = event != null && event.toString().startsWith("Failure(requestType=");
-                boolean fetched = event != null && event.toString().startsWith("Success(requestType=");
+                if (snapshot == null || snapshot.length != 6) throw new IllegalStateException("Missing native paging state");
+                String cursor = (String) snapshot[3];
+                ProfileBulkPager.Network network = ProfileBulkPager.Network.read(snapshot[4]);
                 ProfileBulkPager.Step step = pager.step(SystemClock.elapsedRealtime(), items,
                         Boolean.TRUE.equals(snapshot[0]), Boolean.TRUE.equals(snapshot[1]),
-                        Boolean.TRUE.equals(snapshot[2]), cursor, networkFailed, fetched);
+                        Boolean.TRUE.equals(snapshot[2]), cursor, network, Boolean.TRUE.equals(snapshot[5]));
                 switch (step) {
                     case PROCESS -> {
+                        recovering = false;
                         processing = true;
                         worker.execute(() -> process(items, cursor));
                     }
-                    case NEXT -> {
-                        pager.requested(cursor, SystemClock.elapsedRealtime());
+                    case NEXT, RETRY -> {
+                        recovering = step == ProfileBulkPager.Step.RETRY;
+                        pager.requested(cursor, SystemClock.elapsedRealtime(), network);
                         requestNext(component);
+                    }
+                    case REFRESH -> {
+                        recovering = true;
+                        pager.refreshed(SystemClock.elapsedRealtime(), cursor, network);
+                        refresh(component);
                     }
                     case DONE -> {
                         if (desiredTab == photos) {
@@ -263,12 +268,24 @@ public final class ProfileBulkDownload {
                             return;
                         }
                     }
-                    case FAILED -> { stop("piko_newx_profile_bulk_incomplete"); return; }
+                    case FAILED -> {
+                        NewXLogger.printInfo(() -> "Profile media pagination stopped: " + pager.failure()
+                                + ", HTTP=" + pager.failureStatus() + ", attempts=" + pager.attempts());
+                        stop(switch (pager.failure()) {
+                            case ACCESS -> "piko_newx_profile_bulk_access_failed";
+                            case RATE_LIMIT -> "piko_newx_profile_bulk_rate_limited";
+                            case CURSOR_LOOP -> "piko_newx_profile_bulk_cursor_stalled";
+                            case NETWORK -> "piko_newx_profile_bulk_network_failed";
+                            case TIMEOUT -> "piko_newx_profile_bulk_timed_out";
+                            case NONE -> "piko_newx_profile_bulk_read_failed";
+                        });
+                        return;
+                    }
                     case WAIT -> { }
                 }
             } catch (RuntimeException exception) {
                 NewXLogger.printException(() -> "Profile media pagination stopped", exception);
-                stop("piko_newx_profile_bulk_incomplete");
+                stop("piko_newx_profile_bulk_read_failed");
                 return;
             }
             main.postDelayed(this::tick, 500);
@@ -278,41 +295,47 @@ public final class ProfileBulkDownload {
             try {
                 for (Object item : NewXTimelineFilter.mediaItemsForProfileDownload(items)) {
                     if (stopped) break;
-                    List<?> media = ProfilePhotosGallery.getDownloadMedia(item);
-                    if (media == null || media.isEmpty()) continue;
-                    List<InlineDownloadButton.DownloadItem> downloads = InlineDownloadButton.downloadItems(media);
-                    failed += Math.max(0, media.size() - downloads.size());
-                    DownloadFileName.PostContext post = DownloadFileName.PostContext.from(item);
-                    for (int index = 0; index < downloads.size() && !stopped; index++) {
-                        InlineDownloadButton.DownloadItem download = downloads.get(index);
-                        String key = InlineDownloadButton.urlKey(download.url);
-                        if (!mediaKeys.add(key)) continue;
-                        discovered++;
-                        drain(false);
-                        if (stopped) break;
-                        InlineDownloadButton.DownloadItem chosen = InlineDownloadButton.autoSelectedOption(download);
-                        if (chosen == null) chosen = download;
-                        EnqueueResult result = InlineDownloadButton.enqueueProfileDownload(context, chosen, post,
-                                post.screenName, index, downloads.size());
-                        switch (result.state()) {
-                            case QUEUED -> {
-                                synchronized (transfers) { transfers.add(result.handle()); }
-                                if (stopped) result.handle().cancel();
-                            }
-                            case SKIPPED -> skipped++;
-                            case FAILED -> failed++;
-                            case DESTINATION_LOST -> {
-                                failed++;
-                                endReason = "piko_newx_profile_bulk_folder_lost";
-                                stopped = true;
+                    try {
+                        List<?> media = ProfilePhotosGallery.getDownloadMedia(item);
+                        if (media == null || media.isEmpty()) continue;
+                        List<InlineDownloadButton.DownloadItem> downloads = InlineDownloadButton.downloadItems(media);
+                        failed += Math.max(0, media.size() - downloads.size());
+                        DownloadFileName.PostContext post = DownloadFileName.PostContext.from(item);
+                        for (int index = 0; index < downloads.size() && !stopped; index++) {
+                            InlineDownloadButton.DownloadItem download = downloads.get(index);
+                            String key = InlineDownloadButton.urlKey(download.url);
+                            if (!mediaKeys.add(key)) continue;
+                            discovered++;
+                            drain(false);
+                            if (stopped) break;
+                            InlineDownloadButton.DownloadItem chosen = InlineDownloadButton.autoSelectedOption(download);
+                            if (chosen == null) chosen = download;
+                            EnqueueResult result = InlineDownloadButton.enqueueProfileDownload(context, chosen, post,
+                                    post.screenName, index, downloads.size());
+                            switch (result.state()) {
+                                case QUEUED -> {
+                                    synchronized (transfers) { transfers.add(result.handle()); }
+                                    if (stopped) result.handle().cancel();
+                                }
+                                case SKIPPED -> skipped++;
+                                case FAILED -> failed++;
+                                case DESTINATION_LOST -> {
+                                    failed++;
+                                    endReason = "piko_newx_profile_bulk_folder_lost";
+                                    stopped = true;
+                                }
                             }
                         }
+                    } catch (RuntimeException exception) {
+                        // A malformed/deleted media item must not abort the rest of the profile.
+                        failed++;
+                        NewXLogger.printException(() -> "Cannot read one profile media item", exception);
                     }
                 }
                 drain(true);
             } catch (RuntimeException exception) {
                 NewXLogger.printException(() -> "Profile batch download stopped", exception);
-                endReason = "piko_newx_profile_bulk_incomplete";
+                endReason = "piko_newx_profile_bulk_read_failed";
                 stopped = true;
                 cancelTransfers();
             } finally {
@@ -367,7 +390,9 @@ public final class ProfileBulkDownload {
 
         void updateProgress() {
             String phase = text(desiredTab == photos ? "piko_newx_media_tab_photos" : "piko_newx_media_tab_videos");
-            progress.setText(StringRef.str("piko_newx_profile_bulk_progress", phase, pages, discovered, saved, skipped, failed));
+            String message = StringRef.str("piko_newx_profile_bulk_progress", phase, pages, discovered, saved, skipped, failed);
+            if (recovering) message += "\n" + StringRef.str("piko_newx_profile_bulk_retry_progress", pager.attempts());
+            progress.setText(message);
         }
 
         void finish() {
@@ -382,6 +407,10 @@ public final class ProfileBulkDownload {
             catch (RuntimeException error) { NewXLogger.printException(() -> "Cannot close profile progress dialog", error); }
             if (activity.isDestroyed() || activity.isFinishing()) return;
             String reason = text(endReason == null ? "piko_newx_profile_bulk_cancelled" : endReason);
+            if (stopped && !"piko_newx_profile_bulk_cancelled".equals(endReason)) {
+                reason += "\n" + StringRef.str("piko_newx_profile_bulk_failure_phase",
+                        text(desiredTab == photos ? "piko_newx_media_tab_photos" : "piko_newx_media_tab_videos"), pages);
+            }
             String summary = StringRef.str("piko_newx_profile_bulk_result", reason, saved, skipped, failed);
             DialogView result = new DialogView(activity).setTitle(text("piko_newx_profile_bulk_button"))
                     .setSubtitle(summary);
@@ -408,4 +437,5 @@ public final class ProfileBulkDownload {
     private static List<?> currentItems(Object component) { throw unpatched(); }
     private static Object[] pagingSnapshot(Object component) { throw unpatched(); }
     private static void requestNext(Object component) { throw unpatched(); }
+    private static void refresh(Object component) { throw unpatched(); }
 }

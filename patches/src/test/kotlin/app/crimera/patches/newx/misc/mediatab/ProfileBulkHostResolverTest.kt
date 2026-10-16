@@ -13,12 +13,31 @@ import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethodParameter
 import kotlin.test.Test
 import kotlin.test.assertFailsWith
+import kotlin.test.assertEquals
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 class ProfileBulkHostResolverTest {
     private val paginator = "Lcom/x/urt/paging/bottom/RenamedPaginator;"
     private val contract = "Lcom/x/urt/paging/RenamedContract;"
+
+    @Test
+    fun `empty state and native refresh objects resolve by contract and label across renames`() {
+        val state = "Lcom/x/urt/RenamedState;"
+        val events = "Lcom/x/urt/RenamedEvent;"
+        val unrelated = singleton("Lother/Empty;", "Lother/State;", "Empty")
+        for (name in listOf("FirstRename", "SecondRename")) {
+            val empty = singleton("Lcom/x/urt/$name;", state, "Empty")
+            val refresh = singleton("Lcom/x/urt/Refresh$name;", events, "RefreshTimeline")
+            val classes = listOf(unrelated, empty, refresh)
+            assertEquals(empty.type, resolveBulkSingleton(classes, state, "Empty").definingClass)
+            assertEquals(refresh.type, resolveBulkSingleton(classes, events, "RefreshTimeline").definingClass)
+            assertFailsWith<PatchException> { resolveBulkSingleton(classes, state, "RefreshTimeline") }
+            assertFailsWith<PatchException> {
+                resolveBulkSingleton(classes + singleton("Lcom/x/urt/Duplicate;", state, "Empty"), state, "Empty")
+            }
+        }
+    }
 
     @Test
     fun `host getter excludes suspend and zero-argument captures and fails closed on real ambiguity`() {
@@ -50,6 +69,19 @@ class ProfileBulkHostResolverTest {
         """.trimIndent())
         return ImmutableClassDef(owner, AccessFlags.PUBLIC.value, "Ljava/lang/Object;", emptyList(), null,
             emptySet(), listOf(ImmutableField(owner, "captured", paginator, AccessFlags.PUBLIC.value,
+                null, emptySet(), emptySet())), listOf(method))
+    }
+
+    private fun singleton(owner: String, contract: String, label: String): ImmutableClassDef {
+        val method = MutableMethod(ImmutableMethod(owner, "toString", emptyList(), "Ljava/lang/String;",
+            AccessFlags.PUBLIC.value, emptySet(), emptySet(), MethodImplementationBuilder(2).methodImplementation))
+        method.addInstructionsWithLabels(0, """
+            const-string v0, "$label"
+            return-object v0
+        """.trimIndent())
+        return ImmutableClassDef(owner, AccessFlags.PUBLIC.value, "Ljava/lang/Object;", listOf(contract), null,
+            emptySet(), listOf(ImmutableField(owner, "renamedInstance", owner,
+                AccessFlags.PUBLIC.value or AccessFlags.STATIC.value or AccessFlags.FINAL.value,
                 null, emptySet(), emptySet())), listOf(method))
     }
 }
