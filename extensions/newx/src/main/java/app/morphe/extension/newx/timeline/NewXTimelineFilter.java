@@ -6,6 +6,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.ArrayDeque;
+import java.util.IdentityHashMap;
 
 import app.morphe.extension.newx.filteredreplies.FilteredRepliesStore;
 import app.morphe.extension.newx.settings.NewXLogger;
@@ -120,6 +122,41 @@ public final class NewXTimelineFilter {
     }
 
     /** Applies all selected timeline filters in one traversal of the immutable item tree. */
+    public static Object filterTimelineItems(Object timelineType, Object timelineItems) {
+        Object filtered = filterTimelineItems(timelineItems);
+        app.morphe.extension.newx.misc.ProfileBulkDownload.rememberPage(timelineType, timelineItems, filtered);
+        return filtered;
+    }
+
+    /** Keep nested media modules in profile batches, using the already resolved model access. */
+    public static List<?> mediaItemsForProfileDownload(List<?> items) {
+        return mediaItemsForProfileDownload(items, PRODUCTION_MODEL_ACCESS);
+    }
+
+    static List<?> mediaItemsForProfileDownload(List<?> items, TimelineModelAccess models) {
+        List<Object> result = new ArrayList<>();
+        ArrayDeque<Object> pending = new ArrayDeque<>();
+        Set<Object> visited = Collections.newSetFromMap(new IdentityHashMap<>());
+        for (int index = items.size() - 1; index >= 0; index--) {
+            if (items.get(index) != null) pending.addFirst(items.get(index));
+        }
+        while (!pending.isEmpty()) {
+            Object item = pending.removeFirst();
+            if (!visited.add(item)) continue;
+            if (models.isModuleItem(item)) {
+                Object child = models.getModuleItem(item);
+                if (child != null) pending.addFirst(child);
+            } else if (models.isModule(item)) {
+                List<?> children = models.getModuleChildren(item);
+                if (children == null) continue;
+                for (int index = children.size() - 1; index >= 0; index--) {
+                    if (children.get(index) != null) pending.addFirst(children.get(index));
+                }
+            } else result.add(item);
+        }
+        return result;
+    }
+
     public static Object filterTimelineItems(Object timelineItems) {
         if (timelineItems == null) return null;
 

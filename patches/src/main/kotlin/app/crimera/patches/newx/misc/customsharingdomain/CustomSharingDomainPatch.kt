@@ -280,18 +280,18 @@ val newXCustomSharingDomainPatch =
 
         newXTextInput(
             id = "newx.content.custom_sharing_domain",
-            category = Categories.CONTENT,
+            category = Categories.POST_ACTIONS_MEDIA,
             strings = settingStrings("piko_newx_custom_sharing_domain"),
-            order = 500,
+            order = 620,
             defaultValue = "",
             validatorClassDescriptor = CUSTOM_DOMAIN_VALIDATOR_DESCRIPTOR,
         )
 
         newXToggle(
             id = "newx.content.clear_tracking_params",
-            category = Categories.CONTENT,
+            category = Categories.POST_ACTIONS_MEDIA,
             strings = settingStrings("piko_newx_clear_tracking_params"),
-            order = 510,
+            order = 630,
             defaultValue = true,
         )
 

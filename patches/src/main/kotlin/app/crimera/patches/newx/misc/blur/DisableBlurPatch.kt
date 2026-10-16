@@ -237,7 +237,7 @@ val newXDisableBlurPatch =
                 id = "newx.appearance.disable_blur",
                 category = Categories.APPEARANCE,
                 strings = settingStrings("piko_newx_disable_blur"),
-                order = 100,
+                order = 300,
                 defaultValue = false,
                 rebootApp = true,
             )

@@ -1,6 +1,6 @@
 {
-  "version": "3.10.0-custom-newx.4",
-  "download_url": "https://github.com/YongkeDet/piko/releases/download/v3.10.0-custom-newx.4/patches-3.10.0-custom-newx.4.mpp",
-  "created_at": "2026-10-15T18:21:19",
-  "description": "X 12.34.0-prod.01 / 312340001（arm64-v8a，Android 10+）。\n修复图片、视频和合并图片保存成功时上下两处重复提示：现在只保留页面上方“已保存”横幅，移除底部 Toast。\n保留按作者建文件夹、简体中文设置和原有下载规则。\n54 项全选、48 项默认修补均零失败并重建成功；328 项测试通过，最终 APK 的两处成功反馈确认无底部 Toast 回退。实际提示位置仍需手机确认。\nhttps://github.com/YongkeDet/piko/releases/tag/v3.10.0-custom-newx.4"
+  "version": "3.10.0-custom-newx.5",
+  "download_url": "https://github.com/YongkeDet/piko/releases/download/v3.10.0-custom-newx.5/patches-3.10.0-custom-newx.5.mpp",
+  "created_at": "2026-10-16T01:03:05",
+  "description": "X 12.34.0-prod.01 / 312340001（arm64-v8a，Android 10+）。\n新增主页一键下载：主页 → 媒体 → 照片 → 下载此主页全部图片和视频。自动分页，显示进度并支持取消，沿用保存目录、作者子文件夹和命名规则；请保持页面在前台。\n设置重排为下载与保存、个人主页、时间线、内容过滤、帖子与互动、导航、外观、高级八类，保留已有配置，新增内容已汉化。\n55 项全选、49 项默认修补均零失败并重建成功，341 项测试通过；新批量下载的真实账号分页和取消交互仍需手机验证。\nhttps://github.com/YongkeDet/piko/releases/tag/v3.10.0-custom-newx.5"
 }

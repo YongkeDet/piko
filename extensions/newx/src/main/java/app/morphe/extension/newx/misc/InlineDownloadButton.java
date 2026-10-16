@@ -509,7 +509,7 @@ public final class InlineDownloadButton {
         return null;
     }
 
-    private static String urlKey(String url) {
+    static String urlKey(String url) {
         if (url == null) return null;
         int cut = url.length();
         int query = url.indexOf('?');
@@ -992,7 +992,7 @@ public final class InlineDownloadButton {
      * shown. Photos use the exact twimg size tiers; videos and GIFs use a best-effort variant
      * policy since the model has no per-variant resolution field.
      */
-    private static DownloadItem autoSelectedOption(DownloadItem item) {
+    static DownloadItem autoSelectedOption(DownloadItem item) {
         if (item == null || item.resolutionOptions.size() <= 1) return null;
 
         if (isImageItem(item)) {
@@ -1184,7 +1184,26 @@ public final class InlineDownloadButton {
             ConflictPolicy policy,
             boolean explicitResolution
     ) {
-        if (!NewXUtils.isHttpUrl(download.url)) return EnqueueState.FAILED;
+        return enqueueResult(context, download, postContext, username, index, mediaCount,
+                policy, explicitResolution, false).state();
+    }
+
+    static synchronized EnqueueResult enqueueProfileDownload(
+            Context context, DownloadItem download, DownloadFileName.PostContext postContext,
+            String username, int index, int mediaCount
+    ) {
+        return enqueueResult(context, download, postContext, username, index, mediaCount,
+                NewXDownloadFolders.conflictPolicy(), false, true);
+    }
+
+    private static EnqueueResult enqueueResult(
+            Context context, DownloadItem download, DownloadFileName.PostContext postContext,
+            String username, int index, int mediaCount, ConflictPolicy policy,
+            boolean explicitResolution, boolean profileBatch
+    ) {
+        if (!NewXUtils.isHttpUrl(download.url)) {
+            return EnqueueResult.failed(new IllegalArgumentException("Invalid media URL"));
+        }
 
         final NewXDownloadFolders.MediaKind kind;
         try {
@@ -1194,7 +1213,7 @@ public final class InlineDownloadButton {
                     () -> "Unsupported NewX download media type: " + download.mimeType,
                     exception
             );
-            return EnqueueState.FAILED;
+            return EnqueueResult.failed(exception);
         }
 
         String template = DownloadSettings.filenameTemplate();
@@ -1216,7 +1235,7 @@ public final class InlineDownloadButton {
 
         DownloadEngine engine = NewXDownloader.get();
         if (engine == null) {
-            return EnqueueState.FAILED;
+            return EnqueueResult.failed(new IllegalStateException("Download engine unavailable"));
         }
 
         final Uri destinationTree = NewXDownloadFolders.treeUri(kind);
@@ -1239,14 +1258,15 @@ public final class InlineDownloadButton {
             );
         } catch (IllegalArgumentException exception) {
             NewXLogger.printException(() -> "Invalid NewX download request: " + resolvedFileName, exception);
-            return EnqueueState.FAILED;
+            return EnqueueResult.failed(exception);
         }
 
+        if (profileBatch) ProfileBulkDownload.markRequest(request);
         EnqueueResult result = engine.enqueue(request);
         if (result.state() == EnqueueState.DESTINATION_LOST) {
             NewXDownloadFolders.invalidate(kind);
         }
-        return result.state();
+        return result;
     }
 
     static String withResolutionSuffix(String fileName, String resolution) {
@@ -1261,7 +1281,7 @@ public final class InlineDownloadButton {
      * never chosen, or whose persisted grant is gone after a restore, aborts the action and offers
      * the picker instead.
      */
-    private static void promptForDestination(
+    static void promptForDestination(
             Context context,
             boolean imagesMissing,
             boolean videosMissing

@@ -155,7 +155,7 @@ val newXForYouTopicFilterPatch =
 
         val forYouTabHookEnabled =
             newXSettings {
-                category(Categories.TIMELINE) {
+                category(Categories.CONTENT) {
                     group(Groups.FOR_YOU_FILTERING) {
                         val setting =
                             toggle(

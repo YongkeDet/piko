@@ -12,13 +12,13 @@
     <string name="piko_newx_patch_version" translatable="false">Piko %s</string>
     <string name="piko_newx_settings_open_failed">Could not open Piko NewX settings</string>
     <string name="piko_newx_category_timeline_title">Timeline</string>
-    <string name="piko_newx_category_timeline_summary">Manage timeline behavior and appearance</string>
-    <string name="piko_newx_category_content_title">Content</string>
-    <string name="piko_newx_category_content_summary">Control promotions, recommendations, sensitive media, and filters</string>
+    <string name="piko_newx_category_timeline_summary">Timeline refreshing, saved positions, tabs and layout</string>
+    <string name="piko_newx_category_content_title">Content filtering</string>
+    <string name="piko_newx_category_content_summary">Ads, recommendations, keywords, AI and verified-account filters</string>
     <string name="piko_newx_category_appearance_title">Appearance</string>
     <string name="piko_newx_category_appearance_summary">Customize colors and fonts</string>
-    <string name="piko_newx_category_post_actions_media_title">Posts and media</string>
-    <string name="piko_newx_category_post_actions_media_summary">Customize post actions, replies, media tabs, downloads, and sharing</string>
+    <string name="piko_newx_category_post_actions_media_title">Posts and interaction</string>
+    <string name="piko_newx_category_post_actions_media_summary">Post menus, inline actions, replies, playback and sharing</string>
     <string name="piko_newx_category_navigation_title">Navigation</string>
     <string name="piko_newx_category_navigation_summary">Customize navigation bar and drawer items</string>
     <string name="piko_newx_category_advanced_title">Advanced</string>
@@ -164,8 +164,8 @@
     <string name="piko_newx_share_image_summary">Adds a rendered-image share action to post menus</string>
     <string name="piko_newx_browse_tweet_object_title">Browse tweet object</string>
     <string name="piko_newx_browse_tweet_object_summary">Adds a debug option to inspect the tweet object in post menus</string>
-    <string name="piko_newx_group_inline_download_title">Inline download</string>
-    <string name="piko_newx_group_inline_download_summary">Customize the inline media download picker</string>
+    <string name="piko_newx_group_inline_download_title">Download entry points</string>
+    <string name="piko_newx_group_inline_download_summary">Post download buttons, native downloads and external downloaders</string>
     <string name="piko_newx_inline_download_button_title">Show inline download button</string>
     <string name="piko_newx_inline_download_button_summary">Adds a download button directly below NewX posts</string>
     <string name="piko_newx_inline_download_hide_no_media_title">Hide button when no media</string>
@@ -201,8 +201,8 @@
     <string name="piko_newx_inline_download_conflict_overwrite">Overwrite the existing file</string>
     <string name="piko_newx_inline_download_conflict_rename">Save with a new name</string>
     <string name="piko_newx_inline_download_conflict_skip">Skip already-downloaded media</string>
-    <string name="piko_newx_inline_download_options_title">Download options</string>
-    <string name="piko_newx_inline_download_options_summary">Choose where downloads are saved and how files are named</string>
+    <string name="piko_newx_inline_download_options_title">Folders and filenames</string>
+    <string name="piko_newx_inline_download_options_summary">Choose image and video folders, author subfolders and filename templates</string>
     <string name="piko_newx_inline_download_filename_template_title">Filename template</string>
     <string name="piko_newx_inline_download_filename_template_summary">Builds the saved filename from post values. Tap to edit, with a live preview of the result.</string>
     <string name="piko_newx_inline_download_images_tree_uri_title">Images download folder</string>
@@ -572,4 +572,25 @@
     <string name="piko_newx_crash_copy_action">Copy</string>
     <string name="piko_newx_download_author_folders_title">Create a folder for each author</string>
     <string name="piko_newx_download_author_folders_summary">Save images and videos in an @username subfolder of each chosen download folder. Applies to new downloads.</string>
+    <string name="piko_newx_category_downloads_title">Downloads and saving</string>
+    <string name="piko_newx_category_downloads_summary">Profile batches, folders, filenames and download quality</string>
+    <string name="piko_newx_category_profile_title">Profile</string>
+    <string name="piko_newx_category_profile_summary">Profile tabs, media gallery, sorting and scroll position</string>
+    <string name="piko_newx_group_download_quality_title">Quality and duplicate files</string>
+    <string name="piko_newx_group_download_quality_summary">Default image size, video quality and existing files</string>
+    <string name="piko_newx_group_media_picker_title">Media picker</string>
+    <string name="piko_newx_group_media_picker_summary">Thumbnails, quality selection, link copying and merging</string>
+    <string name="piko_newx_profile_bulk_title">Profile batch download button</string>
+    <string name="piko_newx_profile_bulk_summary">Adds a button above the profile Photos gallery to download all accessible photos, videos and GIFs. Requires the Photos gallery and both media tabs.</string>
+    <string name="piko_newx_profile_bulk_button">Download all profile media</string>
+    <string name="piko_newx_profile_bulk_keep_open">Keep this page open. Saves both media tabs using your folders, author subfolders and quality preferences. Ask each time uses the best available quality.</string>
+    <string name="piko_newx_profile_bulk_unavailable">Open a profile Photos gallery with both Photos and Videos tabs available, then retry.</string>
+    <string name="piko_newx_profile_bulk_progress">%1$s: %2$d pages read\nFound %3$d, saved %4$d\nSkipped %5$d, failed %6$d</string>
+    <string name="piko_newx_profile_bulk_completed">Both media tabs reached the end.</string>
+    <string name="piko_newx_profile_bulk_with_failures">Both media tabs reached the end; some files failed.</string>
+    <string name="piko_newx_profile_bulk_incomplete">Stopped before reaching the end. Refresh the profile after restoring access or connectivity, then retry.</string>
+    <string name="piko_newx_profile_bulk_cancelled">Stopped. Previously saved files are kept.</string>
+    <string name="piko_newx_profile_bulk_folder_lost">Stopped: the download folder is no longer writable. Choose the folder again.</string>
+    <string name="piko_newx_profile_bulk_result">%1$s\nSaved %2$d, skipped %3$d, failed %4$d</string>
+    <string name="piko_newx_settings_close">Close</string>
 </resources>

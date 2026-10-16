@@ -50,9 +50,9 @@ val newXShowPollResultsPatch =
 
         newXToggle(
             id = "newx.content.show_poll_results",
-            category = Categories.CONTENT,
+            category = Categories.POST_ACTIONS_MEDIA,
             strings = settingStrings("piko_newx_show_poll_results"),
-            order = 350,
+            order = 410,
             defaultValue = false,
         )
 

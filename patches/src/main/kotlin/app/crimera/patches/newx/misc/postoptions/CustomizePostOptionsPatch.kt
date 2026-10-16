@@ -101,7 +101,7 @@ val customizeNewXPostOptionsPatch =
                 id = "newx.content.hidden_post_options",
                 category = Categories.POST_ACTIONS_MEDIA,
                 strings = settingStrings("piko_newx_post_options"),
-                order = 150,
+                order = 200,
                 defaultValue = emptySet(),
                 options =
                     listOf(

@@ -95,16 +95,17 @@ private data class ResolvedComposeContracts(
     val paddingBottom: Method,
     val androidView: Method,
 )
-private data class ResolvedPagingEvent(
+internal data class ResolvedPagingEvent(
     val eventType: String,
     val constructorReference: String,
     val eventKindField: String,
     val paginatorType: String,
     val paginatorClassName: String,
+    val dispatch: NativeMethodCall,
     val state: ResolvedPagingState,
 )
 
-private data class ResolvedPagingState(
+internal data class ResolvedPagingState(
     val stateType: String,
     val stateFlowGetter: NativeMethodCall,
     val stateValueGetter: NativeMethodCall,
@@ -387,7 +388,7 @@ private fun resolveComposeContracts(classDefs: List<ClassDef>): ResolvedComposeC
 
 
 context(context: BytecodePatchContext)
-private fun resolvePagingEvent(classDefs: List<ClassDef>): ResolvedPagingEvent {
+internal fun resolvePagingEvent(classDefs: List<ClassDef>): ResolvedPagingEvent {
     val classByType = classDefs.associateBy { it.type.toString() }
     val dispatchCandidates = classDefs.flatMap { classDef ->
         if (!classDef.type.toString().startsWith(BOTTOM_PAGING_SCOPE)) {
@@ -576,6 +577,7 @@ private fun resolvePagingEvent(classDefs: List<ClassDef>): ResolvedPagingEvent {
             .removePrefix("L")
             .removeSuffix(";")
             .replace('/', '.'),
+        dispatch = dispatch.toNativeCall(),
         state = ResolvedPagingState(
             stateType = stateType,
             stateFlowGetter = stateFlowGetterCall,
@@ -894,7 +896,7 @@ private fun resolveTimelineItemCallbackIndex(method: Method, timelineListDescrip
         ?: throw PatchException("NewX timeline item click callback is not a renderer parameter")
 }
 
-private data class NativeMethodCall(
+internal data class NativeMethodCall(
     val descriptor: String,
     val opcode: Opcode,
 )
@@ -956,7 +958,7 @@ private fun Method.toNativeCall(): NativeMethodCall =
         opcode = invocationOpcode(definingClass.toString()),
     )
 
-private fun isStateFlowInterface(
+internal fun isStateFlowInterface(
     type: String,
     classByType: Map<String, ClassDef>,
 ): Boolean {
@@ -970,7 +972,7 @@ private fun isStateFlowInterface(
 }
 
 context(context: BytecodePatchContext)
-private fun resolveStateValueGetter(
+internal fun resolveStateValueGetter(
     flowType: String,
     classByType: Map<String, ClassDef>,
 ): NativeMethodCall {
@@ -1569,6 +1571,33 @@ private fun patchItemClickPhotoViewer(timelineListDescriptor: String) {
     val classDefs = allClassDefs()
     val event = resolveNativePhotoViewerTarget(classDefs, timelineListDescriptor)
     val (targets, delegates) = resolveItemClickViewerTargets(event, classDefs)
+    // The same native media contract serves the gallery and profile-wide downloads. Keep
+    // wrapper unwrapping here so a media timeline item never gets cast to a post-only model.
+    val extension = context.mutableClassDefBy(GALLERY_EXTENSION)
+    val mediaStub = requireExactlyOne("NewX gallery downloadable media bridge", extension.methods.filter {
+        it.name == "getDownloadMedia" && it.parameterTypes.map(CharSequence::toString) == listOf(OBJECT)
+    })
+    val mediaBridge = mediaStub.cloneMutable(additionalRegisters = 3)
+    extension.methods.remove(mediaStub)
+    extension.methods.add(mediaBridge)
+    mediaBridge.implementation!!.apply {
+        while (instructions.isNotEmpty()) removeInstruction(instructions.lastIndex)
+    }
+    mediaBridge.insertHook(0, relocateBranchTargets = false) {
+        delegates.forEachIndexed { index, delegate ->
+            instanceOf(0, mediaBridge.p0Register, delegate.itemType)
+            ifEqz(0, Target.Local("next_media_$index"))
+            move(1, mediaBridge.p0Register, OBJECT)
+            checkCast(1, delegate.itemType)
+            delegate.holderField?.let { iget(1, 1, fieldReference(it)) }
+            invoke(event.mediaGetter.opcode, methodReference(event.mediaGetter.descriptor), listOf(1))
+            moveResult(1, JAVA_LIST)
+            returnObject(1)
+            label("next_media_$index")
+        }
+        constInt(0, 0)
+        returnObject(0)
+    }
     targets.forEach { target ->
         val owner = context.mutableClassDefBy(target.ownerType)
         val method = requireExactlyOne(
@@ -1702,9 +1731,9 @@ val newXProfilePhotosGalleryPatch =
         val galleryToggle =
             newXToggle(
                 id = "newx.post_actions_media.gallery_profile_photos",
-                category = Categories.POST_ACTIONS_MEDIA,
+                category = Categories.PROFILE,
                 strings = settingStrings("piko_newx_gallery_profile_photos"),
-                order = 105,
+                order = 300,
                 defaultValue = true,
             )
 

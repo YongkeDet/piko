@@ -170,6 +170,7 @@ public final class NewXDownloader {
 
         @Override
         public void onCompleted(DownloadEvent.Completed event) {
+            if (ProfileBulkDownload.isBatchRequest(engine.requestFor(event.id()))) return;
             if (!DownloadNotifications.notificationsEnabled(context, CHANNEL_ID)) {
                 // Completion feedback belongs to the top in-app banner only.
                 NewXInAppNotification.tryShowForUser(StringRef.str("piko_newx_download_saved", event.fileName()), event.label());
@@ -178,6 +179,7 @@ public final class NewXDownloader {
 
         @Override
         public void onFailed(DownloadEvent.Failed event) {
+            if (ProfileBulkDownload.isBatchRequest(engine.requestFor(event.id()))) return;
             String label = event.label();
             if (event.reason() == FailureReason.DESTINATION_LOST) {
                 DownloadRequest request = engine.requestFor(event.id());
@@ -202,6 +204,7 @@ public final class NewXDownloader {
 
         @Override
         public void onCancelled(DownloadEvent.Cancelled event) {
+            if (ProfileBulkDownload.isBatchRequest(engine.requestFor(event.id()))) return;
             NewXInAppNotification.showForUser(StringRef.str("piko_newx_download_cancelled"), event.label());
         }
     }

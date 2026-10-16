@@ -22,7 +22,7 @@ val postFilterPatch =
                 customScreen(
                     id = "newx.content.post_filtering",
                     strings = settingStrings("piko_newx_post_filtering"),
-                    order = 400,
+                    order = 500,
                     fragmentClassDescriptor =
                         "Lapp/morphe/extension/newx/postfilter/PostFilterFragment;",
                     iconResourceName = "ic_vector_filter",

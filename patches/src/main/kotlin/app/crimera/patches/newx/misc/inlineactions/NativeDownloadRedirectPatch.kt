@@ -126,12 +126,12 @@ val newXNativeDownloadRedirectPatch =
         )
 
         newXSettings {
-            category(Categories.POST_ACTIONS_MEDIA) {
+            category(Categories.DOWNLOADS) {
                 group(Groups.INLINE_DOWNLOAD) {
                     toggle(
                         id = REDIRECT_SETTING,
                         strings = settingStrings("piko_newx_inline_download_redirect_native"),
-                        order = 380,
+                        order = 250,
                         defaultValue = true,
                     )
                 }

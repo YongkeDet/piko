@@ -47,6 +47,54 @@ public final class InlineDownloadButtonTest {
     @After
     public void removeInlineDownloadSetting() throws ReflectiveOperationException {
         settings().remove(INLINE_DOWNLOAD_SETTING_ID);
+        settings().remove("newx.downloads.profile_bulk");
+    }
+
+    private enum TimelineKind { USER_PROFILE_PHOTOS, USER_PROFILE_VIDEOS }
+
+    @Test
+    public void bulkCallbacksResolveTheParentOfTheirOwnNativeChild() {
+        Object firstChild = new String("equal"), secondChild = new String("equal");
+        Object firstProfile = new Object(), secondProfile = new Object();
+        ProfileBulkDownload.bindComponent(firstChild, firstProfile);
+        ProfileBulkDownload.bindComponent(secondChild, secondProfile);
+        assertSame(firstProfile, ProfileBulkDownload.ownerOf(firstChild));
+        assertSame(secondProfile, ProfileBulkDownload.ownerOf(secondChild));
+        Object unknown = new String("equal");
+        assertSame(unknown, ProfileBulkDownload.ownerOf(unknown));
+    }
+
+    @Test
+    public void bulkSnapshotsDoNotMixProfilesWhoseFilteredListsAreBothEmpty() throws Exception {
+        BooleanSetting bulk = new BooleanSetting("newx.downloads.profile_bulk", true, false);
+        settings().put("newx.downloads.profile_bulk", bulk);
+        bulk.save(true);
+        // Equal native Success values and shared empty filtered lists still belong to distinct
+        // native instances. Reusing the wrong raw snapshot would download another profile.
+        Object first = new String("equal"), second = new String("equal");
+        List<?> firstMedia = Collections.singletonList("first profile media");
+        List<?> secondMedia = Collections.singletonList("second profile media");
+        List<?> hidden = Collections.emptyList();
+        ProfileBulkDownload.rememberPage(TimelineKind.USER_PROFILE_PHOTOS, firstMedia, hidden);
+        ProfileBulkDownload.attachPage(first);
+        ProfileBulkDownload.rememberPage(TimelineKind.USER_PROFILE_PHOTOS, secondMedia, hidden);
+        ProfileBulkDownload.attachPage(second);
+        assertSame(firstMedia, ProfileBulkDownload.itemsBeforeFilters(first, hidden));
+        assertSame(secondMedia, ProfileBulkDownload.itemsBeforeFilters(second, hidden));
+        assertSame(hidden, ProfileBulkDownload.itemsBeforeFilters(new String("equal"), hidden));
+        // Autoplay/refresh state copies keep the same already-filtered items. Their raw lineage
+        // must survive without allowing a real replacement list to inherit another snapshot.
+        Object copy = new Object(), replacement = new Object();
+        ProfileBulkDownload.inheritPage(first, copy, hidden, hidden);
+        assertSame(firstMedia, ProfileBulkDownload.itemsBeforeFilters(copy, hidden));
+        List<?> newVisible = new ArrayList<>();
+        ProfileBulkDownload.inheritPage(first, replacement, hidden, newVisible);
+        assertSame(newVisible, ProfileBulkDownload.itemsBeforeFilters(replacement, newVisible));
+        Object ownReplacement = new Object();
+        ProfileBulkDownload.rememberPage(TimelineKind.USER_PROFILE_PHOTOS, secondMedia, hidden);
+        ProfileBulkDownload.attachPage(ownReplacement);
+        ProfileBulkDownload.inheritPage(first, ownReplacement, hidden, hidden);
+        assertSame(secondMedia, ProfileBulkDownload.itemsBeforeFilters(ownReplacement, hidden));
     }
 
     @Test

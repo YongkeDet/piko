@@ -1,0 +1,149 @@
+{
+  "native_bridges": {
+    "availableTabs": {
+      "calls": [],
+      "fields": [
+        "Lcom/x/profile/timeline/d;->a:Ljava/util/List;"
+      ],
+      "registers": 9
+    },
+    "componentOf": {
+      "calls": [
+        "Lapp/morphe/extension/newx/misc/ProfileBulkDownload;->ownerOf(Ljava/lang/Object;)Ljava/lang/Object;"
+      ],
+      "fields": [
+        "Lcom/x/urt/ui/p0;->b:Lcom/x/urt/x0;"
+      ],
+      "registers": 9
+    },
+    "currentItems": {
+      "calls": [
+        "Lcom/x/profile/timeline/d;->G()Lcom/x/urt/x0;",
+        "Lcom/x/urt/x0;->d()Lkotlinx/coroutines/flow/u2;",
+        "Lkotlinx/coroutines/flow/u2;->getValue()Ljava/lang/Object;",
+        "Lkotlinx/coroutines/flow/u2;->getValue()Ljava/lang/Object;",
+        "Lapp/morphe/extension/newx/misc/ProfileBulkDownload;->matchesTimeline(Ljava/lang/Object;Ljava/lang/Object;)Z",
+        "Lapp/morphe/extension/newx/misc/ProfileBulkDownload;->itemsBeforeFilters(Ljava/lang/Object;Ljava/util/List;)Ljava/util/List;"
+      ],
+      "fields": [
+        "Lcom/x/urt/d2;->a:Lcom/x/models/timelines/u;",
+        "Lcom/x/profile/timeline/d;->q:Lkotlinx/coroutines/flow/w2;",
+        "Lcom/x/urt/d2;->b:Lkotlinx/collections/immutable/b;"
+      ],
+      "registers": 9
+    },
+    "pagingSnapshot": {
+      "calls": [
+        "Lcom/x/urt/x0;->s()Lcom/x/urt/paging/c;",
+        "Lcom/x/urt/paging/bottom/h;->d()Lkotlinx/coroutines/flow/u2;",
+        "Lkotlinx/coroutines/flow/u2;->getValue()Ljava/lang/Object;",
+        "Lcom/x/urt/paging/g;->c()Z",
+        "Ljava/lang/Boolean;->valueOf(Z)Ljava/lang/Boolean;",
+        "Lcom/x/urt/paging/g;->isTerminated()Z",
+        "Ljava/lang/Boolean;->valueOf(Z)Ljava/lang/Boolean;",
+        "Ljava/lang/Boolean;->valueOf(Z)Ljava/lang/Boolean;"
+      ],
+      "fields": [
+        "Lcom/x/urt/paging/bottom/l;->b:Z",
+        "Lcom/x/urt/paging/bottom/l;->f:Lcom/x/models/timelines/items/k0;",
+        "Lcom/x/urt/paging/bottom/l;->g:Lcom/x/models/timelines/s;"
+      ],
+      "registers": 9
+    },
+    "requestNext": {
+      "calls": [
+        "Lcom/x/urt/x0;->s()Lcom/x/urt/paging/c;",
+        "Lcom/x/urt/paging/d;-><init>(Lcom/x/scribing/analytics/pagination/v;II)V",
+        "Lcom/x/urt/paging/bottom/h;->a(Lcom/x/urt/paging/f;)V"
+      ],
+      "fields": [
+        "Lcom/x/scribing/analytics/pagination/v;->LAZY_LIST_SCROLL:Lcom/x/scribing/analytics/pagination/v;"
+      ],
+      "registers": 9
+    },
+    "selectTab": {
+      "calls": [
+        "Lcom/x/profile/timeline/q;->j(Lcom/x/profile/y;)V",
+        "Lcom/x/urt/x0;->h()Lcom/x/media/autoplay/c;",
+        "Lcom/x/media/autoplay/c;->a(Z)V"
+      ],
+      "fields": [],
+      "registers": 10
+    },
+    "selectedTab": {
+      "calls": [
+        "Lkotlinx/coroutines/flow/u2;->getValue()Ljava/lang/Object;"
+      ],
+      "fields": [
+        "Lcom/x/profile/timeline/d;->q:Lkotlinx/coroutines/flow/w2;"
+      ],
+      "registers": 9
+    }
+  },
+  "native_child_binding": {
+    "live_child_read": true,
+    "creator": "Lcom/x/profile/timeline/d;->F(Lcom/x/profile/y;Z)Lcom/x/urt/x0;",
+    "bound_returns": 2,
+    "branch_bypasses": 0,
+    "receiver_register": 25
+  },
+  "gallery_media_bridge": {
+    "fields": [],
+    "calls": [
+      "Lcom/x/models/t5;->u()Lkotlinx/collections/immutable/b;"
+    ]
+  },
+  "native_success": {
+    "constructor_calls": [
+      "Lapp/morphe/extension/newx/timeline/NewXTimelineFilter;->filterTimelineItems(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;",
+      "Ljava/lang/Object;->getClass()Ljava/lang/Class;",
+      "Ljava/lang/Object;->getClass()Ljava/lang/Class;",
+      "Ljava/lang/Object;->getClass()Ljava/lang/Class;",
+      "Ljava/lang/Object;-><init>()V",
+      "Lapp/morphe/extension/newx/misc/ProfileBulkDownload;->allowAutoplay(Ljava/lang/Object;Z)Z",
+      "Lapp/morphe/extension/newx/misc/ProfileBulkDownload;->attachPage(Ljava/lang/Object;)V"
+    ],
+    "copy_calls": [
+      "Ljava/lang/Object;->getClass()Ljava/lang/Class;",
+      "Ljava/lang/Object;->getClass()Ljava/lang/Class;",
+      "Ljava/lang/Object;->getClass()Ljava/lang/Class;",
+      "Ljava/lang/Object;->getClass()Ljava/lang/Class;",
+      "Lcom/x/urt/d2;-><init>(Lcom/x/models/timelines/u;Lkotlinx/collections/immutable/b;Lcom/x/urt/c2;ZZ)V",
+      "Lapp/morphe/extension/newx/misc/ProfileBulkDownload;->inheritPage(Ljava/lang/Object;Ljava/lang/Object;Ljava/util/List;Ljava/util/List;)V"
+    ],
+    "class": "Lcom/x/urt/d2;"
+  },
+  "success_feedback": {
+    "completion_calls": [
+      "Lapp/morphe/extension/crimera/downloader/events/DownloadEvent$Completed;->id()I",
+      "Lapp/morphe/extension/crimera/downloader/DownloadEngine;->requestFor(I)Lapp/morphe/extension/crimera/downloader/model/DownloadRequest;",
+      "Lapp/morphe/extension/newx/misc/ProfileBulkDownload;->isBatchRequest(Lapp/morphe/extension/crimera/downloader/model/DownloadRequest;)Z",
+      "Lapp/morphe/extension/crimera/downloader/engine/DownloadNotifications;->notificationsEnabled(Landroid/content/Context;Ljava/lang/String;)Z",
+      "Lapp/morphe/extension/crimera/downloader/events/DownloadEvent$Completed;->fileName()Ljava/lang/String;",
+      "Lapp/morphe/extension/shared/StringRef;->str(Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/String;",
+      "Lapp/morphe/extension/crimera/downloader/events/DownloadEvent$Completed;->label()Ljava/lang/String;",
+      "Lapp/morphe/extension/newx/misc/NewXInAppNotification;->tryShowForUser(Ljava/lang/String;Ljava/lang/String;)Z"
+    ],
+    "merge_top_banner": true,
+    "bottom_completion_toast": false
+  },
+  "settings_categories": [
+    "newx.downloads",
+    "newx.profile",
+    "newx.timeline",
+    "newx.content",
+    "newx.post_actions_media",
+    "newx.navigation",
+    "newx.appearance",
+    "newx.advanced"
+  ],
+  "compiled_chinese": {
+    "bulk_button": "下载此主页全部图片和视频",
+    "missing": [],
+    "present": 594,
+    "expected": 594
+  },
+  "apk_sha256": "bd466c901ce8994e7f47ea2b1726c11ccde88d4f27dad0596036bdd069caa59a",
+  "source_sha": "0221cda87bdaa5e38639b061fb1894f0ad5cbaab",
+  "mpp_sha256": "38a0c46b2aa940f6b56aefebecc99b0b4178f3adb6e8b3ffdd0b50caf9dba135"
+}

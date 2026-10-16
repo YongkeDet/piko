@@ -9,10 +9,12 @@ import app.crimera.patches.common.requireExactlyOne
 import app.crimera.patches.utils.scopedMatchAll
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.util.p0Register
+import app.morphe.util.getReference
+import com.android.tools.smali.dexlib2.Opcode
 
 private const val OBJECT_DESCRIPTOR = "Ljava/lang/Object;"
 private const val FILTER_TIMELINE_ITEMS_DESCRIPTOR =
-    "$TIMELINE_FILTER_DESCRIPTOR->filterTimelineItems($OBJECT_DESCRIPTOR)$OBJECT_DESCRIPTOR"
+    "$TIMELINE_FILTER_DESCRIPTOR->filterTimelineItems($OBJECT_DESCRIPTOR$OBJECT_DESCRIPTOR)$OBJECT_DESCRIPTOR"
 
 /** Installs the shared single-pass timeline filter hook used by individual features. */
 internal val newXTimelineFilterPatch =
@@ -30,13 +32,25 @@ internal val newXTimelineFilterPatch =
             // `p2` is the constructor's third argument, the `timelineItems` list it stores; the
             // hook rewrites that register in place so the field keeps the filtered value.
             val itemsRegister = method.p0Register + 2
+            val returns = method.implementation!!.instructions.toList().withIndex().filter {
+                it.value.opcode == Opcode.RETURN_VOID
+            }
+            // Bind the unfiltered snapshot to this exact initialized Success instance. Equal
+            // empty filtered lists from different profiles must never share media snapshots.
+            returns.sortedByDescending { it.index }.forEach { exit ->
+                method.insertHook(exit.index, relocateBranchTargets = true) {
+                    invokeStatic(methodReference(
+                        "Lapp/morphe/extension/newx/misc/ProfileBulkDownload;->attachPage($OBJECT_DESCRIPTOR)V",
+                    ), method.p0Register)
+                }
+            }
             method.insertHook(
                 index = 0,
                 // The old plain insertion left every incoming label on the constructor head, so a
                 // branch that reached it keeps skipping the hook, exactly as before.
                 relocateBranchTargets = false,
             ) {
-                invokeStatic(methodReference(FILTER_TIMELINE_ITEMS_DESCRIPTOR), itemsRegister)
+                invokeStatic(methodReference(FILTER_TIMELINE_ITEMS_DESCRIPTOR), method.p0Register + 1, itemsRegister)
                 moveResult(itemsRegister, OBJECT_DESCRIPTOR)
             }
         }
