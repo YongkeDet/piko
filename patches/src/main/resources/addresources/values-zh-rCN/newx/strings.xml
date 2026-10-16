@@ -605,4 +605,8 @@
     <string name="piko_newx_settings_close">关闭</string>
     <string name="piko_newx_fixed_bottom_bar_title">固定底栏</string>
     <string name="piko_newx_fixed_bottom_bar_summary">滚动页面时底栏保持显示，可与悬浮玻璃底栏同时使用。重启生效。</string>
+    <string name="piko_newx_download_progress_active">正在下载 %1$d 项 %2$s</string>
+    <string name="piko_newx_download_progress_amount">%1$s / %2$s · %3$s/秒</string>
+    <string name="piko_newx_download_progress_unknown_amount">已下载 %1$s · %2$s/秒</string>
+    <string name="piko_newx_download_progress_waiting">等待网络连接（%1$d 项）</string>
 </resources>

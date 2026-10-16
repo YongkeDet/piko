@@ -36,8 +36,12 @@ val disableAutomaticContentRefreshPatch = bytecodePatch(
             }
         })
         val repository = requireExactlyOne("NewX background refresh implementation", newXUrtRepositoryRequestFingerprint(request).scopedMatchAll()).method
-        val requestType = classDefByOrNull(request.parameterTypes[0].toString())
-            ?: throw PatchException("Missing NewX automatic refresh request enum")
+        val requestType = requireExactlyOne("NewX automatic refresh request enum", request.parameterTypes.mapNotNull {
+            classDefByOrNull(it.toString())?.takeIf { type -> type.superclass == ENUM }
+        })
+        if (request.parameterTypes.indexOf(requestType.type) != 0) {
+            throw PatchException("NewX automatic refresh request enum is not the first argument")
+        }
         require(requestType.superclass == ENUM && requestType.fields.map { it.name }.containsAll(
             listOf("AUTO_REFRESH", "VIEWPORT_AWARE_AUTO_REFRESH", "PULL_TO_REFRESH", "OLDER_THAN", "NEWER_THAN", "GAP"),
         )) { "Unsupported NewX automatic refresh request enum: ${requestType.type}" }

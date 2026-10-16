@@ -606,4 +606,8 @@
     <string name="piko_newx_settings_close">Close</string>
     <string name="piko_newx_fixed_bottom_bar_title">Fixed bottom navigation bar</string>
     <string name="piko_newx_fixed_bottom_bar_summary">Keep the main bottom bar visible while scrolling. Works with the floating glass style. Restart to apply.</string>
+    <string name="piko_newx_download_progress_active">Downloading %1$d item(s) %2$s</string>
+    <string name="piko_newx_download_progress_amount">%1$s / %2$s · %3$s/s</string>
+    <string name="piko_newx_download_progress_unknown_amount">Downloaded %1$s · %2$s/s</string>
+    <string name="piko_newx_download_progress_waiting">Waiting for connection (%1$d item(s))</string>
 </resources>
