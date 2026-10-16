@@ -43,7 +43,7 @@ public final class ProfileBulkDownload {
     private ProfileBulkDownload() { }
 
     public static boolean isEnabled() {
-        return SettingsRegistry.isRegistered(SETTING) && SettingsRegistry.getBooleanOrDefault(SETTING, true);
+        return SettingsRegistry.getBooleanOrDefault(SETTING, false);
     }
 
     public static boolean isRunning() { return active != null; }
@@ -190,13 +190,14 @@ public final class ProfileBulkDownload {
                 List<?> items = currentItems(component);
                 Object[] snapshot = pagingSnapshot(component);
                 if (snapshot == null || snapshot.length != 5) throw new IllegalStateException("Missing native paging state");
-                String cursor = String.valueOf(snapshot[3]);
+                String cursor = snapshot[3] == null ? null : snapshot[3].toString();
                 Object event = snapshot[4];
                 // Native network event labels are preserved data-model contracts, as with media.
                 boolean networkFailed = event != null && event.toString().startsWith("Failure(requestType=");
+                boolean fetched = event != null && event.toString().startsWith("Success(requestType=");
                 ProfileBulkPager.Step step = pager.step(SystemClock.elapsedRealtime(), items,
                         Boolean.TRUE.equals(snapshot[0]), Boolean.TRUE.equals(snapshot[1]),
-                        Boolean.TRUE.equals(snapshot[2]), cursor, networkFailed);
+                        Boolean.TRUE.equals(snapshot[2]), cursor, networkFailed, fetched);
                 switch (step) {
                     case PROCESS -> {
                         processing = true;

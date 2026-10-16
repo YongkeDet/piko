@@ -41,7 +41,7 @@ private const val OBJECT = "Ljava/lang/Object;"
 private const val LIST = "Ljava/util/List;"
 
 private fun Method.parameters() = parameterTypes.map(CharSequence::toString)
-private fun Method.readFields() = implementation?.instructions.orEmpty().mapNotNull {
+private fun Method.readFields() = implementation?.instructions?.toList().orEmpty().mapNotNull {
     it.getReference<FieldReference>().takeIf { _ -> it.opcode == Opcode.IGET_OBJECT }
 }.distinctBy(FieldReference::toString)
 

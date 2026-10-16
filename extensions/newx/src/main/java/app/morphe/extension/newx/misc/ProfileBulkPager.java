@@ -24,13 +24,17 @@ final class ProfileBulkPager {
     ProfileBulkPager(long now) { lastProgress = now; }
 
     Step step(long now, Object items, boolean canPage, boolean terminated, boolean loading,
-              String cursor, boolean failure) {
+              String cursor, boolean failure, boolean fetched) {
         if (failure) return Step.FAILED;
         if (now - lastProgress >= TIMEOUT_MS) return Step.FAILED;
         if (loading || items == null) {
             stableSince = -1;
             return Step.WAIT;
         }
+        // Native NO_CURSOR is a separate end condition from an explicit terminate instruction.
+        // It is only authoritative after a successful network fetch, never on an initial or
+        // cached blank state while the first page is still unavailable.
+        terminated = terminated || fetched && cursor == null && !canPage;
         if (awaiting) {
             boolean advanced = !Objects.equals(cursor, requestCursor) || terminated;
             if (!advanced) {
