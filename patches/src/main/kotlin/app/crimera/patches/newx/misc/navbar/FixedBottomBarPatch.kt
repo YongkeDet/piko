@@ -43,7 +43,7 @@ internal fun resolveBottomBarScrollRead(host: Method, constructor: Method, gette
     val creation = requireExactlyOne("NewX bottom bar visibility state creation", code.withIndex().filter {
         it.value.getReference<MethodReference>()?.let { call ->
             call.definingClass == constructor.definingClass && call.name == "<init>" &&
-                call.parameterTypes == constructor.parameterTypes
+                call.parameterTypes.map(CharSequence::toString) == constructor.parameterTypes.map(CharSequence::toString)
         } == true
     })
     val stateRegister = creation.value.registersUsed[parameterSlot]
@@ -107,7 +107,7 @@ val fixedBottomBarPatch = bytecodePatch(
         val getter = requireExactlyOne("NewX bottom bar scaffold isVisible", state.methods.filter { it.name == "isVisible" && it.parameterTypes.isEmpty() && it.returnType == "Z" })
         val read = resolveBottomBarScrollRead(host, constructor, getter)
         val mutable = requireExactlyOne("NewX fixed bottom bar mutable host", mutableClassDefBy(host.definingClass).methods.filter {
-            it.name == host.name && it.parameterTypes == host.parameterTypes && it.returnType == host.returnType
+            it.name == host.name && it.parameterTypes.map(CharSequence::toString) == host.parameterTypes.map(CharSequence::toString) && it.returnType == host.returnType
         })
         mutable.pinBottomBarScrollRead(read)
     }

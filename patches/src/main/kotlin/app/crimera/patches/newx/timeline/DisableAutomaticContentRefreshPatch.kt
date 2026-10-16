@@ -39,7 +39,7 @@ val disableAutomaticContentRefreshPatch = bytecodePatch(
         val requestType = requireExactlyOne("NewX automatic refresh request enum", request.parameterTypes.mapNotNull {
             classDefByOrNull(it.toString())?.takeIf { type -> type.superclass == ENUM }
         })
-        if (request.parameterTypes.indexOf(requestType.type) != 0) {
+        if (request.parameterTypes.map(CharSequence::toString).indexOf(requestType.type) != 0) {
             throw PatchException("NewX automatic refresh request enum is not the first argument")
         }
         require(requestType.superclass == ENUM && requestType.fields.map { it.name }.containsAll(
