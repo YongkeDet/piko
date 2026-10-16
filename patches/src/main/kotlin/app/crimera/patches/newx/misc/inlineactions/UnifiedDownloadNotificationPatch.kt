@@ -113,7 +113,7 @@ val unifiedDownloadNotificationPatch = bytecodePatch(
                 } == true }
         })
         patchRichFactory(runtime, supplied, maskBits, styles, priorities,
-            notificationField(model, ", button="))
+            notificationField(model, ", buttonSpec="))
         patchPinnedSender(runtime, classes, present)
         patchReactiveText(runtime, classes, model, detail)
         patchNativeInterceptor(manager.type, current, modelGetter, dispose, dismiss, reason)

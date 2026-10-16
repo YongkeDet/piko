@@ -119,6 +119,8 @@ public class PinnedBannerStaticReview extends UnifiedBannerStaticReview {
   check(postCallers.size()==1&&postCallers.get(0).getDefiningClass().equals(C)&&postCallers.get(0).getName().equals("pump"),"Only the acknowledged task queue dispatches notices");
   check(call(method(C,"pump"),P,"next")&&call(method(C,"pump"),P,"bind")&&call(method(C,"pump"),P,"bindClear"),"Queue owns task models before actor admission");
   check(call(method(P,"disposed"),"Ljava/util/ArrayDeque;","remove"),"Result FIFO advances on actual native disposal");
+  Method bulkConstructor=method(S,"<init>");
+  check(!pathCalls(bulkConstructor,unifiedPath(bulkConstructor),"Lapp/morphe/extension/crimera/ui/DialogView;","<init>"),"Unified bulk session never constructs the legacy automatic progress dialog");
   for(String name:List.of("begin","updateProgress","finish")){
    Method m=method(S,name);Set<Integer> path=unifiedPath(m);
    check(!pathCalls(m,path,"Lapp/morphe/extension/crimera/ui/DialogView;","show"),"Unified bulk "+name+" cannot display an automatic modal");

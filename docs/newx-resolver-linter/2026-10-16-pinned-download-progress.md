@@ -81,3 +81,8 @@ which changes the library's lexical proof boundary. The corrected fixture includ
 mapNotNull/filter pipeline. Running the unchanged library classes from the verified .9 MPP locally
 reproduces exactly one finding before, zero after; the entire current notification resolver has zero
 findings. No production patch or extension change was required for this fixture correction.
+
+Pre-patch smali review found the model's actual semantic property label is `buttonSpec`,
+not `button`. The button resolver anchor was corrected before any APK test; no obfuscated
+field name or descriptor was added. The final DEX review also symbolically checks that the
+unified bulk constructor does not instantiate its legacy progress dialog.
