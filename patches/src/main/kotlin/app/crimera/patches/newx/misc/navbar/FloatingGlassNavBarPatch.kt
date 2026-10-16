@@ -277,6 +277,15 @@ val floatingGlassNewXNavBarPatch = bytecodePatch(
             invokeStatic(methodReference("$GLASS->haze($OBJECT$OBJECT${OBJECT}I)$OBJECT"), *hazeCall.value.registersUsed.toIntArray())
         }
         bar.implementation!!.removeInstruction(replacement.lastIndex + 1)
+        // The Java bridge returns Object; restore Modifier before the native interface join.
+        val hazeResult = code.getOrNull(hazeCall.index + 1) as? OneRegisterInstruction
+            ?: throw PatchException("NewX bottom bar Haze has no object result")
+        if (code[hazeCall.index + 1].opcode != Opcode.MOVE_RESULT_OBJECT) {
+            throw PatchException("NewX bottom bar Haze result is not a modifier")
+        }
+        bar.insertHook(hazeCall.index + 2, relocateBranchTargets = true) {
+            checkCast(hazeResult.registerA, MODIFIER)
+        }
         val gateRegister = (blurRead.value as OneRegisterInstruction).registerA
         bar.insertHook(blurRead.index + 1, relocateBranchTargets = false) {
             invokeStatic(methodReference("$GLASS->useBlur(Z)Z"), gateRegister)
