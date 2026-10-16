@@ -53,9 +53,9 @@ val newXShowSensitiveMediaPatch =
         val showSensitiveMedia =
             newXToggle(
                 id = "newx.content.show_sensitive_media",
-                category = Categories.CONTENT,
+                category = Categories.POST_ACTIONS_MEDIA,
                 strings = settingStrings("piko_newx_show_sensitive_media"),
-                order = 300,
+                order = 420,
                 defaultValue = true,
             )
 

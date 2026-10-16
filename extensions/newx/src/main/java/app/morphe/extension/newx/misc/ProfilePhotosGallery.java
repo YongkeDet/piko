@@ -11,6 +11,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.Button;
+import app.morphe.extension.shared.StringRef;
 
 import androidx.core.widget.NestedScrollView;
 
@@ -40,6 +42,11 @@ public final class ProfilePhotosGallery {
 
     public static boolean isEnabled() {
         return SettingsRegistry.getBooleanOrDefault(SETTING_ID, true);
+    }
+
+    /** Filled with the native media getter and wrapper delegates by the gallery patch. */
+    public static List<?> getDownloadMedia(Object timelineItem) {
+        throw new IllegalStateException("NewX gallery media bridge was not patched");
     }
 
     private static final Object PENDING_PHOTO_LOCK = new Object();
@@ -201,6 +208,7 @@ public final class ProfilePhotosGallery {
         private final LinearLayout content;
         private final GalleryGrid grid;
         private final LoadingIndicatorView loadingIndicator;
+        private final Button bulkDownload;
         private Object callback;
         private Object itemClickCallback;
         private List<?> currentItems;
@@ -249,6 +257,15 @@ public final class ProfilePhotosGallery {
             content.setOrientation(LinearLayout.VERTICAL);
             content.setBackgroundColor(Color.TRANSPARENT);
 
+            bulkDownload = new Button(context);
+            bulkDownload.setAllCaps(false);
+            bulkDownload.setText(StringRef.str("piko_newx_profile_bulk_button"));
+            bulkDownload.setTextColor(Theme.primaryAccent(context));
+            bulkDownload.setOnClickListener(view -> ProfileBulkDownload.start(getContext(), this.callback));
+            bulkDownload.setVisibility(ProfileBulkDownload.isEnabled() ? View.VISIBLE : View.GONE);
+            content.addView(bulkDownload, new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
             grid = new GalleryGrid(context);
             grid.setItemClickCallback(itemClickCallback);
             content.addView(grid, new LinearLayout.LayoutParams(
@@ -282,6 +299,7 @@ public final class ProfilePhotosGallery {
             this.callback = callback;
             this.itemClickCallback = itemClickCallback;
             grid.setItemClickCallback(itemClickCallback);
+            bulkDownload.setVisibility(ProfileBulkDownload.isEnabled() ? View.VISIBLE : View.GONE);
             float density = getResources().getDisplayMetrics().density;
             setPadding(
                     0,
@@ -347,6 +365,7 @@ public final class ProfilePhotosGallery {
         }
 
         private void checkLoadMore() {
+            if (ProfileBulkDownload.isRunning()) return;
             if (loadMoreInFlight || getChildCount() == 0) return;
             View child = getChildAt(0);
             int contentHeight = child.getHeight();

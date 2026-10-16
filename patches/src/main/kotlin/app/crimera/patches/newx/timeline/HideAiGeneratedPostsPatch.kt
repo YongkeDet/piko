@@ -47,7 +47,7 @@ val newXHideAiGeneratedPostsPatch =
                     multiChoice(
                         id = "newx.content.hide_ai_generated_posts",
                         strings = settingStrings("piko_newx_hide_ai_generated_posts"),
-                        order = 300,
+                        order = 400,
                         defaultValue = emptySet(),
                         options =
                             listOf(

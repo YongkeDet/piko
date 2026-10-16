@@ -22,7 +22,7 @@ val newXHideDiscoverMorePatch =
                 toggle(
                     id = "newx.content.hide_discover_more",
                     strings = settingStrings("piko_newx_hide_discover_more"),
-                    order = 250,
+                    order = 210,
                     defaultValue = false,
                 )
             }

@@ -47,6 +47,29 @@ public final class InlineDownloadButtonTest {
     @After
     public void removeInlineDownloadSetting() throws ReflectiveOperationException {
         settings().remove(INLINE_DOWNLOAD_SETTING_ID);
+        settings().remove("newx.downloads.profile_bulk");
+    }
+
+    private enum TimelineKind { USER_PROFILE_PHOTOS, USER_PROFILE_VIDEOS }
+
+    @Test
+    public void bulkSnapshotsDoNotMixProfilesWhoseFilteredListsAreBothEmpty() throws Exception {
+        BooleanSetting bulk = new BooleanSetting("newx.downloads.profile_bulk", true, false);
+        settings().put("newx.downloads.profile_bulk", bulk);
+        bulk.save(true);
+        // Equal native Success values and shared empty filtered lists still belong to distinct
+        // native instances. Reusing the wrong raw snapshot would download another profile.
+        Object first = new String("equal"), second = new String("equal");
+        List<?> firstMedia = Collections.singletonList("first profile media");
+        List<?> secondMedia = Collections.singletonList("second profile media");
+        List<?> hidden = Collections.emptyList();
+        ProfileBulkDownload.rememberPage(TimelineKind.USER_PROFILE_PHOTOS, firstMedia, hidden);
+        ProfileBulkDownload.attachPage(first);
+        ProfileBulkDownload.rememberPage(TimelineKind.USER_PROFILE_PHOTOS, secondMedia, hidden);
+        ProfileBulkDownload.attachPage(second);
+        assertSame(firstMedia, ProfileBulkDownload.itemsBeforeFilters(first, hidden));
+        assertSame(secondMedia, ProfileBulkDownload.itemsBeforeFilters(second, hidden));
+        assertSame(hidden, ProfileBulkDownload.itemsBeforeFilters(new String("equal"), hidden));
     }
 
     @Test

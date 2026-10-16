@@ -4,13 +4,31 @@ import app.crimera.patches.settings.SettingsCategory
 import app.crimera.patches.settings.SettingsGroupMetadata
 
 internal object Categories {
+    val DOWNLOADS =
+        SettingsCategory(
+            id = "newx.downloads",
+            titleResourceName = "piko_newx_category_downloads_title",
+            summaryResourceName = "piko_newx_category_downloads_summary",
+            iconResourceName = "ic_vector_arrow_down_circle_stroke",
+            order = 100,
+        )
+
+    val PROFILE =
+        SettingsCategory(
+            id = "newx.profile",
+            titleResourceName = "piko_newx_category_profile_title",
+            summaryResourceName = "piko_newx_category_profile_summary",
+            iconResourceName = "ic_vector_post_with_media",
+            order = 200,
+        )
+
     val TIMELINE =
         SettingsCategory(
             id = "newx.timeline",
             titleResourceName = "piko_newx_category_timeline_title",
             summaryResourceName = "piko_newx_category_timeline_summary",
             iconResourceName = "ic_vector_home_stroke",
-            order = 100,
+            order = 300,
         )
 
     val CONTENT =
@@ -19,7 +37,7 @@ internal object Categories {
             titleResourceName = "piko_newx_category_content_title",
             summaryResourceName = "piko_newx_category_content_summary",
             iconResourceName = "ic_vector_bulleted_list",
-            order = 200,
+            order = 400,
         )
 
     val APPEARANCE =
@@ -28,7 +46,7 @@ internal object Categories {
             titleResourceName = "piko_newx_category_appearance_title",
             summaryResourceName = "piko_newx_category_appearance_summary",
             iconResourceName = "ic_vector_paintbrush_box",
-            order = 300,
+            order = 700,
         )
 
     val POST_ACTIONS_MEDIA =
@@ -37,7 +55,7 @@ internal object Categories {
             titleResourceName = "piko_newx_category_post_actions_media_title",
             summaryResourceName = "piko_newx_category_post_actions_media_summary",
             iconResourceName = "ic_vector_post_with_media",
-            order = 400,
+            order = 500,
         )
 
     val NAVIGATION =
@@ -46,7 +64,7 @@ internal object Categories {
             titleResourceName = "piko_newx_category_navigation_title",
             summaryResourceName = "piko_newx_category_navigation_summary",
             iconResourceName = "ic_vector_menu",
-            order = 500,
+            order = 600,
         )
 
     val ADVANCED =
@@ -55,7 +73,7 @@ internal object Categories {
             titleResourceName = "piko_newx_category_advanced_title",
             summaryResourceName = "piko_newx_category_advanced_summary",
             iconResourceName = "ic_vector_wrench",
-            order = 600,
+            order = 800,
         )
 }
 
@@ -75,7 +93,7 @@ internal object Groups {
             titleResourceName = "piko_newx_group_for_you_filtering_title",
             summaryResourceName = "piko_newx_group_for_you_filtering_summary",
             iconResourceName = "ic_vector_filter",
-            order = 200,
+            order = 300,
         )
 
     val FEATURE_SWITCHES =
@@ -93,7 +111,7 @@ internal object Groups {
             titleResourceName = "piko_newx_group_verified_account_filtering_title",
             summaryResourceName = "piko_newx_group_verified_account_filtering_summary",
             iconResourceName = "ic_vector_verified_blue",
-            order = 200,
+            order = 600,
         )
 
     val THEME =
@@ -111,7 +129,25 @@ internal object Groups {
             titleResourceName = "piko_newx_group_inline_download_title",
             summaryResourceName = "piko_newx_group_inline_download_summary",
             iconResourceName = "ic_vector_arrow_down_circle_stroke",
-            order = 250,
+            order = 200,
+        )
+
+    val DOWNLOAD_QUALITY =
+        SettingsGroupMetadata(
+            id = "newx.downloads.quality",
+            titleResourceName = "piko_newx_group_download_quality_title",
+            summaryResourceName = "piko_newx_group_download_quality_summary",
+            iconResourceName = "ic_vector_post_with_media",
+            order = 300,
+        )
+
+    val MEDIA_PICKER =
+        SettingsGroupMetadata(
+            id = "newx.downloads.media_picker",
+            titleResourceName = "piko_newx_group_media_picker_title",
+            summaryResourceName = "piko_newx_group_media_picker_summary",
+            iconResourceName = "ic_vector_bulleted_list",
+            order = 400,
         )
 
     val REPLY_SORTING =

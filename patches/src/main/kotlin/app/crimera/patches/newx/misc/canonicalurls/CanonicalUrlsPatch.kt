@@ -137,9 +137,9 @@ val newXCanonicalUrlsPatch =
         val useCanonicalUrls =
             newXToggle(
                 id = "newx.content.use_canonical_urls",
-                category = Categories.CONTENT,
+                category = Categories.POST_ACTIONS_MEDIA,
                 strings = settingStrings("piko_newx_canonical_urls"),
-                order = 400,
+                order = 610,
                 defaultValue = true,
             )
 

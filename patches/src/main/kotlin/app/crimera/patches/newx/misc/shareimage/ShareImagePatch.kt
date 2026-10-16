@@ -61,7 +61,7 @@ val newXShareImagePatch =
             id = "newx.content.share_post_as_image",
             category = Categories.POST_ACTIONS_MEDIA,
             strings = settingStrings("piko_newx_share_image"),
-            order = 400,
+            order = 600,
             defaultValue = true,
         )
 

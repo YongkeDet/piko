@@ -113,7 +113,7 @@ val newXHideCommunityNotesPatch = bytecodePatch(
         id = "newx.content.hide_community_notes",
         category = Categories.CONTENT,
         strings = settingStrings("piko_newx_hide_community_notes"),
-        order = 360,
+        order = 700,
         defaultValue = false,
         rebootApp = true,
     )
@@ -135,9 +135,9 @@ val newXForceTranslatePatch = bytecodePatch(
     dependsOn(newXPostModelResolutionPatch)
     val setting = newXToggle(
         id = "newx.content.force_translate",
-        category = Categories.CONTENT,
+        category = Categories.POST_ACTIONS_MEDIA,
         strings = settingStrings("piko_newx_force_translate"),
-        order = 370,
+        order = 400,
         defaultValue = false,
         rebootApp = true,
     )
@@ -155,7 +155,7 @@ val newXHidePromoteButtonPatch = bytecodePatch(
         id = "newx.content.hide_promote",
         category = Categories.CONTENT,
         strings = settingStrings("piko_newx_hide_promote"),
-        order = 380,
+        order = 710,
         defaultValue = false,
         rebootApp = true,
     )

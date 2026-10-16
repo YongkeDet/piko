@@ -178,9 +178,9 @@ val restoreTimelinePositionPatch =
             )
         newXToggle(
             id = "newx.profile.restore_position",
-            category = Categories.TIMELINE,
+            category = Categories.PROFILE,
             strings = settingStrings("piko_newx_restore_profile_position"),
-            order = 151,
+            order = 450,
             defaultValue = false,
             rebootApp = true,
         )

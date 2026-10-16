@@ -114,7 +114,7 @@ val customizeNewXMediaSheetPatch =
                     multiChoice(
                         id = "newx.content.hidden_media_sheet_items",
                         strings = settingStrings("piko_newx_media_sheet_items"),
-                        order = 160,
+                        order = 210,
                         defaultValue = emptySet(),
                         options =
                             MEDIA_SHEET_OPTIONS.map { (resourceName, titleResourceName) ->

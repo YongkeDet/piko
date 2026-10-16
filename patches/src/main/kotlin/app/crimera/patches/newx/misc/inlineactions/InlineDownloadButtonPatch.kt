@@ -115,7 +115,13 @@ val newXInlineDownloadButtonPatch =
         )
 
         newXSettings {
-            category(Categories.POST_ACTIONS_MEDIA) {
+            category(Categories.DOWNLOADS) {
+                customScreen(
+                    id = "newx.content.inline_download.options",
+                    strings = settingStrings("piko_newx_inline_download_options"),
+                    order = 100,
+                    fragmentClassDescriptor = DOWNLOAD_OPTIONS_FRAGMENT_DESCRIPTOR,
+                )
                 group(Groups.INLINE_DOWNLOAD) {
                     toggle(
                         id = "newx.content.inline_download_button",
@@ -126,96 +132,16 @@ val newXInlineDownloadButtonPatch =
                     toggle(
                         id = "newx.content.inline_download_hide_no_media",
                         strings = settingStrings("piko_newx_inline_download_hide_no_media"),
-                        order = 150,
-                        defaultValue = true,
-                    )
-                    toggle(
-                        id = "newx.content.media_picker_copy_link",
-                        strings = settingStrings("piko_newx_media_picker_copy_link"),
                         order = 200,
-                        defaultValue = true,
-                    )
-                    toggle(
-                        id = "newx.content.media_picker_resolution_button",
-                        strings = settingStrings("piko_newx_media_picker_resolution_button"),
-                        order = 250,
                         defaultValue = true,
                     )
                     toggle(
                         id = "newx.content.media_picker_external_downloader",
                         strings = settingStrings("piko_newx_media_picker_external_downloader"),
-                        order = 275,
+                        order = 300,
                         defaultValue = false,
                     )
-                    toggle(
-                        id = "newx.content.media_picker_thumbnails",
-                        strings = settingStrings("piko_newx_media_picker_thumbnails"),
-                        order = 300,
-                        defaultValue = true,
-                    )
-                    toggle(
-                        id = "newx.content.media_picker_merge_button",
-                        strings = settingStrings("piko_newx_media_picker_merge_button"),
-                        order = 350,
-                        defaultValue = true,
-                    )
-                    // Preferred quality for downloads that skip the picker. "ask" keeps the
-                    // resolution chooser; any other value auto-selects the matching option.
-                    singleChoice(
-                        id = "newx.content.inline_download.image_resolution",
-                        strings = settingStrings("piko_newx_inline_download_image_resolution"),
-                        order = 360,
-                        defaultValue = "original",
-                        options =
-                            listOf(
-                                choice("ask", "piko_newx_inline_download_quality_ask"),
-                                choice("original", "piko_newx_inline_download_quality_original"),
-                                choice("4096x4096", "piko_newx_inline_download_quality_4096"),
-                                choice("large", "piko_newx_inline_download_quality_large"),
-                                choice("medium", "piko_newx_inline_download_quality_medium"),
-                                choice("small", "piko_newx_inline_download_quality_small"),
-                            ),
-                    )
-                    // Videos and GIFs share the same variant model, so one policy covers both.
-                    singleChoice(
-                        id = "newx.content.inline_download.video_quality",
-                        strings = settingStrings("piko_newx_inline_download_video_quality"),
-                        order = 370,
-                        defaultValue = "highest",
-                        options =
-                            listOf(
-                                choice("ask", "piko_newx_inline_download_quality_ask"),
-                                choice("highest", "piko_newx_inline_download_quality_highest"),
-                                choice("1080p", "piko_newx_inline_download_quality_1080p"),
-                                choice("720p", "piko_newx_inline_download_quality_720p"),
-                                choice("480p", "piko_newx_inline_download_quality_480p"),
-                                choice("360p", "piko_newx_inline_download_quality_360p"),
-                                choice("lowest", "piko_newx_inline_download_quality_lowest"),
-                            ),
-                    )
-                    singleChoice(
-                        id = "newx.content.inline_download_conflict",
-                        strings = settingStrings("piko_newx_inline_download_conflict"),
-                        order = 400,
-                        defaultValue = "skip",
-                        options =
-                            listOf(
-                                choice("overwrite", "piko_newx_inline_download_conflict_overwrite"),
-                                choice("rename", "piko_newx_inline_download_conflict_rename"),
-                                choice("skip", "piko_newx_inline_download_conflict_skip"),
-                            ),
-                    )
-                    // Folders and the filename template need richer editors than a settings row, so
-                    // they live in the Download options screen.
-                    customScreen(
-                        id = "newx.content.inline_download.options",
-                        strings = settingStrings("piko_newx_inline_download_options"),
-                        order = 410,
-                        fragmentClassDescriptor = DOWNLOAD_OPTIONS_FRAGMENT_DESCRIPTOR,
-                    )
-                    // The template is edited only from the Download options screen, which owns the
-                    // token chips and live preview. It stays registered as a setting so
-                    // "back up settings" carries it, but is hidden from the list.
+                    // Keep destination and naming ids registered for existing preferences and backups.
                     input(
                         id = "newx.content.inline_download.filename_template",
                         strings = settingStrings("piko_newx_inline_download_filename_template"),
@@ -223,7 +149,6 @@ val newXInlineDownloadButtonPatch =
                         defaultValue = "{screenName}_{id}",
                         visible = false,
                     )
-                    // Edited in Download options; kept in the registry for backup and restore.
                     toggle(
                         id = "newx.content.inline_download.author_folders",
                         strings = settingStrings("piko_newx_download_author_folders"),
@@ -231,8 +156,6 @@ val newXInlineDownloadButtonPatch =
                         defaultValue = true,
                         visible = false,
                     )
-                    // Hidden nodes store the SAF destination for each media type. They are declared
-                    // as registry settings so "back up settings" carries them between installs.
                     input(
                         id = "newx.content.inline_download.images_tree_uri",
                         strings = settingStrings("piko_newx_inline_download_images_tree_uri"),
@@ -260,6 +183,77 @@ val newXInlineDownloadButtonPatch =
                         order = 730,
                         defaultValue = "",
                         visible = false,
+                    )
+                }
+                group(Groups.DOWNLOAD_QUALITY) {
+                    singleChoice(
+                        id = "newx.content.inline_download.image_resolution",
+                        strings = settingStrings("piko_newx_inline_download_image_resolution"),
+                        order = 100,
+                        defaultValue = "original",
+                        options =
+                            listOf(
+                                choice("ask", "piko_newx_inline_download_quality_ask"),
+                                choice("original", "piko_newx_inline_download_quality_original"),
+                                choice("4096x4096", "piko_newx_inline_download_quality_4096"),
+                                choice("large", "piko_newx_inline_download_quality_large"),
+                                choice("medium", "piko_newx_inline_download_quality_medium"),
+                                choice("small", "piko_newx_inline_download_quality_small"),
+                            ),
+                    )
+                    singleChoice(
+                        id = "newx.content.inline_download.video_quality",
+                        strings = settingStrings("piko_newx_inline_download_video_quality"),
+                        order = 200,
+                        defaultValue = "highest",
+                        options =
+                            listOf(
+                                choice("ask", "piko_newx_inline_download_quality_ask"),
+                                choice("highest", "piko_newx_inline_download_quality_highest"),
+                                choice("1080p", "piko_newx_inline_download_quality_1080p"),
+                                choice("720p", "piko_newx_inline_download_quality_720p"),
+                                choice("480p", "piko_newx_inline_download_quality_480p"),
+                                choice("360p", "piko_newx_inline_download_quality_360p"),
+                                choice("lowest", "piko_newx_inline_download_quality_lowest"),
+                            ),
+                    )
+                    singleChoice(
+                        id = "newx.content.inline_download_conflict",
+                        strings = settingStrings("piko_newx_inline_download_conflict"),
+                        order = 300,
+                        defaultValue = "skip",
+                        options =
+                            listOf(
+                                choice("overwrite", "piko_newx_inline_download_conflict_overwrite"),
+                                choice("rename", "piko_newx_inline_download_conflict_rename"),
+                                choice("skip", "piko_newx_inline_download_conflict_skip"),
+                            ),
+                    )
+                }
+                group(Groups.MEDIA_PICKER) {
+                    toggle(
+                        id = "newx.content.media_picker_thumbnails",
+                        strings = settingStrings("piko_newx_media_picker_thumbnails"),
+                        order = 100,
+                        defaultValue = true,
+                    )
+                    toggle(
+                        id = "newx.content.media_picker_resolution_button",
+                        strings = settingStrings("piko_newx_media_picker_resolution_button"),
+                        order = 200,
+                        defaultValue = true,
+                    )
+                    toggle(
+                        id = "newx.content.media_picker_copy_link",
+                        strings = settingStrings("piko_newx_media_picker_copy_link"),
+                        order = 300,
+                        defaultValue = true,
+                    )
+                    toggle(
+                        id = "newx.content.media_picker_merge_button",
+                        strings = settingStrings("piko_newx_media_picker_merge_button"),
+                        order = 400,
+                        defaultValue = true,
                     )
                 }
             }

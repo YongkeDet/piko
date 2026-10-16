@@ -120,7 +120,7 @@ val newXForceHighestVideoQualityPatch =
                 id = "newx.post_actions_media.force_highest_video_quality",
                 category = Categories.POST_ACTIONS_MEDIA,
                 strings = settingStrings("piko_newx_force_highest_video_quality"),
-                order = 150,
+                order = 500,
                 defaultValue = true,
             )
 

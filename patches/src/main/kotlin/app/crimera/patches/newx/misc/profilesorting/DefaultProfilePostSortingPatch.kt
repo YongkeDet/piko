@@ -76,9 +76,9 @@ val newXDefaultProfilePostSortingPatch =
 
         newXSingleChoice(
             id = "newx.post_actions_media.profile_post_sort_default",
-            category = Categories.POST_ACTIONS_MEDIA,
+            category = Categories.PROFILE,
             strings = settingStrings("piko_newx_profile_post_sort_default"),
-            order = 150,
+            order = 400,
             defaultValue = "Latest",
             options =
                 listOf(

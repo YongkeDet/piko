@@ -120,6 +120,12 @@ public final class NewXTimelineFilter {
     }
 
     /** Applies all selected timeline filters in one traversal of the immutable item tree. */
+    public static Object filterTimelineItems(Object timelineType, Object timelineItems) {
+        Object filtered = filterTimelineItems(timelineItems);
+        app.morphe.extension.newx.misc.ProfileBulkDownload.rememberPage(timelineType, timelineItems, filtered);
+        return filtered;
+    }
+
     public static Object filterTimelineItems(Object timelineItems) {
         if (timelineItems == null) return null;
 

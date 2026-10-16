@@ -205,7 +205,7 @@ val hidePremiumUpsellPatch =
                 id = "newx.content.hide_premium_upsell",
                 category = Categories.CONTENT,
                 strings = settingStrings("piko_newx_hide_premium_upsell"),
-                order = 200,
+                order = 220,
                 defaultValue = true,
                 rebootApp = true,
             )

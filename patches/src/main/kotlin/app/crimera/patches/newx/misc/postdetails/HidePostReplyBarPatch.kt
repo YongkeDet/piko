@@ -941,7 +941,7 @@ val newXHidePostReplyBarPatch =
                 id = "newx.post_actions_media.hide_post_reply_bar",
                 category = Categories.POST_ACTIONS_MEDIA,
                 strings = settingStrings("piko_newx_hide_post_reply_bar"),
-                order = 100,
+                order = 220,
                 defaultValue = false,
             )
 

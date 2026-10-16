@@ -123,9 +123,9 @@ val customizeNewXProfileTabsPatch =
 
         newXCustomScreen(
             id = "newx.profile.tabs.editor",
-            category = Categories.POST_ACTIONS_MEDIA,
+            category = Categories.PROFILE,
             strings = settingStrings("piko_newx_profile_tabs_editor"),
-            order = 160,
+            order = 100,
             fragmentClassDescriptor = PROFILE_TABS_EDITOR_DESCRIPTOR,
             iconResourceName = "ic_vector_bulleted_list",
         )

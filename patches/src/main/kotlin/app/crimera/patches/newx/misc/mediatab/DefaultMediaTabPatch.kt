@@ -149,9 +149,9 @@ val newXDefaultMediaTabPatch =
 
         newXSingleChoice(
             id = "newx.post_actions_media.media_tab_default",
-            category = Categories.POST_ACTIONS_MEDIA,
+            category = Categories.PROFILE,
             strings = settingStrings("piko_newx_media_tab_default"),
-            order = 100,
+            order = 200,
             defaultValue = "Photos",
             options =
                 listOf(
