@@ -46,6 +46,17 @@ private fun Method.readFields() = implementation?.instructions?.toList().orEmpty
     it.getReference<FieldReference>().takeIf { _ -> it.opcode == Opcode.IGET_OBJECT }
 }.distinctBy(FieldReference::toString)
 
+/** A coroutine can capture the same field; only a component exposes it as a paging getter. */
+internal fun resolveBulkTimelineHost(
+    classes: List<ClassDef>, paginatorType: String, pagingContract: String,
+): ClassDef = requireExactlyOne("NewX bulk URT host", classes.filter { cls ->
+    cls.type.startsWith("Lcom/x/urt/") && cls.fields.any { it.type == paginatorType } &&
+        cls.methods.any { method ->
+            !AccessFlags.STATIC.isSet(method.accessFlags) && method.parameterTypes.isEmpty() &&
+                method.returnType == pagingContract && method.readFields().any { it.type == paginatorType }
+        }
+})
+
 /** All unstable native contracts are resolved here; the Java worker knows no R8 identities. */
 @Suppress("unused")
 val newXProfileBulkDownloadPatch = bytecodePatch(
@@ -65,11 +76,14 @@ val newXProfileBulkDownloadPatch = bytecodePatch(
         val classes = buildList<ClassDef> { classDefForEach { add(it) } }
         val byType = classes.associateBy { it.type.toString() }
         val paging = resolvePagingEvent(classes)
-        val nativeHost = requireExactlyOne("NewX bulk URT host", classes.filter { cls ->
-            cls.type.startsWith("Lcom/x/urt/") && cls.fields.any { it.type == paging.paginatorType }
-        })
+        val pagingContract = requireExactlyOne("NewX bulk paging interface", byType[paging.paginatorType]!!.interfaces.filter {
+            it.startsWith("Lcom/x/urt/paging/") &&
+                byType[it.toString()]?.let { cls -> AccessFlags.INTERFACE.isSet(cls.accessFlags) } == true
+        }).toString()
+        val nativeHost = resolveBulkTimelineHost(classes, paging.paginatorType, pagingContract)
         val bottom = requireExactlyOne("NewX bulk bottom paginator getter", nativeHost.methods.filter { method ->
-            method.parameterTypes.isEmpty() && method.readFields().any { it.type == paging.paginatorType }
+            method.parameterTypes.isEmpty() && method.returnType == pagingContract &&
+                method.readFields().any { it.type == paging.paginatorType }
         })
         val hostInterface = requireExactlyOne("NewX bulk URT interface", nativeHost.interfaces.mapNotNull {
             byType[it.toString()]
