@@ -155,6 +155,24 @@ class NewXResolverLinterTest {
     }
 
     @Test
+    fun `record notification duration parameter helper false positive from pinned banner CI`() {
+        val before = lint("""
+            val instance = requireExactlyOne("sender", senders.filter {
+                it.definingClass == facade && it.returnType == "V" && it.types().size == 2 && it.types()[0] == api
+            }.distinctBy { it.toString() })
+        """.trimIndent())
+        // Library 0.7.0 treats the types() helper as resolver candidate selection despite its size guard.
+        assertEquals(listOf(ResolverLinter.Rule.RAW_INDEX), before.map { it.rule })
+        val after = lint("""
+            val instance = requireExactlyOne("sender", senders.filter {
+                val parameters = it.parameterTypes
+                it.definingClass == facade && it.returnType == "V" && parameters.size == 2 && parameters[0].toString() == api
+            }.distinctBy { it.toString() })
+        """.trimIndent())
+        assertTrue(after.isEmpty(), after.toString())
+    }
+
+    @Test
     fun `at most one proof does not permit required candidate selection`() {
         val findings =
             lint(

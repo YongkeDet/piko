@@ -52,3 +52,19 @@ No build or patch result is inferred from that tooling failure. CI builds the ex
 The unified adapter remains limited to the validated 12.34 compatibility declaration. Older target
 notification/card/dialog paths remain behind hasUnifiedHost=false; an older APK is unavailable here.
 No device was launched or controlled. Final APK evidence and source provenance will be appended after verification.
+
+## First CI lint finding
+
+Source `8fa648d1912cb770682ee08653309394dd1203f7`, run `38928279908`, job `117065400805`.
+Extension tests and Kotlin compilation passed; the resolver linter stopped the build before publication.
+This was a false positive on the helper-returned ordered parameter list (size == 2 was already checked),
+not APK drift or a failed patch. Rewrite uses the explicit `parameterTypes` contract with the same size guard;
+the library is unchanged. The observed finding and corrected non-finding are recorded in
+NewXResolverLinterTest.
+
+```text
+misc/inlineactions/UnifiedDownloadNotificationPatch.kt:243:115: raw-index: indexed access on candidate-like 'types'; require exact cardinality or use an explicit fail-closed resolver
+    it.definingClass == runtime.facadeDescriptor && it.returnType == "V" && it.types().size == 2 && it.types()[0] == runtime.apiDescriptor
+Resolver lint found 1 gating issue(s) and 0 advisory finding(s)
+Execution failed for task ':patches:lintNewxResolvers'.
+```

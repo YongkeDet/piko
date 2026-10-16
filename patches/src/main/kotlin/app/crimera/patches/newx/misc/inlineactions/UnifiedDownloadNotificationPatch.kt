@@ -240,7 +240,8 @@ context(context: BytecodePatchContext)
 private fun patchPinnedSender(runtime: ResolvedNotificationRuntime, classes: List<ClassDef>, present: Method) {
     val sender = requireExactlyOne("NewX generic sender body", nativeNotificationClass(runtime.facadeDescriptor).methods.filter { it.same(runtime.sender) })
     val instance = requireExactlyOne("NewX sender with duration", sender.code().mapNotNull { it.getReference<MethodReference>() }.filter {
-        it.definingClass == runtime.facadeDescriptor && it.returnType == "V" && it.types().size == 2 && it.types()[0] == runtime.apiDescriptor
+        val parameters = it.parameterTypes
+        it.definingClass == runtime.facadeDescriptor && it.returnType == "V" && parameters.size == 2 && parameters[0].toString() == runtime.apiDescriptor
     }.distinctBy { it.toString() })
     val duration = instance.types()[1]
     val custom = requireExactlyOne("NewX custom notification duration", classes.filter { type ->
