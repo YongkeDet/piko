@@ -76,6 +76,15 @@ internal fun MutableMethod.guardGlassDivider(index: Int) {
     }
 }
 
+/** Decorate the proven outer inset value before the blur/fallback diamond, leaving join labels alone. */
+internal fun MutableMethod.decorateGlassInsets(resultIndex: Int, register: Int) {
+    insertHook(resultIndex + 1, relocateBranchTargets = false) {
+        invokeStatic(methodReference("$GLASS->decorate($OBJECT)$OBJECT"), register)
+        moveResult(register, OBJECT)
+        checkCast(register, MODIFIER)
+    }
+}
+
 context(context: BytecodePatchContext)
 private fun MethodReference.mutable(): MutableMethod = requireExactlyOne(
     "NewX glass mutable method $this",
@@ -274,11 +283,6 @@ val floatingGlassNewXNavBarPatch = bytecodePatch(
         })
         // Mutate from high indexes downward. Only this bottom bar's divider is suppressed.
         bar.guardGlassDivider(divider.index)
-        bar.insertHook(join.index, relocateBranchTargets = true) {
-            invokeStatic(methodReference("$GLASS->decorate($OBJECT)$OBJECT"), insetRegister)
-            moveResult(insetRegister, OBJECT)
-            checkCast(insetRegister, MODIFIER)
-        }
         val replacement = bar.insertHook(hazeCall.index, relocateBranchTargets = true) {
             invokeStatic(methodReference("$GLASS->haze($OBJECT$OBJECT${OBJECT}I)$OBJECT"), *hazeCall.value.registersUsed.toIntArray())
         }
@@ -297,5 +301,7 @@ val floatingGlassNewXNavBarPatch = bytecodePatch(
             invokeStatic(methodReference("$GLASS->useBlur(Z)Z"), gateRegister)
             moveResult(gateRegister, "Z")
         }
+        // The inset result reaches the join receiver unchanged on both native background paths.
+        bar.decorateGlassInsets(inset.index + 1, insetRegister)
     }
 }

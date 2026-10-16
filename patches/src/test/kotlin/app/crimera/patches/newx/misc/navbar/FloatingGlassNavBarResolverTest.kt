@@ -8,6 +8,8 @@ import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.builder.BuilderOffsetInstruction
 import com.android.tools.smali.dexlib2.builder.MethodImplementationBuilder
+import com.android.tools.smali.dexlib2.builder.instruction.BuilderInstruction10t
+import com.android.tools.smali.dexlib2.builder.instruction.BuilderInstruction21t
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethodParameter
@@ -17,6 +19,34 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 class FloatingGlassNavBarResolverTest {
+    @Test
+    fun `inset decoration precedes both backgrounds and preserves their shared join label`() {
+        val body = MethodImplementationBuilder(22)
+        fun add(line: String) { body.addInstruction(line.toInstruction()) }
+        add("invoke-static {v0}, Lfixture/Insets;->padding(Ljava/lang/Object;)Ljava/lang/Object;")
+        add("move-result-object v1")
+        add("const/4 v2, 0")
+        body.addInstruction(BuilderInstruction21t(Opcode.IF_EQZ, 2, body.getLabel("solid")))
+        add("const/4 v3, 0")
+        body.addInstruction(BuilderInstruction10t(Opcode.GOTO, body.getLabel("join")))
+        body.addLabel("solid")
+        add("const/4 v3, 0")
+        body.addLabel("join")
+        add("invoke-interface {v1, v3}, Landroidx/compose/ui/Modifier;->then(Landroidx/compose/ui/Modifier;)Landroidx/compose/ui/Modifier;")
+        add("move-result-object v1")
+        add("return-void")
+        val method = fixture("diamond", emptyList(), "V", body)
+        method.decorateGlassInsets(resultIndex = 1, register = 1)
+        val code = method.implementation!!.instructions
+        assertEquals(Opcode.INVOKE_STATIC, code[2].opcode)
+        assertEquals(Opcode.MOVE_RESULT_OBJECT, code[3].opcode)
+        assertEquals(Opcode.CHECK_CAST, code[4].opcode)
+        assertEquals(Opcode.IF_EQZ, code[6].opcode)
+        val join = (code[8] as BuilderOffsetInstruction).target.location.index
+        assertEquals(10, join)
+        assertEquals(Opcode.INVOKE_INTERFACE, code[join].opcode)
+    }
+
     @Test
     fun `divider guard works with every four-bit local live`() {
         // The real Compose bar had v0..v15 live and its first free local was v16.
@@ -54,6 +84,10 @@ class FloatingGlassNavBarResolverTest {
         val implementation = MethodImplementationBuilder(22)
         lines.forEach { implementation.addInstruction(it.toInstruction()) }
         implementation.addInstruction("return-void".toInstruction())
+        return fixture(name, parameters, result, implementation)
+    }
+
+    private fun fixture(name: String, parameters: List<String>, result: String, implementation: MethodImplementationBuilder): MutableMethod {
         return MutableMethod(ImmutableMethod(
             "Lfixture/Glass;", name,
             parameters.map { ImmutableMethodParameter(it, emptySet(), null) }, result,
