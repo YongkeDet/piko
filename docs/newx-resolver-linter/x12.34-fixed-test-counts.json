@@ -1,0 +1,12 @@
+{
+  "patches": {
+    "tests": 81,
+    "failures": 0,
+    "skipped": 0
+  },
+  "extension": {
+    "tests": 276,
+    "failures": 0,
+    "skipped": 0
+  }
+}

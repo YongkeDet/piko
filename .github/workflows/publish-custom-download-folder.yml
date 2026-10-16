@@ -20,11 +20,11 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      SOURCE_RUN_ID: '38859264087'
-      SOURCE_SHA: 623391ef62040948ecf4f1bf950321b52a26a9a3
-      BUNDLE_SHA256: cfd5b6c18b533076983bd5b403834f2128f796b2b5597f1dc0b9949ce08c2525
-      RELEASE_TAG: v3.10.0-custom-newx.7
-      BUNDLE_NAME: patches-3.10.0-custom-newx.7.mpp
+      SOURCE_RUN_ID: '38892127266'
+      SOURCE_SHA: 08953aa74cf93cffd955ff54a8355b3a8385b246
+      BUNDLE_SHA256: 9cafb85863ccc083ac033c045d4c5052ec5e957afe1dff181d10814e41b52d65
+      RELEASE_TAG: v3.10.0-custom-newx.8
+      BUNDLE_NAME: patches-3.10.0-custom-newx.8.mpp
     steps:
       - uses: actions/checkout@v7
       - name: Verify source build
@@ -56,6 +56,6 @@ jobs:
             "dist/$BUNDLE_NAME" dist/SHA256SUMS dist/source-provenance.json \
             --repo "$GITHUB_REPOSITORY" \
             --target "$GITHUB_SHA" \
-            --title 'Piko NewX Custom — 悬浮玻璃底栏' \
-            --notes-file docs/releases/v3.10.0-custom-newx.7.md \
+            --title 'Piko NewX Custom — 固定底栏、自动刷新限制与下载进度' \
+            --notes-file docs/releases/v3.10.0-custom-newx.8.md \
             --latest
