@@ -1,6 +1,6 @@
 {
-  "version": "3.10.0-custom-newx.6",
-  "download_url": "https://github.com/YongkeDet/piko/releases/download/v3.10.0-custom-newx.6/patches-3.10.0-custom-newx.6.mpp",
-  "created_at": "2026-10-16T05:22:07",
-  "description": "X 12.34.0-prod.01 / 312340001（arm64-v8a，Android 10+）。\n修复主页批量下载失败：正确处理没有图片或视频的 Empty 标签页，区分历史失败和新请求结果；暂时性分页失败最多尝试三次，缺少首屏时自动请求原生刷新。\n进度窗口显示恢复状态；失败时区分网络、超时、访问受限、限流等原因，并显示停止阶段和累计页数。单条异常媒体不再中断整个主页。\n沿用作者子文件夹、保存目录、命名与画质规则、顶部成功提示和八类中文设置。\n348 项测试通过；55 项全选、49 项默认修补均零失败并成功重建，两份最终 APK 各通过 30 项字节码及资源检查，603 条中文资源确认存在。真实账号分页仍需手机复测。\nhttps://github.com/YongkeDet/piko/releases/tag/v3.10.0-custom-newx.6"
+  "version": "3.10.0-custom-newx.7",
+  "download_url": "https://github.com/YongkeDet/piko/releases/download/v3.10.0-custom-newx.7/patches-3.10.0-custom-newx.7.mpp",
+  "created_at": "2026-10-16T10:20:03",
+  "description": "X 12.34.0-prod.01 / 312340001（arm64-v8a，Android 10+）。\n新增悬浮玻璃底栏：圆角胶囊、半透明底色、原生背景模糊、细边框和阴影，保留系统手势安全区。\n刷新补丁源后重新载入默认选择，用原版 APKM 重新修补。安装后在 Piko 设置 → 外观 → 悬浮玻璃底栏 开启并重启，样式默认关闭。\n这是接近液态玻璃的 Android 视觉效果，未实现 iOS 动态光学折射，仅作用于手机主底栏。\n保留作者子文件夹、自定义保存目录、主页一键下载与恢复策略、顶部保存提示和八类中文设置。旧版 73 项功能仍未全部迁移。\n351 项测试通过；56 项全选、50 项默认修补均零失败并成功重建。两份 APK 各通过 33 项底栏检查和 30 项既有功能检查，605 条中文资源存在。实机观感与触控仍需试用。\nhttps://github.com/YongkeDet/piko/releases/tag/v3.10.0-custom-newx.7"
 }

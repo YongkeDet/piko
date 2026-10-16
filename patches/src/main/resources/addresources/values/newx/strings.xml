@@ -158,6 +158,8 @@
     <string name="piko_newx_theme_dim">Dim</string>
     <string name="piko_newx_dynamic_color_like_title">Theme liked-post icon</string>
     <string name="piko_newx_dynamic_color_like_summary">Uses the dynamic accent for liked posts. Warning: This disables the heart Lottie animation.</string>
+    <string name="piko_newx_floating_glass_navbar_title">Floating glass navigation bar</string>
+    <string name="piko_newx_floating_glass_navbar_summary">Round the phone bottom bar into a floating capsule with background blur, translucent tint and a highlight border. Restart to apply. Disable blur overrides the blur effect.</string>
     <string name="piko_newx_disable_blur_title">Disable Compose blur</string>
     <string name="piko_newx_disable_blur_summary">Removes blur from NewX Compose UI while keeping configured background tint and scrim effects</string>
     <string name="piko_newx_share_image_title">Share post as image</string>
