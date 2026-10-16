@@ -86,3 +86,68 @@ Pre-patch smali review found the model's actual semantic property label is `butt
 not `button`. The button resolver anchor was corrected before any APK test; no obfuscated
 field name or descriptor was added. The final DEX review also symbolically checks that the
 unified bulk constructor does not instantiate its legacy progress dialog.
+
+## Final source build
+
+- Source: `6b2da69f22a09107597ca4a4f0b2d35465218b79`; tree `aed8eef5780299254549e6f78f39f8c61d3eb026`.
+- CI: https://github.com/YongkeDet/piko/actions/runs/38930312006 , job `117072308254`, success.
+- 86 patch tests + 279 extension tests = 365; zero failures/skips. API 29 animal-sniffer,
+  Android lint, NewX resolver lint and extension descriptor checks passed.
+- Bundle artifact `12058103927`, ZIP SHA-256 `6348f54ff98b91aa988a348fb0b72cfeb8c87c2ebb6bdb295d8fa6a32d7237a0`.
+- Test artifact `12057934298`, ZIP SHA-256 `1141cd2a7ff934b58c7fec67d675f2e1ae8eb2211a96b48d6788c598693b2374`.
+- MPP `patches-3.10.0-custom-newx.10.mpp`, SHA-256 `3de1e2ccbd0b38b087ff48ea88aca57c048c0a0ebf669570f5fdd76bfc0a5bef`.
+- NewX MPE 568016 bytes, SHA-256 `f3b8fddc466400aa408a989c3b7b9b38ad0626cf0937c91c5e963c12dfbb3216`.
+- Shared MPE 3371684 bytes, SHA-256 `ad486f4bf4537b12e4d0efaff8b809cf550d6f9eea4bff4549d481a9da105396`.
+
+The bundle and both downloaded artifact ZIPs were checked against their provenance/digests before use.
+`patch-twitter.sh` verifies the source HEAD, clean source paths and bundle SHA before patching.
+
+Final review setup correction: the first BulkFixStaticReview invocation supplied `base.apk` as
+its source-directory argument and failed opening `base.apk/patches/.../strings.xml`. This checker
+accepts `OUTPUT.apk SOURCE_ROOT REPORT.json`, unlike the other reviews. Its arguments were
+corrected and only that check rerun; no product source or APK changed.
+
+## Exact APKM verification
+
+Commands were run sequentially with the above CI bundle, clean production sources and HEAD
+matching the provenance. No device installation or launch was requested or performed.
+
+```sh
+JAVA_TOOL_OPTIONS='-XX:-UsePerfData -Xshare:off' \
+PATCHER_JAVA=/workspace/scratch/558c083b636f/verification/jdk-21.0.12.1+1-jre/bin/java \
+MORPHE_CLI_JAR=/workspace/scratch/558c083b636f/verification/morphe-desktop-1.18.1-all.jar \
+PATCHER_OUTPUT_APK=OUTPUT.apk ./patch-twitter.sh ORIGINAL.apkm \
+  [--all-newx] --unsigned --continue-on-error --disable-purge --bytecode-mode FULL
+```
+
+- All: 59 applied, zero failed, rebuilt successfully; 121349965 bytes,
+  SHA-256 `17133098b9a34fbf84cbd8808083ba31642c6d125f9aea7aadde7fcc151af29a`.
+  [Result](x12.34-pinned-all.json), [full log](x12.34-pinned-all.log).
+- Default: 53 applied, zero failed, rebuilt successfully; 120464631 bytes,
+  SHA-256 `19f411828a9a6bf40f228f26435f4ec65d1ff7f2ec75dd75a612e16568490981`.
+  [Result](x12.34-pinned-default.json), [full log](x12.34-pinned-default.log).
+
+Each final APK passes 236 checks (135 pinned-native + 38 fixed/refresh + 33 glass + 30 bulk/resource):
+
+- Pinned model construction, mask/button/style operands, native infinite duration vs result timeout,
+  one native actor gate, original actor instructions/branches preserved, no replacement presentation,
+  original present/dispose instructions preserved, live receiver at StateFlow publication, shared
+  group-free localizer fallback preserved, Snapshot factory/get/set, text-only progress updates,
+  task queue ownership, native bulk constructor/begin/progress/finish paths with no modal creation/show,
+  scoped bulk cancellation, single terminal summary, keyed engine/merge outcomes and silent batch members.
+- Bottom-bar host and automatic-refresh request controls, merge byte progress, native paging recovery,
+  raw page lineage, empty/retry/terminal paths and no bottom success toast remain intact.
+- All 621 Chinese strings are present. The new notification headings and counters are included in
+  the same resource aggregation as the Chinese settings.
+
+[Checker](PinnedBannerStaticReview.java); native [all](x12.34-pinned-all-native.json)/[default](x12.34-pinned-default-native.json),
+fixed [all](x12.34-pinned-all-fixed.json)/[default](x12.34-pinned-default-fixed.json),
+glass [all](x12.34-pinned-all-glass.json)/[default](x12.34-pinned-default-glass.json),
+bulk [all](x12.34-pinned-all-bulk.json)/[default](x12.34-pinned-default-bulk.json).
+[Tests](x12.34-pinned-tests.json), [bundle provenance](x12.34-pinned-source-provenance.json).
+
+These are build, state-machine and final-bytecode/resource results, not device UI/runtime claims.
+Native animations, visual hierarchy and foreground/background experience still need normal use
+on the user's phone. No other target APK was available for full package regression.
+
+Committed CLI logs preserve every line with trailing whitespace removed; raw captures remain in the verification working directory.
