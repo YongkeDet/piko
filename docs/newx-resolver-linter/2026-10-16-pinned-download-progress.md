@@ -68,3 +68,16 @@ misc/inlineactions/UnifiedDownloadNotificationPatch.kt:243:115: raw-index: index
 Resolver lint found 1 gating issue(s) and 0 advisory finding(s)
 Execution failed for task ':patches:lintNewxResolvers'.
 ```
+
+Local offline state-machine smoke check compiled the actual DownloadBannerPolicy,
+DownloadProgressState and existing NewXDownloaderTest with javac 17 and a minimal assertion
+runner (not a replacement for CI/JUnit): all eight downloader regressions passed.
+PinnedBannerStaticReview.java compiles against the official Morphe CLI and existing review helpers.
+
+Second CI run `38929020837` (source `16d5c1092ecc05cfb3e7015cc3b1f5d8abafe37c`)
+passed compilation, extension tests and production resolver lint. One newly added lint fixture failed:
+`expected [RAW_INDEX] but was []`. The reduced fixture had omitted the preceding mapNotNull lambda,
+which changes the library's lexical proof boundary. The corrected fixture includes the actual
+mapNotNull/filter pipeline. Running the unchanged library classes from the verified .9 MPP locally
+reproduces exactly one finding before, zero after; the entire current notification resolver has zero
+findings. No production patch or extension change was required for this fixture correction.
