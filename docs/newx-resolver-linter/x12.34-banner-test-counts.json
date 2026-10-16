@@ -1,0 +1,12 @@
+{
+  "patches/build/reports/tests/test/index.html": {
+    "tests": 83,
+    "failures": 0,
+    "skipped": 0
+  },
+  "extensions/newx/build/reports/tests/testDebugUnitTest/index.html": {
+    "tests": 278,
+    "failures": 0,
+    "skipped": 0
+  }
+}

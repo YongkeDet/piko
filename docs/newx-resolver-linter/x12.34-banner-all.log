@@ -1,0 +1,147 @@
+Picked up JAVA_TOOL_OPTIONS: -XX:-UsePerfData -Xshare:off
+INFO: Created new output file at /tmp/tmp.6mBHXUafBV 
+Picked up JAVA_TOOL_OPTIONS: -XX:-UsePerfData -Xshare:off
+INFO: Morphe data root: /workspace/scratch/558c083b636f/verification/morphe-data (JAR-adjacent) 
+INFO: Loading patches... 
+INFO: Merging split APK bundle 
+INFO: Extracting to: /workspace/scratch/558c083b636f/recovered-input/tmp_ab733c8b 
+INFO: Searching apk files ... 
+INFO: Found apk files: 28 
+INFO: Found modules: 28 
+INFO: Merging: base 
+INFO: Added [base] classes.dex -> classes.dex 
+INFO: Added [base] classes2.dex -> classes2.dex 
+INFO: Added [base] classes3.dex -> classes3.dex 
+INFO: Added [base] classes4.dex -> classes4.dex 
+INFO: Added [base] classes5.dex -> classes5.dex 
+INFO: Added [base] classes6.dex -> classes6.dex 
+INFO: Added [base] classes7.dex -> classes7.dex 
+INFO: Added [base] classes8.dex -> classes8.dex 
+INFO: Added [base] classes9.dex -> classes9.dex 
+INFO: Added [base] classes10.dex -> classes10.dex 
+INFO: Added [base] classes11.dex -> classes11.dex 
+INFO: Added [base] classes12.dex -> classes12.dex 
+INFO: Added [base] classes13.dex -> classes13.dex 
+INFO: Merging: split_config.sv 
+INFO: Merging: split_config.ko 
+INFO: Merging: split_config.in 
+INFO: Merging: split_config.arm64_v8a 
+INFO: Merging: split_config.ms 
+INFO: Merging: split_config.vi 
+INFO: Merging: split_config.th 
+INFO: Merging: split_config.ar 
+INFO: Merging: split_config.ja 
+INFO: Merging: split_config.xxhdpi 
+INFO: Merging: split_config.it 
+INFO: Merging: split_config.xxxhdpi 
+INFO: Merging: split_config.en 
+INFO: Merging: split_config.et 
+INFO: Merging: split_config.zh 
+INFO: Merging: split_config.es 
+INFO: Merging: split_config.fi 
+INFO: Merging: split_config.ru 
+INFO: Merging: split_config.pt 
+INFO: Merging: split_config.de 
+INFO: Merging: split_config.hi 
+INFO: Merging: split_config.pl 
+INFO: Merging: split_config.tr 
+INFO: Merging: split_config.nl 
+INFO: Merging: split_config.uk 
+INFO: Merging: split_config.fr 
+INFO: Merging: split_config.hu 
+INFO: Validating resources dir ... 
+INFO: Sanitizing manifest ... 
+INFO: Setting extractNativeLibs=false 
+INFO: Writing apk ... 
+INFO: Buffering compress changed files ... 
+INFO: Writing files: 4768 
+INFO: Writing signature block ... 
+INFO: Saved to: /workspace/scratch/558c083b636f/piko/build/com.twitter.android_12.34.0-prod.01-312340001_1arch_2dpi_24lang_0d5e5dfcd6d1ce2f7899e98625ad1541_apkmirror.com-merged.apk 
+INFO: Initializing patcher... 
+INFO: Filtering patches for com.twitter.android v12.34.0-prod.01... 
+INFO: Applying 59 patches... 
+INFO: Deleting existing temporary files directory 
+INFO: Decoding all resources 
+INFO: Leaving 32 native library files in the input APK 
+INFO: Sanitizing unpatched strings 
+INFO: Escaping strings 
+INFO: Executing patches 
+INFO: Applied: NewX: Browse tweet object 
+INFO: Applied: NewX: Classic inline action spacing 
+INFO: Applied: NewX: Clone 
+INFO: Applied: NewX: Crash logs 
+INFO: Applied: NewX: Custom font 
+INFO: Applied: NewX: Custom sharing domain 
+INFO: Applied: NewX: Customize drawer items 
+INFO: Applied: NewX: Customize inline actions 
+INFO: Applied: NewX: Customize media menu items 
+INFO: Applied: NewX: Customize navigation bar 
+INFO: Applied: NewX: Customize post menu items 
+INFO: Applied: NewX: Customize profile tabs 
+INFO: Applied: NewX: Customize timeline tabs 
+INFO: Applied: NewX: Disable automatic content refresh 
+INFO: Applied: NewX: Disable automatic timeline refresh 
+INFO: Applied: NewX: Disable blur effects 
+INFO: Applied: NewX: Disable video player scrolling 
+INFO: Applied: NewX: Download all profile media 
+INFO: Applied: NewX: Feature switch overrides 
+INFO: Applied: NewX: Filter For You by topic 
+INFO: Applied: NewX: Filter posts by keyword 
+INFO: Applied: NewX: Fixed bottom navigation bar 
+INFO: Applied: NewX: Floating glass navigation bar 
+INFO: Applied: NewX: Force highest video resolution 
+INFO: Applied: NewX: Force translate option 
+INFO: Applied: NewX: Gallery profile Photos tab 
+INFO: Applied: NewX: Handle custom links 
+INFO: Applied: NewX: Hide AI-generated posts 
+INFO: Applied: NewX: Hide Community Notes 
+INFO: Applied: NewX: Hide Discover more 
+INFO: Applied: NewX: Hide Spaces bar 
+INFO: Applied: NewX: Hide compose button 
+INFO: Applied: NewX: Hide new posts pill 
+INFO: Applied: NewX: Hide post dividers 
+INFO: Applied: NewX: Hide post reply bar 
+INFO: Applied: NewX: Hide posts by verified account type 
+INFO: Applied: NewX: Hide premium upsell 
+INFO: Applied: NewX: Hide promote button 
+INFO: Applied: NewX: Hide timeline tabs bar 
+INFO: Applied: NewX: Hide who to follow 
+INFO: Applied: NewX: Inline download button 
+INFO: Applied: NewX: Open canonical URLs 
+INFO: Applied: NewX: Redirect downloads to chosen folder 
+INFO: Applied: NewX: Remove ads 
+INFO: Applied: NewX: Restore Twitter branding 
+INFO: Applied: NewX: Restore pinned home tab 
+INFO: Applied: NewX: Restore timeline position 
+INFO: Applied: NewX: Server error logging 
+INFO: Applied: NewX: Set default media tab 
+INFO: Applied: NewX: Set default profile post sorting 
+INFO: Applied: NewX: Set default reply sorting 
+INFO: Applied: NewX: Share post as image 
+INFO: Applied: NewX: Show changelog 
+INFO: Applied: NewX: Show poll results 
+INFO: Applied: NewX: Show sensitive media 
+INFO: Applied: NewX: Theme 
+INFO: Applied: NewX: Unified download notifications 
+INFO: Applied: NewX: Unlock color customization 
+INFO: Applied: NewX: Unlock downloads 
+INFO: Compiling patched dex files (mode: FULL) 
+INFO: Processing 120980 classes in parallel (4 threads) 
+INFO: Wrote 14 dex files to /workspace/scratch/558c083b636f/verification/morphe-data/tmp/patching-1792163367983/patched/dex 
+INFO: Compiling modified resources 
+INFO: Stripping libs (keeping architectures arm64-v8a) 
+INFO: Stripped 0 lib files 
+INFO: Unescaping strings 
+INFO: Post-processing package name change 
+INFO: Processing aapt macros 
+INFO: Generating new resource IDs 
+INFO: Writing resource APK 
+INFO: Encoded 6590 of 210450 values in 56 files, 43 resource files and 0 configurations of patches for com.twitter.android 
+INFO: Encoded 0 of 0 values in 0 files, 0 resource files and 0 configurations of patches for com.twitter.android.paymentsdynamicfeature 
+INFO: Resource APK inputs: reusing 4757 unchanged archive entries, rebuilding 45 entries, dropping 0 entries 
+INFO: Resource APK scan: 1.5s write: 400ms 
+INFO: Using compiled resource APK as output base 
+INFO: Aligning APK 
+INFO: Saved to /workspace/scratch/558c083b636f/piko/build/newx-unified-banner-all.apk 
+INFO: Patching result saved to /workspace/scratch/558c083b636f/piko/build/newx-unified-banner-all-result.json 
+Verified 59 applied patches and a successful APK rebuild.

@@ -52,7 +52,7 @@ private data class FacadeCandidate(
     override fun toString(): String = classDef.type
 }
 
-private data class ResolvedNotificationRuntime(
+internal data class ResolvedNotificationRuntime(
     val facadeDescriptor: String,
     val facadeConstructor: MethodReference,
     val sender: MethodReference,
@@ -80,7 +80,7 @@ internal val newXInAppNotificationPatch =
     }
 
 context(context: BytecodePatchContext)
-private fun resolveNotificationRuntime(): ResolvedNotificationRuntime {
+internal fun resolveNotificationRuntime(): ResolvedNotificationRuntime {
     val classDefs = buildList<ClassDef> {
         context.classDefForEach { add(it) }
     }

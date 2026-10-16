@@ -162,8 +162,10 @@ public final class NativeDownloadRouter {
 
         EnqueueResult result = engine.enqueue(request);
         switch (result.state()) {
-            case QUEUED -> postStatus(StringRef.str("piko_newx_download_started"), username);
-            case SKIPPED -> postStatus(StringRef.str("piko_newx_download_already_downloaded"), username);
+            case QUEUED -> {
+                if (!NewXInAppNotification.hasUnifiedHost()) postInfo(StringRef.str("piko_newx_download_started"), username);
+            }
+            case SKIPPED -> postInfo(StringRef.str("piko_newx_download_already_downloaded"), username);
             case DESTINATION_LOST -> {
                 NewXDownloadFolders.invalidate(kind);
                 postStatus(InlineDownloadButton.folderLostMessage(), username);
@@ -174,6 +176,11 @@ public final class NativeDownloadRouter {
 
     private static void postStatus(String message, String username) {
         // The in-app host only: a status Toast on top of the app's own banner is redundant.
+        NewXUtils.runOnUiThread(() -> NewXInAppNotification.tryShowError(
+                NewXInAppNotification.formatForUser(message, username)));
+    }
+
+    private static void postInfo(String message, String username) {
         NewXUtils.runOnUiThread(() -> NewXInAppNotification.tryShowForUser(message, username));
     }
 

@@ -1,5 +1,7 @@
 package app.morphe.extension.newx.misc;
 
+import android.os.SystemClock;
+
 import app.morphe.extension.shared.Utils;
 
 /**
@@ -12,6 +14,7 @@ import app.morphe.extension.shared.Utils;
  */
 public final class NewXInAppNotification {
     private static volatile Object facade;
+    private static final DownloadBannerPolicy POLICY = new DownloadBannerPolicy();
 
     private NewXInAppNotification() {
     }
@@ -29,7 +32,7 @@ public final class NewXInAppNotification {
     /** Shows a status message; reports whether the in-app host took it. */
     public static boolean tryShow(String message) {
         try {
-            return send(message);
+            return sendRich(message, null, DownloadBannerPolicy.INFO) || send(message);
         } catch (Throwable ignored) {
             return false;
         }
@@ -44,6 +47,52 @@ public final class NewXInAppNotification {
     public static boolean tryShowForUser(String message, String username) {
         return tryShow(formatForUser(message, username));
     }
+
+    public static boolean tryShowSuccess(String message) {
+        try { return sendRich(message, null, DownloadBannerPolicy.SUCCESS) || send(message); }
+        catch (Throwable ignored) { return false; }
+    }
+
+    public static boolean tryShowSuccessForUser(String message, String username) {
+        return tryShowSuccess(formatForUser(message, username));
+    }
+
+    public static boolean tryShowError(String message) {
+        try { return sendRich(message, null, DownloadBannerPolicy.ERROR) || send(message); }
+        catch (Throwable ignored) { return false; }
+    }
+
+    public static void showError(String message) {
+        if (!tryShowError(message)) Utils.showToastShort(message);
+    }
+
+    public static void showErrorForUser(String message, String username) {
+        showError(formatForUser(message, username));
+    }
+
+    static void progress(String title, String detail) {
+        POLICY.beginProgress();
+        try { sendRich(title, detail, DownloadBannerPolicy.PROGRESS); }
+        catch (Throwable ignored) { /* Try again on the next foreground tick. */ }
+    }
+
+    static void finishProgress() {
+        if (!POLICY.endProgress()) return;
+        try { sendRich("", null, DownloadBannerPolicy.CLEAR); }
+        catch (Throwable ignored) { /* The native timeout still removes a stale progress notice. */ }
+    }
+
+    // These Object-only methods are called by direct, patch-time-resolved native bytecode.
+    public static void registerNative(Object notification, int kind) { POLICY.register(notification, kind); }
+    public static void forgetNative(Object notification) { POLICY.forget(notification); }
+    public static int decideNative(Object incoming, Object current) {
+        return POLICY.decide(incoming, current, SystemClock.elapsedRealtime());
+    }
+
+    /** Enabled only by the separately validated native update adapter. */
+    static boolean hasUnifiedHost() { return false; }
+    private static boolean sendRich(String title, String detail, int kind) { return false; }
+    public static boolean interceptNative(Object manager, Object entry) { return false; }
 
     static String formatForUser(String message, String username) {
         if (username == null) return message;

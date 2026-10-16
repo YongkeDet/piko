@@ -287,7 +287,7 @@ public final class InlineDownloadButton {
             Context context = NewXUtils.findUsableActivity(null);
             Object post = getPresenterPost(presenter);
             if (context == null || post == null) {
-                NewXInAppNotification.show(StringRef.str("piko_newx_download_post_missing"));
+                NewXInAppNotification.showError(StringRef.str("piko_newx_download_post_missing"));
                 return true;
             }
 
@@ -300,7 +300,7 @@ public final class InlineDownloadButton {
             return true;
         } catch (RuntimeException exception) {
             NewXLogger.printException(() -> "Failed to process inline download action", exception);
-            NewXInAppNotification.show(StringRef.str("piko_newx_download_media_failed"));
+            NewXInAppNotification.showError(StringRef.str("piko_newx_download_media_failed"));
             return true;
         }
     }
@@ -316,7 +316,7 @@ public final class InlineDownloadButton {
             username = NewXUtils.sourceUsername(postText);
         } catch (RuntimeException exception) {
             NewXLogger.printException(() -> "Failed to process inline download action", exception);
-            NewXUtils.runOnUiThread(() -> NewXInAppNotification.show(StringRef.str("piko_newx_download_media_failed")));
+            NewXUtils.runOnUiThread(() -> NewXInAppNotification.showError(StringRef.str("piko_newx_download_media_failed")));
             return;
         }
         if (downloads.isEmpty()) {
@@ -1094,7 +1094,7 @@ public final class InlineDownloadButton {
             } catch (RuntimeException exception) {
                 NewXLogger.printException(() -> "Unsupported NewX download conflict policy", exception);
                 NewXUtils.runOnUiThread(() ->
-                        NewXInAppNotification.showForUser(StringRef.str("piko_newx_download_start_failed"), username));
+                        NewXInAppNotification.showErrorForUser(StringRef.str("piko_newx_download_start_failed"), username));
                 return;
             }
 
@@ -1114,13 +1114,11 @@ public final class InlineDownloadButton {
                 ));
             }
             String message = DownloadMessages.summary(result, new NewXDownloadTexts(), username);
-            // Only a clean outcome stays quiet (toast when the in-app host is absent); anything
-            // that went wrong or was partly skipped also toasts, as before.
-            boolean clean = result.failed() == 0 && result.lost() == 0
-                    && (result.queued() == 0 ? result.skipped() > 0 : result.skipped() == 0);
+            // Live progress already announces queued work in the unified native host.
+            boolean clean = result.failed() == 0 && result.lost() == 0;
             NewXUtils.runOnUiThread(() -> {
                 if (clean) {
-                    NewXInAppNotification.show(message);
+                    if (result.queued() == 0 || !NewXInAppNotification.hasUnifiedHost()) NewXInAppNotification.show(message);
                 } else {
                     reportDownloadStatus(message);
                 }
@@ -1288,7 +1286,7 @@ public final class InlineDownloadButton {
     ) {
         Activity activity = currentActivity();
         if (activity == null) {
-            NewXInAppNotification.show(StringRef.str("piko_newx_download_folder_required"));
+            NewXInAppNotification.showError(StringRef.str("piko_newx_download_folder_required"));
             return;
         }
 
@@ -1392,10 +1390,9 @@ public final class InlineDownloadButton {
         return state != null && !NewXDownloadFolders.isUsable(state);
     }
 
-    /** In-app message plus toast fallback, so outcomes never depend on the host being ready. */
+    /** Error style and priority; toast is used only when the native host is unavailable. */
     static void reportDownloadStatus(String formatted) {
-        NewXInAppNotification.tryShow(formatted);
-        Utils.showToastShort(formatted);
+        NewXInAppNotification.showError(formatted);
     }
 
     static void reportDownloadStatus(String message, String username) {
@@ -1404,7 +1401,11 @@ public final class InlineDownloadButton {
 
     private static void reportEnqueueResult(EnqueueState state, String username) {
         switch (state) {
-            case QUEUED -> NewXInAppNotification.showForUser(StringRef.str("piko_newx_download_started"), username);
+            case QUEUED -> {
+                if (!NewXInAppNotification.hasUnifiedHost()) {
+                    NewXInAppNotification.showForUser(StringRef.str("piko_newx_download_started"), username);
+                }
+            }
             case SKIPPED -> NewXInAppNotification.showForUser(StringRef.str("piko_newx_download_already_downloaded"), username);
             case FAILED -> reportDownloadStatus(StringRef.str("piko_newx_download_start_failed"), username);
             case DESTINATION_LOST -> reportDownloadStatus(folderLostMessage(), username);

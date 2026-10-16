@@ -26,7 +26,7 @@ import app.morphe.extension.newx.utils.NewXUtils;
 import app.morphe.extension.shared.StringRef;
 import app.morphe.extension.shared.Utils;
 
-/** A single, non-modal foreground progress card; batch transfers use their existing dialog. */
+/** Feeds one native banner; the original card remains the adapter for older, unvalidated hosts. */
 final class DownloadProgressDisplay implements DownloadListener {
     private static final DownloadProgressState STATE = new DownloadProgressState();
     private static final AtomicInteger LOCAL_IDS = new AtomicInteger(-1);
@@ -110,9 +110,25 @@ final class DownloadProgressDisplay implements DownloadListener {
 
     private void tick() {
         DownloadProgressState.Snapshot snapshot = STATE.snapshot(false, SystemClock.elapsedRealtime());
-        if (snapshot.count == 0) { detach(); scheduled = false; return; }
+        if (snapshot.count == 0) { NewXInAppNotification.finishProgress(); detach(); scheduled = false; return; }
         try {
             Activity activity = NewXUtils.findUsableActivity(Utils.getContext());
+            if (NewXInAppNotification.hasUnifiedHost()) {
+                detach();
+                if (activity != null && activity.hasWindowFocus()) {
+                    String heading = snapshot.waiting == snapshot.count
+                            ? StringRef.str("piko_newx_download_progress_waiting", snapshot.count)
+                            : StringRef.str("piko_newx_download_progress_active", snapshot.count,
+                                snapshot.percent < 0 ? "" : snapshot.percent + "%");
+                    // The native host gives detail text lower emphasis than the headline.
+                    String name = snapshot.count == 1 ? snapshot.name : "";
+                    if (name.length() > 60) name = name.substring(0, 57) + "…";
+                    NewXInAppNotification.progress(heading, amount(activity, snapshot)
+                            + (name.isEmpty() ? "" : "\n" + name));
+                }
+                main.postDelayed(this::tick, 1000);
+                return;
+            }
             View content = activity == null ? null : activity.findViewById(android.R.id.content);
             if (!(content instanceof FrameLayout frame)) detach();
             else {

@@ -104,9 +104,9 @@ public final class BulkFixStaticReview {
     Method tick=method(SESSION,"tick");
     check(calls(tick).stream().anyMatch(r->r.getName().contains("refresh")),"Session executes native refresh recovery");
     check(calls(tick).stream().anyMatch(r->r.getDefiningClass().endsWith("ProfileBulkPager$Network;")&&r.getName().equals("read")),"Session passes the native event identity to the pager");
-    check(call(method(SESSION,"finish"),"Lapp/morphe/extension/newx/misc/NewXInAppNotification;","tryShow"),"Batch finish retains top banner");
+    check(call(method(SESSION,"finish"),"Lapp/morphe/extension/newx/misc/NewXInAppNotification;","tryShow") || call(method(SESSION,"finish"),"Lapp/morphe/extension/newx/misc/NewXInAppNotification;","tryShowSuccess"),"Batch finish retains top banner");
     for(ClassDef cls:classes.values())if(cls.getType().startsWith("Lapp/morphe/extension/newx/misc/NewXDownloader$"))for(Method m:cls.getMethods())if(m.getName().equals("onCompleted")) {
-      check(call(m,"Lapp/morphe/extension/newx/misc/NewXInAppNotification;","tryShowForUser"),"Individual completion retains top banner");
+      check(call(m,"Lapp/morphe/extension/newx/misc/NewXInAppNotification;","tryShowForUser") || call(m,"Lapp/morphe/extension/newx/misc/NewXInAppNotification;","tryShowSuccessForUser"),"Individual completion retains top banner");
       check(calls(m).stream().noneMatch(r->r.getDefiningClass().equals("Landroid/widget/Toast;")||r.getName().toLowerCase(Locale.ROOT).contains("toast")),"Individual completion has no bottom toast fallback");
     }
     Map<String,String> expected=strings(source.resolve("patches/src/main/resources/addresources/values-zh-rCN/newx/strings.xml"));
