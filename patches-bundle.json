@@ -1,6 +1,6 @@
 {
-  "version": "3.10.0-custom-newx.9",
-  "download_url": "https://github.com/YongkeDet/piko/releases/download/v3.10.0-custom-newx.9/patches-3.10.0-custom-newx.9.mpp",
-  "created_at": "2026-10-16T15:15:16",
-  "description": "X 12.34.0-prod.01 / 312340001（arm64-v8a，Android 10+）。\n下载进度、完成和错误合并为 X 原生顶部横幅，沿用其样式；主文字显示任务数/百分比，次级文字显示大小、速度和单文件名，不再叠加独立卡片。\n错误优先、完成其次、持续进度低优先级；进度每秒原位更新，让位于结果和其他原生通知。跳过和主动取消使用普通提示，过期进度与清除指令不能覆盖其他消息。\n刷新本源并重新载入默认选择，确保勾选 NewX: Unified download notifications，使用原版 APKM 重新修补安装。\n保留自定义目录、作者子文件夹、主页分页与恢复、禁止自动刷新、固定/玻璃底栏和八类中文设置；旧版 73 项功能仍未全部迁移。\n361 项测试通过；59 项全选、53 项默认修补均零失败并成功重建。两份 APK 各通过 223 项最终字节码/资源检查，613 条中文资源存在。实机外观及前后台体验仍需试用。\nhttps://github.com/YongkeDet/piko/releases/tag/v3.10.0-custom-newx.9"
+  "version": "3.10.0-custom-newx.10",
+  "download_url": "https://github.com/YongkeDet/piko/releases/download/v3.10.0-custom-newx.10/patches-3.10.0-custom-newx.10.mpp",
+  "created_at": "2026-10-16T16:24:04",
+  "description": "X 12.34.0-prod.01 / 312340001（arm64-v8a，Android 10+）。\n下载期间固定显示同一条 X 原生顶部进度，只更新文字，不再每秒重新弹出。完成、失败、取消结果按任务独立去重并依次展示，结束后恢复仍在下载的进度。\n主页全部下载采用同一机制，不再自动弹出进度或结果对话框，只显示一份汇总；成员文件不逐个提示。顶部取消按钮仅操作对应任务。\n主标题突出状态、百分比或保存数量，次级内容显示文件、阶段、页数、速度与原因；沿用 X 原生 UI 风格。\n刷新本源后使用原始 APKM 重新修补，保留 NewX: Unified download notifications。保留自定义目录、作者子文件夹、主页分页恢复、禁止自动刷新、固定/玻璃底栏和中文设置；旧版 73 项仍未全部迁移。\n365 项测试通过；59 项全选和 53 项默认修补均零失败并重建成功。两份 APK 各通过 236 项最终字节码/资源检查，621 条中文资源存在。未操作设备，手机上的显示、动画及前后台体验仍需试用。\nhttps://github.com/YongkeDet/piko/releases/tag/v3.10.0-custom-newx.10"
 }

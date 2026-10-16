@@ -1,0 +1,14 @@
+{
+  "all": {
+    "applied": 59,
+    "failed": 0,
+    "bytes": 121349965,
+    "sha256": "17133098b9a34fbf84cbd8808083ba31642c6d125f9aea7aadde7fcc151af29a"
+  },
+  "default": {
+    "applied": 53,
+    "failed": 0,
+    "bytes": 120464631,
+    "sha256": "19f411828a9a6bf40f228f26435f4ec65d1ff7f2ec75dd75a612e16568490981"
+  }
+}

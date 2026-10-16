@@ -1,6 +1,7 @@
 package app.morphe.extension.newx.misc;
 
-import android.os.SystemClock;
+import java.util.concurrent.atomic.AtomicLong;
+import app.morphe.extension.shared.StringRef;
 
 import app.morphe.extension.shared.Utils;
 
@@ -14,7 +15,9 @@ import app.morphe.extension.shared.Utils;
  */
 public final class NewXInAppNotification {
     private static volatile Object facade;
-    private static final DownloadBannerPolicy POLICY = new DownloadBannerPolicy();
+    private static final AtomicLong IDS = new AtomicLong(1L << 32);
+    private static final class Host { static final DownloadBannerController INSTANCE = new DownloadBannerController(); }
+    static long nextTaskId() { return IDS.getAndIncrement(); }
 
     private NewXInAppNotification() {
     }
@@ -32,7 +35,7 @@ public final class NewXInAppNotification {
     /** Shows a status message; reports whether the in-app host took it. */
     public static boolean tryShow(String message) {
         try {
-            return sendRich(message, null, DownloadBannerPolicy.INFO) || send(message);
+            return queue(message, DownloadBannerPolicy.INFO) || send(message);
         } catch (Throwable ignored) {
             return false;
         }
@@ -49,7 +52,7 @@ public final class NewXInAppNotification {
     }
 
     public static boolean tryShowSuccess(String message) {
-        try { return sendRich(message, null, DownloadBannerPolicy.SUCCESS) || send(message); }
+        try { return queue(message, DownloadBannerPolicy.SUCCESS) || send(message); }
         catch (Throwable ignored) { return false; }
     }
 
@@ -58,7 +61,7 @@ public final class NewXInAppNotification {
     }
 
     public static boolean tryShowError(String message) {
-        try { return sendRich(message, null, DownloadBannerPolicy.ERROR) || send(message); }
+        try { return queue(message, DownloadBannerPolicy.ERROR) || send(message); }
         catch (Throwable ignored) { return false; }
     }
 
@@ -70,29 +73,62 @@ public final class NewXInAppNotification {
         showError(formatForUser(message, username));
     }
 
-    static void progress(String title, String detail) {
-        POLICY.beginProgress();
-        try { sendRich(title, detail, DownloadBannerPolicy.PROGRESS); }
-        catch (Throwable ignored) { /* Try again on the next foreground tick. */ }
+    private static boolean queue(String message, int kind) {
+        if (!hasUnifiedHost()) return false;
+        Host.INSTANCE.result(nextTaskId(), kind, headline(kind), message);
+        return true;
     }
 
-    static void finishProgress() {
-        if (!POLICY.endProgress()) return;
-        try { sendRich("", null, DownloadBannerPolicy.CLEAR); }
-        catch (Throwable ignored) { /* The native timeout still removes a stale progress notice. */ }
+    private static String headline(int kind) {
+        return StringRef.str(kind == DownloadBannerPolicy.ERROR ? "piko_newx_download_banner_failed"
+                : kind == DownloadBannerPolicy.SUCCESS ? "piko_newx_download_banner_saved"
+                : "piko_newx_download_banner_info");
     }
 
-    // These Object-only methods are called by direct, patch-time-resolved native bytecode.
-    public static void registerNative(Object notification, int kind) { POLICY.register(notification, kind); }
-    public static void forgetNative(Object notification) { POLICY.forget(notification); }
-    public static int decideNative(Object incoming, Object current) {
-        return POLICY.decide(incoming, current, SystemClock.elapsedRealtime());
+    static void startProgress(long id, String title, String detail, Runnable cancel) {
+        if (hasUnifiedHost()) Host.INSTANCE.start(id, title, detail, cancel);
+    }
+    static void progress(long id, String title, String detail) {
+        if (hasUnifiedHost()) Host.INSTANCE.progress(id, title, detail);
+    }
+    static void finishProgress(long id) {
+        if (hasUnifiedHost()) Host.INSTANCE.finish(id);
+    }
+    static void taskResult(long id, int kind, String title, String detail) {
+        if (hasUnifiedHost()) Host.INSTANCE.result(id, kind, title, detail);
+        else if (kind == DownloadBannerPolicy.ERROR) showError(detail);
+        else if (kind == DownloadBannerPolicy.SUCCESS) tryShowSuccess(detail);
+        else show(detail);
+    }
+    static void taskSuccess(long id, String message, String username) {
+        taskResult(id, DownloadBannerPolicy.SUCCESS, headline(DownloadBannerPolicy.SUCCESS), formatForUser(message, username));
+    }
+    static void taskError(long id, String message, String username) {
+        taskResult(id, DownloadBannerPolicy.ERROR, headline(DownloadBannerPolicy.ERROR), formatForUser(message, username));
+    }
+    static void taskInfo(long id, String message, String username) {
+        taskResult(id, DownloadBannerPolicy.INFO, headline(DownloadBannerPolicy.INFO), formatForUser(message, username));
     }
 
-    /** Enabled only by the separately validated native update adapter. */
+    // Direct patch-time-resolved native calls; no reflection or release identities in the extension.
+    public static int decideNative(Object incoming, Object current) { return Host.INSTANCE.decide(incoming, current); }
+    public static void nativeVisible(Object model) { Host.INSTANCE.visible(model); }
+    public static void nativeDisposed(Object model, Object reason, boolean current) {
+        Host.INSTANCE.disposed(model, reason instanceof Enum<?> value ? value.name() : "", current);
+    }
+    public static String progressText(Object literal) { return Host.INSTANCE.text(literal); }
     static boolean hasUnifiedHost() { return false; }
-    private static boolean sendRich(String title, String detail, int kind) { return false; }
+    static Object createRich(String title, String detail, int kind, Object button) { return null; }
+    static boolean postRich(Object model, int kind) { return false; }
+    static Object cancelButton(String text) { return null; }
+    static Object titleLiteral(Object model) { return null; }
+    static Object detailLiteral(Object model) { return null; }
+    static Object makeState(String value) { return null; }
+    static void writeState(Object state, String value) { }
+    static String readState(Object state) { return null; }
     public static boolean interceptNative(Object manager, Object entry) { return false; }
+    public static void observeNative(Object manager) { }
+    public static void disposingNative(Object manager, Object entry, Object reason) { }
 
     static String formatForUser(String message, String username) {
         if (username == null) return message;

@@ -54,6 +54,7 @@ final class DownloadProgressDisplay implements DownloadListener {
         if (display == null) return;
         display.main.post(() -> {
             STATE.queued(id, name, false, SystemClock.elapsedRealtime());
+            NewXInAppNotification.startProgress(id, name, "", null);
             display.refresh();
         });
     }
@@ -89,6 +90,10 @@ final class DownloadProgressDisplay implements DownloadListener {
         DownloadRequest request = engine.requestFor(event.id());
         STATE.queued(event.id(), request == null ? event.label() : request.fileName(),
                 ProfileBulkDownload.isBatchRequest(request), SystemClock.elapsedRealtime());
+        if (!ProfileBulkDownload.isBatchRequest(request)) {
+            NewXInAppNotification.startProgress(event.id(), StringRef.str("piko_newx_download_progress_active", 1, ""),
+                    request == null ? event.label() : request.fileName(), () -> engine.cancel(event.id()));
+        }
         refresh();
     }
     @Override public void onStarted(DownloadEvent.Started event) { STATE.waiting(event.id(), false); refresh(); }
@@ -100,7 +105,7 @@ final class DownloadProgressDisplay implements DownloadListener {
     @Override public void onCompleted(DownloadEvent.Completed event) { end(event.id()); }
     @Override public void onFailed(DownloadEvent.Failed event) { end(event.id()); }
     @Override public void onCancelled(DownloadEvent.Cancelled event) { end(event.id()); }
-    private void end(int id) { STATE.finished(id); refresh(); }
+    private void end(int id) { STATE.finished(id); NewXInAppNotification.finishProgress(id); refresh(); }
 
     private void refresh() {
         if (scheduled) return;
@@ -110,21 +115,21 @@ final class DownloadProgressDisplay implements DownloadListener {
 
     private void tick() {
         DownloadProgressState.Snapshot snapshot = STATE.snapshot(false, SystemClock.elapsedRealtime());
-        if (snapshot.count == 0) { NewXInAppNotification.finishProgress(); detach(); scheduled = false; return; }
+        if (snapshot.count == 0) { detach(); scheduled = false; return; }
         try {
             Activity activity = NewXUtils.findUsableActivity(Utils.getContext());
             if (NewXInAppNotification.hasUnifiedHost()) {
                 detach();
                 if (activity != null && activity.hasWindowFocus()) {
-                    String heading = snapshot.waiting == snapshot.count
-                            ? StringRef.str("piko_newx_download_progress_waiting", snapshot.count)
-                            : StringRef.str("piko_newx_download_progress_active", snapshot.count,
-                                snapshot.percent < 0 ? "" : snapshot.percent + "%");
-                    // The native host gives detail text lower emphasis than the headline.
-                    String name = snapshot.count == 1 ? snapshot.name : "";
-                    if (name.length() > 60) name = name.substring(0, 57) + "…";
-                    NewXInAppNotification.progress(heading, amount(activity, snapshot)
-                            + (name.isEmpty() ? "" : "\n" + name));
+                    for (DownloadProgressState.TaskSnapshot task : STATE.tasks(SystemClock.elapsedRealtime())) {
+                        DownloadProgressState.Snapshot item = task.snapshot;
+                        String heading = item.waiting == 1
+                                ? StringRef.str("piko_newx_download_progress_waiting", 1)
+                                : StringRef.str("piko_newx_download_progress_active", 1,
+                                    item.percent < 0 ? "" : item.percent + "%");
+                        String name = item.name.length() > 60 ? item.name.substring(0, 57) + "…" : item.name;
+                        NewXInAppNotification.progress(task.id, heading, name + "\n" + amount(activity, item));
+                    }
                 }
                 main.postDelayed(this::tick, 1000);
                 return;

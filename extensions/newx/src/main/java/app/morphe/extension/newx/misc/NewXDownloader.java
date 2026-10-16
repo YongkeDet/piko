@@ -178,7 +178,7 @@ public final class NewXDownloader {
             if (NewXInAppNotification.hasUnifiedHost()
                     || !DownloadNotifications.notificationsEnabled(context, CHANNEL_ID)) {
                 // Completion feedback belongs to the top in-app banner only.
-                NewXInAppNotification.tryShowSuccessForUser(StringRef.str("piko_newx_download_saved", event.fileName()), event.label());
+                NewXInAppNotification.taskSuccess(event.id(), StringRef.str("piko_newx_download_saved", event.fileName()), event.label());
             }
         }
 
@@ -197,20 +197,27 @@ public final class NewXDownloader {
                         NewXLogger.printException(() -> "Could not invalidate lost destination", e);
                     }
                 }
-                InlineDownloadButton.reportDownloadStatus(InlineDownloadButton.folderLostMessage(), label);
+                NewXInAppNotification.taskError(event.id(), InlineDownloadButton.folderLostMessage(), label);
             } else if (event.reason() == FailureReason.NO_CONNECTION) {
-                InlineDownloadButton.reportDownloadStatus(StringRef.str("piko_newx_download_no_connection"), label);
+                NewXInAppNotification.taskError(event.id(), StringRef.str("piko_newx_download_no_connection"), label);
             } else {
                 DownloadRequest request = engine.requestFor(event.id());
                 String fileName = request != null ? request.fileName() : "";
-                InlineDownloadButton.reportDownloadStatus(StringRef.str("piko_newx_download_save_failed", fileName), label);
+                NewXInAppNotification.taskError(event.id(), StringRef.str("piko_newx_download_save_failed", fileName), label);
             }
         }
 
         @Override
         public void onCancelled(DownloadEvent.Cancelled event) {
             if (ProfileBulkDownload.isBatchRequest(engine.requestFor(event.id()))) return;
-            NewXInAppNotification.showForUser(StringRef.str("piko_newx_download_cancelled"), event.label());
+            if (!NewXInAppNotification.hasUnifiedHost()) {
+                NewXInAppNotification.showForUser(StringRef.str("piko_newx_download_cancelled"), event.label());
+                return;
+            }
+            DownloadRequest request = engine.requestFor(event.id());
+            NewXInAppNotification.taskResult(event.id(), DownloadBannerPolicy.INFO,
+                    StringRef.str("piko_newx_download_cancelled"),
+                    NewXInAppNotification.formatForUser(request == null ? "" : request.fileName(), event.label()));
         }
     }
 }

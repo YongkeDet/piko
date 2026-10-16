@@ -134,7 +134,11 @@ public final class ProfileBulkDownload {
     public static void start(Context context, Object callback) {
         Activity activity = NewXUtils.findUsableActivity(context);
         if (activity == null || !isEnabled()) return;
-        if (active != null) { active.dialog.show(); return; }
+        if (active != null) {
+            if (active.dialog != null) active.dialog.show();
+            active.updateProgress();
+            return;
+        }
         boolean imagesMissing = !NewXDownloadFolders.isConfigured(activity, NewXDownloadFolders.MediaKind.IMAGES);
         boolean videosMissing = !NewXDownloadFolders.isConfigured(activity, NewXDownloadFolders.MediaKind.VIDEOS);
         if (imagesMissing || videosMissing) {
@@ -177,6 +181,9 @@ public final class ProfileBulkDownload {
         final ExecutorService worker = Executors.newSingleThreadExecutor();
         final Set<String> mediaKeys = new HashSet<>();
         final List<DownloadHandle> transfers = new ArrayList<>();
+        final boolean unified = NewXInAppNotification.hasUnifiedHost();
+        final long taskId = NewXInAppNotification.nextTaskId();
+        boolean addedScreenFlag;
         final DialogView dialog;
         final TextView progress;
         final TextView transferProgress;
@@ -199,29 +206,42 @@ public final class ProfileBulkDownload {
             this.photos = photos;
             this.videos = videos;
             this.desiredTab = photos;
-            progress = SettingsUi.summaryText(activity);
-            LinearLayout body = new LinearLayout(activity);
-            body.setOrientation(LinearLayout.VERTICAL);
-            body.setPadding(Theme.dpToPx(activity, 24), 0, Theme.dpToPx(activity, 24), 0);
-            body.addView(progress, new LinearLayout.LayoutParams(-1, -2));
-            transferProgress = SettingsUi.summaryText(activity);
-            transferBar = new ProgressBar(activity, null, android.R.attr.progressBarStyleHorizontal);
-            transferBar.setMax(100);
-            body.addView(transferProgress, new LinearLayout.LayoutParams(-1, -2));
-            body.addView(transferBar, new LinearLayout.LayoutParams(-1, Theme.dpToPx(activity, 8)));
-            dialog = new DialogView(activity).setTitle(text("piko_newx_profile_bulk_button"))
-                    .setSubtitle(text("piko_newx_profile_bulk_keep_open")).setBodyView(body);
-            ButtonView cancel = SettingsUi.dialogButton(activity, text("piko_newx_settings_cancel"));
-            cancel.setOnClickListener(view -> stop("piko_newx_profile_bulk_cancelled"));
-            dialog.addButton(cancel);
-            dialog.getDialog().setCanceledOnTouchOutside(false);
-            dialog.getDialog().setOnCancelListener(ignored -> stop("piko_newx_profile_bulk_cancelled"));
+            if (unified) {
+                dialog = null; progress = null; transferProgress = null; transferBar = null;
+            } else {
+                progress = SettingsUi.summaryText(activity);
+                LinearLayout body = new LinearLayout(activity);
+                body.setOrientation(LinearLayout.VERTICAL);
+                body.setPadding(Theme.dpToPx(activity, 24), 0, Theme.dpToPx(activity, 24), 0);
+                body.addView(progress, new LinearLayout.LayoutParams(-1, -2));
+                transferProgress = SettingsUi.summaryText(activity);
+                transferBar = new ProgressBar(activity, null, android.R.attr.progressBarStyleHorizontal);
+                transferBar.setMax(100);
+                body.addView(transferProgress, new LinearLayout.LayoutParams(-1, -2));
+                body.addView(transferBar, new LinearLayout.LayoutParams(-1, Theme.dpToPx(activity, 8)));
+                dialog = new DialogView(activity).setTitle(text("piko_newx_profile_bulk_button"))
+                        .setSubtitle(text("piko_newx_profile_bulk_keep_open")).setBodyView(body);
+                ButtonView cancel = SettingsUi.dialogButton(activity, text("piko_newx_settings_cancel"));
+                cancel.setOnClickListener(view -> stop("piko_newx_profile_bulk_cancelled"));
+                dialog.addButton(cancel);
+                dialog.getDialog().setCanceledOnTouchOutside(false);
+                dialog.getDialog().setOnCancelListener(ignored -> stop("piko_newx_profile_bulk_cancelled"));
+            }
         }
 
         void begin() {
-            dialog.show();
-            if (dialog.getDialog().getWindow() != null) {
-                dialog.getDialog().getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            if (unified) {
+                NewXInAppNotification.startProgress(taskId, text("piko_newx_profile_bulk_banner_active"),
+                        text("piko_newx_profile_bulk_keep_open"), () -> stop("piko_newx_profile_bulk_cancelled"));
+                if (activity.getWindow() != null) {
+                    addedScreenFlag = (activity.getWindow().getAttributes().flags & WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) == 0;
+                    if (addedScreenFlag) activity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+                }
+            } else {
+                dialog.show();
+                if (dialog.getDialog().getWindow() != null) {
+                    dialog.getDialog().getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+                }
             }
             selectTab(component, photos);
             updateProgress();
@@ -401,8 +421,16 @@ public final class ProfileBulkDownload {
             String phase = text(desiredTab == photos ? "piko_newx_media_tab_photos" : "piko_newx_media_tab_videos");
             String message = StringRef.str("piko_newx_profile_bulk_progress", phase, pages, discovered, saved, skipped, failed);
             if (recovering) message += "\n" + StringRef.str("piko_newx_profile_bulk_retry_progress", pager.attempts());
-            progress.setText(message);
             DownloadProgressState.Snapshot snapshot = DownloadProgressDisplay.batchSnapshot();
+            if (unified) {
+                String heading = StringRef.str("piko_newx_profile_bulk_banner_progress", saved, discovered);
+                String detail = StringRef.str("piko_newx_profile_bulk_banner_detail", phase, pages, skipped, failed)
+                        + "\n" + (recovering ? StringRef.str("piko_newx_profile_bulk_retry_progress", pager.attempts())
+                        : snapshot.count == 0 ? text("piko_newx_profile_bulk_keep_open") : DownloadProgressDisplay.amount(activity, snapshot));
+                NewXInAppNotification.progress(taskId, heading, detail);
+                return;
+            }
+            progress.setText(message);
             transferProgress.setVisibility(snapshot.count == 0 ? android.view.View.GONE : android.view.View.VISIBLE);
             transferBar.setVisibility(snapshot.count == 0 ? android.view.View.GONE : android.view.View.VISIBLE);
             if (snapshot.count != 0) {
@@ -422,15 +450,30 @@ public final class ProfileBulkDownload {
             try { selectTab(component, originalTab); }
             catch (RuntimeException error) { NewXLogger.printException(() -> "Cannot restore profile tab", error); }
             active = null;
-            try { dialog.dismiss(); }
-            catch (RuntimeException error) { NewXLogger.printException(() -> "Cannot close profile progress dialog", error); }
-            if (activity.isDestroyed() || activity.isFinishing()) return;
+            if (addedScreenFlag && activity.getWindow() != null) {
+                activity.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+                addedScreenFlag = false;
+            }
+            if (dialog != null) {
+                try { dialog.dismiss(); }
+                catch (RuntimeException error) { NewXLogger.printException(() -> "Cannot close profile progress dialog", error); }
+            }
+            if (!unified && (activity.isDestroyed() || activity.isFinishing())) return;
             String reason = text(endReason == null ? "piko_newx_profile_bulk_cancelled" : endReason);
             if (stopped && !"piko_newx_profile_bulk_cancelled".equals(endReason)) {
                 reason += "\n" + StringRef.str("piko_newx_profile_bulk_failure_phase",
                         text(desiredTab == photos ? "piko_newx_media_tab_photos" : "piko_newx_media_tab_videos"), pages);
             }
             String summary = StringRef.str("piko_newx_profile_bulk_result", reason, saved, skipped, failed);
+            if (unified) {
+                int kind = failed > 0 || stopped && !"piko_newx_profile_bulk_cancelled".equals(endReason)
+                        ? DownloadBannerPolicy.ERROR : stopped ? DownloadBannerPolicy.INFO : DownloadBannerPolicy.SUCCESS;
+                String headline = text(kind == DownloadBannerPolicy.ERROR ? "piko_newx_profile_bulk_banner_failed"
+                        : kind == DownloadBannerPolicy.SUCCESS ? "piko_newx_profile_bulk_banner_done"
+                        : "piko_newx_profile_bulk_cancelled");
+                NewXInAppNotification.taskResult(taskId, kind, headline, summary);
+                return;
+            }
             DialogView result = new DialogView(activity).setTitle(text("piko_newx_profile_bulk_button"))
                     .setSubtitle(summary);
             ButtonView close = SettingsUi.dialogButton(activity, text("piko_newx_settings_close"));

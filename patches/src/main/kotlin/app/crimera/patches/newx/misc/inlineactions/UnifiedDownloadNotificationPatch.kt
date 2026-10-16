@@ -14,7 +14,6 @@ import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.util.cloneMutable
 import app.morphe.util.getReference
 import app.morphe.util.p0Register
-import app.morphe.util.registersUsed
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.builder.BuilderOffsetInstruction
@@ -44,7 +43,7 @@ private fun MethodReference.same(other: MethodReference) = toString() == other.t
 @Suppress("unused")
 val unifiedDownloadNotificationPatch = bytecodePatch(
     name = "NewX: Unified download notifications",
-    description = "Uses the native top banner for live download progress and prioritizes errors, results and progress in one place.",
+    description = "Pins native download progress without repeated popups and queues independent task results, including profile downloads.",
 ) {
     compatibleWith(COMPATIBILITY_NEW_X_12_34)
     dependsOn(newXInlineDownloadButtonPatch)
@@ -67,7 +66,6 @@ val unifiedDownloadNotificationPatch = bytecodePatch(
             throw PatchException("NewX notification detail/style/priority contract changed")
         }
         val maskBits = supplied.associateWith { notificationDefaultBit(constructor, it) }
-        patchRichSender(runtime, supplied, maskBits, styles, priorities)
 
         // Show(entry=...) identifies the event, whose getter links to the manager's entry contract.
         val show = requireExactlyOne("NewX native Show notification event", classes.filter { type ->
@@ -114,7 +112,12 @@ val unifiedDownloadNotificationPatch = bytecodePatch(
                     call.definingClass.startsWith("Lkotlinx/coroutines/flow/") && call.types() == listOf(OBJECT) && call.returnType == "V"
                 } == true }
         })
-        patchNativeInterceptor(manager.type, current, modelGetter, dispose, dismiss, present, reason)
+        patchRichFactory(runtime, supplied, maskBits, styles, priorities,
+            notificationField(model, ", buttonSpec="))
+        patchPinnedSender(runtime, classes, present)
+        patchReactiveText(runtime, classes, model, detail)
+        patchNativeInterceptor(manager.type, current, modelGetter, dispose, dismiss, reason)
+        patchNativeLifecycle(manager, current, modelGetter, dispose, present)
         val actor = requireExactlyOne("NewX mutable notification actor", mutableClassDefBy(manager.type).methods.filter { it.same(actorReference) })
         actor.interceptNotificationActor(showGetter, present)
         bridgeMethod("hasUnifiedHost", emptyList(), 1).insertHook(0, relocateBranchTargets = false) { constInt(0, 1); returnValue(0) }
@@ -172,65 +175,202 @@ private fun bridgeMethod(name: String, types: List<String>, locals: Int): Mutabl
 }
 
 context(context: BytecodePatchContext)
-private fun patchRichSender(
-    runtime: ResolvedNotificationRuntime,
-    supplied: List<Int>,
-    maskBits: Map<Int, Int>,
-    styles: List<FieldReference>,
-    priorities: List<FieldReference>,
+private fun patchRichFactory(
+    runtime: ResolvedNotificationRuntime, supplied: List<Int>, maskBits: Map<Int, Int>,
+    styles: List<FieldReference>, priorities: List<FieldReference>, button: FieldReference,
 ) {
     val count = runtime.apiConstructor.parameterTypes.size
     if (count + 3 > 15) throw PatchException("NewX rich notification constructor exceeds the validated low-register frame")
-    val method = bridgeMethod("sendRich", listOf(STRING, STRING, "I"), count + 4)
+    val buttonParameter = requireExactlyOne("NewX button constructor parameter", runtime.apiConstructor.types().indices.filter {
+        runtime.apiConstructor.types()[it] == button.type
+    })
+    val constructor = requireExactlyOne("NewX rich constructor body", nativeNotificationClass(runtime.apiDescriptor).methods.filter { it.same(runtime.apiConstructor) })
+    val buttonBit = notificationDefaultBit(constructor, buttonParameter)
+    val method = bridgeMethod("createRich", listOf(STRING, STRING, "I", OBJECT), count + 4)
     method.insertHook(0, relocateBranchTargets = false) {
         val title = method.p0Register
-        val detail = title + 1
         val work = count + 2
         val kind = count + 3
         move(kind, title + 2, "I")
-        sget(0, fieldReference("$BRIDGE->facade:$OBJECT"))
-        ifEqz(0, Target.Local("unavailable"))
-        checkCast(0, runtime.facadeDescriptor)
         newInstance(1, runtime.apiDescriptor)
         newInstance(2, runtime.literalDescriptor)
         move(work, title, STRING)
         invokeDirect(runtime.literalConstructor, 2, work)
         (3..count + 1).forEach { constInt(it, 0) }
+        move(buttonParameter + 2, title + 3, OBJECT)
+        checkCast(buttonParameter + 2, button.type)
         val detailReg = supplied[0] + 2
-        move(work, detail, STRING)
-        ifEqz(work, Target.Local("no_detail"))
+        move(work, title + 1, STRING)
         newInstance(detailReg, runtime.literalDescriptor)
         invokeDirect(runtime.literalConstructor, detailReg, work)
-        label("no_detail")
         val styleReg = supplied[1] + 2
         val priorityReg = supplied[2] + 2
         sget(styleReg, styles[0]); sget(priorityReg, priorities[1])
-        constInt(work, 1)
-        ifEq(kind, work, Target.Local("success"))
-        constInt(work, 2)
-        ifEq(kind, work, Target.Local("error"))
-        constInt(work, 3)
-        ifEq(kind, work, Target.Local("progress"))
+        constInt(work, 1); ifEq(kind, work, Target.Local("success"))
+        constInt(work, 2); ifEq(kind, work, Target.Local("error"))
+        constInt(work, 3); ifEq(kind, work, Target.Local("progress"))
         goto(Target.Local("ready"))
         label("success"); sget(styleReg, styles[1]); goto(Target.Local("ready"))
-        label("error"); sget(styleReg, styles[2]); sget(priorityReg, priorities[2]); goto(Target.Local("ready"))
+        label("error"); sget(styleReg, styles[2]); goto(Target.Local("ready"))
         label("progress"); sget(priorityReg, priorities[0])
         label("ready")
-        var mask = (1 shl count) - 2
+        var mask = ((1 shl count) - 2) and buttonBit.inv()
         maskBits.values.forEach { mask = mask and it.inv() }
         constInt(count + 1, mask)
         invokeDirect(runtime.apiConstructor, 1, *IntArray(count) { it + 2 })
-        invokeStatic(methodReference("$BRIDGE->registerNative(${OBJECT}I)V"), 1, kind)
-        invokeStatic(runtime.sender, 0, 1)
-        constInt(0, 1); returnValue(0)
+        returnObject(1)
+    }
+    val classes = buildList<ClassDef> { context.classDefForEach { add(it) } }
+    val primary = requireExactlyOne("NewX primary-only button", classes.filter { type ->
+        button.type in type.interfaces && type.methods.any { m -> m.code().any { it.getReference<StringReference>()?.string == "PrimaryOnly(text=" } }
+    })
+    val ctor = requireExactlyOne("NewX primary-only button constructor", primary.methods.filter {
+        it.name == "<init>" && it.types() == listOf(runtime.apiConstructor.types()[0])
+    })
+    val cancel = bridgeMethod("cancelButton", listOf(STRING), 3)
+    cancel.insertHook(0, relocateBranchTargets = false) {
+        newInstance(0, runtime.literalDescriptor)
+        move(1, cancel.p0Register, STRING); invokeDirect(runtime.literalConstructor, 0, 1)
+        newInstance(2, primary.type); invokeDirect(ctor, 2, 0); returnObject(2)
+    }
+}
+
+/** Infinity is the same field compared by the native Custom-duration branch, never a magic delay. */
+context(context: BytecodePatchContext)
+private fun patchPinnedSender(runtime: ResolvedNotificationRuntime, classes: List<ClassDef>, present: Method) {
+    val sender = requireExactlyOne("NewX generic sender body", nativeNotificationClass(runtime.facadeDescriptor).methods.filter { it.same(runtime.sender) })
+    val instance = requireExactlyOne("NewX sender with duration", sender.code().mapNotNull { it.getReference<MethodReference>() }.filter {
+        val parameters = it.parameterTypes
+        it.definingClass == runtime.facadeDescriptor && it.returnType == "V" && parameters.size == 2 && parameters[0].toString() == runtime.apiDescriptor
+    }.distinctBy { it.toString() })
+    val duration = instance.types()[1]
+    val custom = requireExactlyOne("NewX custom notification duration", classes.filter { type ->
+        type.superclass == duration && type.methods.any { m -> m.code().any { it.getReference<StringReference>()?.string == "Custom(duration=" } }
+    })
+    val ctor = requireExactlyOne("NewX custom duration constructor", custom.methods.filter { it.name == "<init>" && it.types() == listOf("J") })
+    val infinity = requireExactlyOne("Native infinite notification duration", present.code().filter { it.opcode == Opcode.SGET_WIDE }
+        .mapNotNull { it.getReference<FieldReference>() }.filter { it.definingClass == "Lkotlin/time/Duration;" && it.type == "J" }.distinctBy { it.toString() })
+    if (present.code().none { it.getReference<MethodReference>()?.definingClass == custom.type }) {
+        throw PatchException("NewX custom infinite duration is not consumed by presentation")
+    }
+    val method = bridgeMethod("postRich", listOf(OBJECT, "I"), 6)
+    method.insertHook(0, relocateBranchTargets = false) {
+        sget(0, fieldReference("$BRIDGE->facade:$OBJECT")); ifEqz(0, Target.Local("unavailable"))
+        checkCast(0, runtime.facadeDescriptor)
+        move(1, method.p0Register, OBJECT); checkCast(1, runtime.apiDescriptor)
+        move(2, method.p0Register + 1, "I"); constInt(5, 3)
+        ifNe(2, 5, Target.Local("result"))
+        newInstance(2, custom.type); sget(3, infinity); invokeDirect(ctor, 2, 3, 4)
+        invokeVirtual(instance, 0, 1, 2); goto(Target.Local("sent"))
+        label("result"); invokeStatic(runtime.sender, 0, 1)
+        label("sent"); constInt(0, 1); returnValue(0)
         label("unavailable"); constInt(0, 0); returnValue(0)
+    }
+}
+
+/** Resolve the exact localizer consumed by the native notification renderer and its State factory. */
+context(context: BytecodePatchContext)
+private fun patchReactiveText(runtime: ResolvedNotificationRuntime, classes: List<ClassDef>, model: ClassDef, detail: FieldReference) {
+    val message = notificationField(model, "InAppNotification(message=")
+    listOf("titleLiteral" to message, "detailLiteral" to detail).forEach { (name, field) ->
+        val method = bridgeMethod(name, listOf(OBJECT), 1)
+        method.insertHook(0, relocateBranchTargets = false) {
+            move(0, method.p0Register, OBJECT); checkCast(0, model.type); iget(0, 0, field); returnObject(0)
+        }
+    }
+    val composer = "Landroidx/compose/runtime/Composer;"
+    val renderers = classes.flatMap { type -> type.methods.filter { method ->
+        composer in method.types() && model.type in method.types() &&
+            method.code().any { it.getReference<FieldReference>()?.toString() == message.toString() }
+    } }
+    if (renderers.isEmpty()) throw PatchException("NewX native notification text renderer not found")
+    val locals = renderers.flatMap { it.code().mapNotNull { ins -> ins.getReference<MethodReference>() } }.filter {
+        it.returnType == STRING && composer in it.types() && message.type in it.types()
+    }.distinctBy { it.toString() }
+    val localizerRef = requireExactlyOne("NewX notification composable localizer", locals)
+    val localizer = requireExactlyOne("NewX localizer body", context.mutableClassDefBy(localizerRef.definingClass).methods.filter { it.same(localizerRef) })
+    val literalField = requireExactlyOne("NewX literal text field", nativeNotificationClass(runtime.literalDescriptor).fields.filter { it.type == STRING && !AccessFlags.STATIC.isSet(it.accessFlags) })
+    val helper = requireExactlyOne("NewX localizer context helper", localizer.code().mapNotNull { it.getReference<MethodReference>() }.filter {
+        it.returnType == STRING && message.type in it.types() && "Landroid/content/Context;" in it.types()
+    })
+    val helperBody = requireExactlyOne("NewX literal localizer body", nativeNotificationClass(helper.definingClass).methods.filter { it.same(helper) })
+    if (helperBody.code().none { it.getReference<FieldReference>()?.toString() == literalField.toString() } ||
+        localizer.code().any { it.getReference<MethodReference>()?.returnType == composer }) {
+        throw PatchException("NewX text localizer no longer has the validated group-free Literal contract")
+    }
+    localizer.interceptProgressText(message.type)
+
+    // The native renderer's owner also contains its host. Derive a factory used there which
+    // returns a Snapshot-backed MutableState with the public Compose getValue/setValue contract.
+    val rendererOwners = renderers.map { it.definingClass }.toSet()
+    val factories = classes.filter { it.type in rendererOwners }.flatMap { type -> type.methods.filter { composer in it.types() }
+        .flatMap { it.code().mapNotNull { ins -> ins.getReference<MethodReference>() } } }.filter { call ->
+        call.types() == listOf(OBJECT) && call.returnType.startsWith("Landroidx/compose/runtime/") &&
+            context.classDefByOrNull(call.returnType)?.let { state ->
+                state.superclass?.startsWith("Landroidx/compose/runtime/snapshots/") == true &&
+                    state.methods.any { it.name == "getValue" && it.types().isEmpty() && it.returnType == OBJECT } &&
+                    state.methods.any { it.name == "setValue" && it.types() == listOf(OBJECT) && it.returnType == "V" }
+            } == true
+    }.distinctBy { it.toString() }
+    val factory = requireExactlyOne("NewX native Snapshot state factory", factories)
+    val state = nativeNotificationClass(factory.returnType)
+    val get = requireExactlyOne("NewX Snapshot state read", state.methods.filter { it.name == "getValue" && it.types().isEmpty() && it.returnType == OBJECT })
+    val set = requireExactlyOne("NewX Snapshot state write", state.methods.filter { it.name == "setValue" && it.types() == listOf(OBJECT) && it.returnType == "V" })
+    val make = bridgeMethod("makeState", listOf(STRING), 1)
+    make.insertHook(0, relocateBranchTargets = false) { invokeStatic(factory, make.p0Register); moveResult(0, factory.returnType); returnObject(0) }
+    val read = bridgeMethod("readState", listOf(OBJECT), 1)
+    read.insertHook(0, relocateBranchTargets = false) {
+        move(0, read.p0Register, OBJECT); checkCast(0, state.type); invokeVirtual(get, 0); moveResult(0, OBJECT); checkCast(0, STRING); returnObject(0)
+    }
+    val write = bridgeMethod("writeState", listOf(OBJECT, STRING), 2)
+    write.insertHook(0, relocateBranchTargets = false) {
+        move(0, write.p0Register, OBJECT); checkCast(0, state.type); move(1, write.p0Register + 1, STRING); invokeVirtual(set, 0, 1); returnVoid()
+    }
+}
+
+/** Only owned literal identities read State; unrelated app strings retain the original path. */
+internal fun MutableMethod.interceptProgressText(model: String) {
+    val types = types()
+    val parameter = requireExactlyOne("NewX localizer text parameter", types.indices.filter { types[it] == model })
+    if (!AccessFlags.STATIC.isSet(accessFlags) || types.any { it == "J" || it == "D" }) throw PatchException("NewX text localizer register shape changed")
+    insertHook(0, relocateBranchTargets = false) {
+        val value = scratchRegister(RegisterLimit.BYTE)
+        invokeStatic(methodReference("$BRIDGE->progressText($OBJECT)$STRING"), p0Register + parameter)
+        moveResult(value, STRING); ifEqz(value, Target.Original); returnObject(value)
+    }
+}
+
+context(context: BytecodePatchContext)
+private fun patchNativeLifecycle(manager: ClassDef, current: FieldReference, model: MethodReference, dispose: MethodReference, present: MethodReference) {
+    val observe = bridgeMethod("observeNative", listOf(OBJECT), 2)
+    observe.insertHook(0, relocateBranchTargets = false) {
+        move(0, observe.p0Register, OBJECT); checkCast(0, manager.type); iget(0, 0, current)
+        constInt(1, 0); ifEqz(0, Target.Local("observed"))
+        invokeVirtual(model, 0); moveResult(1, model.returnType)
+        label("observed"); invokeStatic(methodReference("$BRIDGE->nativeVisible($OBJECT)V"), 1); returnVoid()
+    }
+    val disposing = bridgeMethod("disposingNative", listOf(OBJECT, OBJECT, OBJECT), 4)
+    disposing.insertHook(0, relocateBranchTargets = false) {
+        move(0, disposing.p0Register, OBJECT); checkCast(0, manager.type)
+        move(1, disposing.p0Register + 1, OBJECT); checkCast(1, current.type)
+        iget(2, 0, current); constInt(3, 0)
+        ifNe(1, 2, Target.Local("identity")); constInt(3, 1)
+        label("identity"); invokeVirtual(model, 1); moveResult(0, model.returnType)
+        invokeStatic(methodReference("$BRIDGE->nativeDisposed($OBJECT${OBJECT}Z)V"), 0, disposing.p0Register + 2, 3); returnVoid()
+    }
+    listOf(present, dispose).forEach { reference ->
+        val method = requireExactlyOne("NewX native lifecycle body", context.mutableClassDefBy(manager.type).methods.filter { it.same(reference) })
+        method.observeNotificationPublication()
+        if (reference.same(dispose)) method.insertHook(0, relocateBranchTargets = false) {
+            invokeStatic(methodReference("$BRIDGE->disposingNative($OBJECT$OBJECT$OBJECT)V"), method.p0Register, method.p0Register + 1, method.p0Register + 2)
+        }
     }
 }
 
 context(context: BytecodePatchContext)
 private fun patchNativeInterceptor(
     manager: String, current: FieldReference, model: MethodReference, dispose: MethodReference,
-    dismiss: MethodReference, present: MethodReference, reason: FieldReference,
+    dismiss: MethodReference, reason: FieldReference,
 ) {
     val method = bridgeMethod("interceptNative", listOf(OBJECT, OBJECT), 7)
     method.insertHook(0, relocateBranchTargets = false) {
@@ -245,15 +385,8 @@ private fun patchNativeInterceptor(
         invokeStatic(methodReference("$BRIDGE->decideNative($OBJECT$OBJECT)I"), 3, 4); moveResult(5, "I")
         ifEqz(5, Target.Local("native"))
         sget(6, reason)
-        constInt(4, 1); ifEq(5, 4, Target.Local("replace"))
         constInt(4, 3); ifEq(5, 4, Target.Local("dismiss"))
         goto(Target.Local("drop"))
-        label("replace")
-        // Publish first so disposing the old entry cannot emit an intermediate null/exit animation.
-        // Old timeout events compare entry identity and cannot dismiss this replacement.
-        invokeVirtual(present, 0, 1)
-        invokeVirtual(dispose, 0, 2, 6)
-        goto(Target.Local("handled"))
         label("dismiss"); invokeVirtual(dismiss, 0, 6)
         label("drop"); invokeVirtual(dispose, 0, 1, 6)
         label("handled"); constInt(0, 1); returnValue(0)
@@ -285,5 +418,23 @@ internal fun MutableMethod.interceptNotificationActor(showGetter: MethodReferenc
         invokeStatic(methodReference("$BRIDGE->interceptNative($OBJECT$OBJECT)Z"), receiver, result.registerA)
         moveResult(handled, "Z")
         ifNez(handled, Target.AfterOriginal(continuation - insertion))
+    }
+}
+
+/** Publication still has the original receiver; return-site parameter registers may be reused. */
+internal fun MutableMethod.observeNotificationPublication() {
+    val code = code()
+    val publication = requireExactlyOne("NewX lifecycle StateFlow publication", code.indices.filter { index ->
+        code[index].getReference<MethodReference>()?.let { call ->
+            call.definingClass.startsWith("Lkotlinx/coroutines/flow/") && call.types() == listOf(OBJECT) && call.returnType == "V"
+        } == true
+    })
+    if (code.take(publication).any { instruction ->
+        instruction.opcode.setsRegister() && (instruction as? OneRegisterInstruction)?.registerA == p0Register
+    }) throw PatchException("NewX notification receiver overwritten before publication")
+    // Only the fallthrough after StateFlow.setValue publishes a change. Do not relocate labels
+    // belonging to a different path which joins after this publication.
+    insertHook(publication + 1, relocateBranchTargets = false) {
+        invokeStatic(methodReference("$BRIDGE->observeNative($OBJECT)V"), p0Register)
     }
 }
