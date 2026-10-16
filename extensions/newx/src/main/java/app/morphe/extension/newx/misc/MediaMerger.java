@@ -91,7 +91,7 @@ public final class MediaMerger {
                 final int sliceIndex = i + 1;
                 if (!downloaded) {
                     NewXLogger.printInfo(() -> LOG_PREFIX + "Failed to download slice " + sliceIndex + " from " + item.url);
-                    NewXInAppNotification.showErrorForUser(StringRef.str("piko_newx_merge_slice_download_failed", sliceIndex), username);
+                    NewXInAppNotification.taskError(progressId, StringRef.str("piko_newx_merge_slice_download_failed", sliceIndex), username);
                     return;
                 }
             }
@@ -108,7 +108,7 @@ public final class MediaMerger {
                 opts.inJustDecodeBounds = true;
                 BitmapFactory.decodeFile(tempFiles.get(i).getAbsolutePath(), opts);
                 if (opts.outWidth <= 0 || opts.outHeight <= 0) {
-                    NewXInAppNotification.showErrorForUser(StringRef.str("piko_newx_merge_slice_size_failed", i + 1), username);
+                    NewXInAppNotification.taskError(progressId, StringRef.str("piko_newx_merge_slice_size_failed", i + 1), username);
                     return;
                 }
                 widths[i] = opts.outWidth;
@@ -155,7 +155,7 @@ public final class MediaMerger {
                 try {
                     mergedBitmap = Bitmap.createBitmap(totalWidth, maxHeight, Bitmap.Config.RGB_565);
                 } catch (OutOfMemoryError oom2) {
-                    NewXInAppNotification.showErrorForUser(StringRef.str("piko_newx_merge_memory_failed"), username);
+                    NewXInAppNotification.taskError(progressId, StringRef.str("piko_newx_merge_memory_failed"), username);
                     return;
                 }
             }
@@ -168,7 +168,7 @@ public final class MediaMerger {
                 Bitmap piece = BitmapFactory.decodeFile(tempFiles.get(i).getAbsolutePath());
                 if (piece == null) {
                     mergedBitmap.recycle();
-                    NewXInAppNotification.showErrorForUser(StringRef.str("piko_newx_merge_slice_decode_failed", i + 1), username);
+                    NewXInAppNotification.taskError(progressId, StringRef.str("piko_newx_merge_slice_decode_failed", i + 1), username);
                     return;
                 }
 
@@ -218,7 +218,7 @@ public final class MediaMerger {
             } catch (IllegalArgumentException exception) {
                 mergedBitmap.recycle();
                 NewXLogger.printException(() -> LOG_PREFIX + "Invalid NewX download request: " + fileName, exception);
-                InlineDownloadButton.reportDownloadStatus(StringRef.str("piko_newx_merge_save_failed", fileName), username);
+                NewXInAppNotification.taskError(progressId, StringRef.str("piko_newx_merge_save_failed", fileName), username);
                 return;
             }
 
@@ -231,12 +231,12 @@ public final class MediaMerger {
                 NewXLogger.printException(() -> LOG_PREFIX + "Failed to create merged image document", exception);
                 if (DestinationLoss.matches(exception)) {
                     NewXDownloadFolders.invalidate(NewXDownloadFolders.MediaKind.IMAGES);
-                    InlineDownloadButton.reportDownloadStatus(
+                    NewXInAppNotification.taskError(progressId,
                             InlineDownloadButton.folderLostMessage(),
                             username
                     );
                 } else {
-                    InlineDownloadButton.reportDownloadStatus(
+                    NewXInAppNotification.taskError(progressId,
                             StringRef.str("piko_newx_merge_save_failed", fileName),
                             username
                     );
@@ -245,26 +245,26 @@ public final class MediaMerger {
             }
             if (reservation == null) {
                 mergedBitmap.recycle();
-                NewXInAppNotification.showForUser(StringRef.str("piko_newx_merge_exists", fileName), username);
+                NewXInAppNotification.taskInfo(progressId, StringRef.str("piko_newx_merge_exists", fileName), username);
                 return;
             }
 
             try {
                 writeMergedBitmap(context, mergedBitmap, reservation.documentUri(), format);
                 NewXLogger.printInfo(() -> LOG_PREFIX + "Successfully merged and saved " + reservation.fileName());
-                NewXInAppNotification.tryShowSuccessForUser(
+                NewXInAppNotification.taskSuccess(progressId,
                         StringRef.str("piko_newx_merge_saved", reservation.fileName()), username);
             } catch (Exception exception) {
                 destination.discard(context, reservation);
                 NewXLogger.printException(() -> LOG_PREFIX + "Failed to write merged image", exception);
                 if (DestinationLoss.matches(exception)) {
                     NewXDownloadFolders.invalidate(NewXDownloadFolders.MediaKind.IMAGES);
-                    InlineDownloadButton.reportDownloadStatus(
+                    NewXInAppNotification.taskError(progressId,
                             InlineDownloadButton.folderLostMessage(),
                             username
                     );
                 } else {
-                    InlineDownloadButton.reportDownloadStatus(
+                    NewXInAppNotification.taskError(progressId,
                             StringRef.str("piko_newx_merge_save_failed", fileName),
                             username
                     );
@@ -275,7 +275,7 @@ public final class MediaMerger {
 
         } catch (Throwable t) {
             NewXLogger.printException(() -> LOG_PREFIX + "Failed to merge images", t);
-            NewXInAppNotification.showErrorForUser(StringRef.str("piko_newx_merge_failed"), username);
+            NewXInAppNotification.taskError(progressId, StringRef.str("piko_newx_merge_failed"), username);
         } finally {
             if (progressId != 0) DownloadProgressDisplay.endLocal(progressId);
             for (File tempFile : tempFiles) {

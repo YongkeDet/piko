@@ -612,4 +612,12 @@
     <string name="piko_newx_download_progress_waiting">Waiting for connection (%1$d item(s))</string>
     <string name="piko_newx_download_progress_merge_part">Downloading image %1$d of %2$d for merge</string>
     <string name="piko_newx_download_progress_merging">Merging and saving image</string>
+    <string name="piko_newx_download_banner_saved">Download complete</string>
+    <string name="piko_newx_download_banner_failed">Download failed</string>
+    <string name="piko_newx_download_banner_info">Download update</string>
+    <string name="piko_newx_profile_bulk_banner_active">Downloading this profile</string>
+    <string name="piko_newx_profile_bulk_banner_progress">Profile download · %1$d / %2$d saved</string>
+    <string name="piko_newx_profile_bulk_banner_done">Profile download complete</string>
+    <string name="piko_newx_profile_bulk_banner_failed">Profile download incomplete</string>
+    <string name="piko_newx_profile_bulk_banner_detail">%1$s · %2$d pages · %3$d skipped · %4$d failed</string>
 </resources>

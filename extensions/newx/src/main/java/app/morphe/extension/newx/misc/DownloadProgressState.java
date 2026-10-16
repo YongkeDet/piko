@@ -2,6 +2,8 @@ package app.morphe.extension.newx.misc;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 
 /** Active transfers only. UI and byte events share snapshots without retaining completed files. */
 final class DownloadProgressState {
@@ -55,6 +57,24 @@ final class DownloadProgressState {
         }
         int percent = known && total > 0 ? Math.min(99, (int) (done * 100.0 / total)) : -1;
         return new Snapshot(count, waiting, done, known ? total : -1, speed, percent, name);
+    }
+
+    synchronized List<TaskSnapshot> tasks(long now) {
+        List<TaskSnapshot> result = new ArrayList<>();
+        for (Map.Entry<Integer, Transfer> entry : active.entrySet()) {
+            Transfer t = entry.getValue();
+            if (t.batch) continue;
+            int percent = t.total > 0 ? Math.min(99, (int) (t.done * 100.0 / t.total)) : -1;
+            result.add(new TaskSnapshot(entry.getKey(), new Snapshot(1, t.waiting ? 1 : 0,
+                    t.done, t.total, !t.waiting && now - t.updatedAt <= 3000 ? t.speed : 0, percent, t.name)));
+        }
+        return result;
+    }
+
+    static final class TaskSnapshot {
+        final int id;
+        final Snapshot snapshot;
+        TaskSnapshot(int id, Snapshot snapshot) { this.id = id; this.snapshot = snapshot; }
     }
 
     private static long sum(long a, long b) { return b > Long.MAX_VALUE - a ? Long.MAX_VALUE : a + b; }

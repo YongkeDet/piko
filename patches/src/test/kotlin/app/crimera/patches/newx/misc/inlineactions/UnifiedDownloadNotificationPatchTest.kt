@@ -73,6 +73,40 @@ class UnifiedDownloadNotificationPatchTest {
         assertTrue(code[hook + 3].getReference<MethodReference>()?.name == "enabled")
     }
 
+    @Test
+    fun `state read returns only owned text and preserves the original localizer branch`() {
+        val body = MethodImplementationBuilder(3)
+        body.addInstruction("invoke-static {v1, v2}, Lfixture/Text;->localize(Ljava/lang/Object;Landroidx/compose/runtime/Composer;)Ljava/lang/String;".toInstruction())
+        body.addInstruction("move-result-object v1".toInstruction())
+        body.addInstruction("return-object v1".toInstruction())
+        val method = fixture("text", listOf("Ljava/lang/Object;", "Landroidx/compose/runtime/Composer;"), "Ljava/lang/String;", body, true)
+        method.interceptProgressText("Ljava/lang/Object;")
+        val code = method.implementation!!.instructions
+        assertEquals("progressText", code[0].getReference<MethodReference>()?.name)
+        assertEquals(Opcode.MOVE_RESULT_OBJECT, code[1].opcode)
+        assertEquals(Opcode.IF_EQZ, code[2].opcode)
+        assertEquals(4, (code[2] as BuilderOffsetInstruction).target.location.index)
+        assertEquals(Opcode.RETURN_OBJECT, code[3].opcode)
+        assertEquals("localize", code[4].getReference<MethodReference>()?.name)
+        assertEquals(3, method.implementation!!.registerCount)
+    }
+
+    @Test
+    fun `lifecycle observes publication before the receiver is reused by R8`() {
+        val body = MethodImplementationBuilder(3)
+        body.addInstruction("invoke-virtual {v0, v1}, Lkotlinx/coroutines/flow/Fixture;->publish(Ljava/lang/Object;)V".toInstruction())
+        body.addInstruction("const/4 v1, 0x3".toInstruction()) // p0 is overwritten here.
+        body.addInstruction("return-void".toInstruction())
+        val method = fixture("dispose", listOf("Ljava/lang/Object;"), "V", body, false)
+        method.observeNotificationPublication()
+        val code = method.implementation!!.instructions
+        assertEquals("publish", code[0].getReference<MethodReference>()?.name)
+        assertEquals("observeNative", code[1].getReference<MethodReference>()?.name)
+        assertEquals(Opcode.CONST_4, code[2].opcode)
+        assertEquals(1, (code[2] as OneRegisterInstruction).registerA)
+        assertEquals(3, method.implementation!!.registerCount)
+    }
+
     private fun fixture(name: String, types: List<String>, result: String, body: MethodImplementationBuilder, static: Boolean) = MutableMethod(ImmutableMethod(
         "Lfixture/Manager;", name, types.map { ImmutableMethodParameter(it, emptySet(), null) }, result,
         AccessFlags.PUBLIC.value or if (static) AccessFlags.STATIC.value else AccessFlags.CONSTRUCTOR.value,

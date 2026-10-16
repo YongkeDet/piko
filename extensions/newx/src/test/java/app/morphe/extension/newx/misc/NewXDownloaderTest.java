@@ -9,59 +9,95 @@ import org.junit.Test;
 
 public final class NewXDownloaderTest {
     @Test
-    public void nativeBannerProgressReplacesInPlaceAndYieldsToErrorsResultsAndNativeMessages() {
+    public void pinnedProgressDispatchesOnceAndResultsAreAcknowledgedInOrder() {
         DownloadBannerPolicy p = new DownloadBannerPolicy();
-        Object first = new Object(), next = new Object(), error = new Object(), saved = new Object();
-        p.beginProgress();
-        p.register(first, DownloadBannerPolicy.PROGRESS);
-        assertEquals(DownloadBannerPolicy.NATIVE, p.decide(first, null, 0));
-        p.register(next, DownloadBannerPolicy.PROGRESS);
-        assertEquals(DownloadBannerPolicy.REPLACE, p.decide(next, first, 1000));
-        p.register(error, DownloadBannerPolicy.ERROR);
-        assertEquals(DownloadBannerPolicy.REPLACE, p.decide(error, next, 1100));
-        p.register(saved, DownloadBannerPolicy.SUCCESS);
-        assertEquals(DownloadBannerPolicy.DROP, p.decide(saved, error, 1200));
-        p.register(next, DownloadBannerPolicy.PROGRESS);
-        assertEquals(DownloadBannerPolicy.DROP, p.decide(next, error, 2000));
-        p.register(next, DownloadBannerPolicy.PROGRESS);
-        assertEquals(DownloadBannerPolicy.REPLACE, p.decide(next, error, 6100));
-        Object nativeNotice = new Object();
-        assertEquals(DownloadBannerPolicy.NATIVE, p.decide(nativeNotice, next, 6200));
-        p.register(first, DownloadBannerPolicy.PROGRESS);
-        assertEquals(DownloadBannerPolicy.DROP, p.decide(first, nativeNotice, 6300));
-        p.register(saved, DownloadBannerPolicy.SUCCESS);
-        assertEquals(DownloadBannerPolicy.NATIVE, p.decide(saved, null, 6400));
-        p.register(first, DownloadBannerPolicy.PROGRESS);
-        assertEquals(DownloadBannerPolicy.DROP, p.decide(first, saved, 7000));
+        p.start(1, "download", "a.mp4", null);
+        DownloadBannerPolicy.Notice first = p.next().notice;
+        Object model = new Object(); p.bind(first, model);
+        for (int i = 0; i < 100; i++) { p.update(1, "download " + i, "a.mp4"); assertNull(p.next()); }
+        assertEquals(DownloadBannerPolicy.NATIVE, p.decide(model, null));
+        p.visible(model);
+        for (int i = 0; i < 100; i++) { p.update(1, "download " + i, "a.mp4"); assertNull(p.next()); }
+        p.start(2, "download", "b.jpg", null);
+        assertTrue(p.result(1, DownloadBannerPolicy.SUCCESS, "saved", "a.mp4"));
+        assertFalse(p.result(1, DownloadBannerPolicy.SUCCESS, "saved", "a.mp4"));
+        DownloadBannerPolicy.Action clear = p.next();
+        assertEquals(model, clear.clear);
+        Object control = new Object(); p.bindClear(control, clear.clear);
+        assertEquals(DownloadBannerPolicy.DISMISS, p.decide(control, model));
+        p.disposed(model, "Replaced", true); p.visible(null);
+        DownloadBannerPolicy.Notice saved = p.next().notice;
+        Object savedModel = new Object(); p.bind(saved, savedModel);
+        assertEquals(DownloadBannerPolicy.NATIVE, p.decide(savedModel, null)); p.visible(savedModel);
+        assertTrue(p.result(2, DownloadBannerPolicy.ERROR, "failed", "b.jpg"));
+        assertNull(p.next()); // Even an error cannot overwrite an unacknowledged earlier result.
+        p.disposed(savedModel, "Replaced", false); // A stale duplicate-entry cleanup is not an ACK.
+        assertNull(p.next());
+        p.disposed(savedModel, "AutoDismiss", true); p.visible(null);
+        DownloadBannerPolicy.Notice failed = p.next().notice;
+        assertEquals(2, failed.id); assertEquals(DownloadBannerPolicy.ERROR, failed.kind);
+        Object failedModel = new Object(); p.bind(failed, failedModel);
+        assertEquals(DownloadBannerPolicy.NATIVE, p.decide(failedModel, null)); p.visible(failedModel);
+        assertEquals(DownloadBannerPolicy.DROP, p.decide(control, failedModel));
+        assertEquals(DownloadBannerPolicy.DROP, p.decide(savedModel, failedModel));
+        p.disposed(failedModel, "DismissedByUser", true); p.visible(null);
+        assertNull(p.next()); assertFalse(p.hasWork());
     }
 
     @Test
-    public void nativeBannerRejectsStaleProgressAndClearCannotEraseResultsOrNewTasks() {
+    public void profileCancellationAndForeignMessagesCannotConsumeAnotherTasksResult() {
         DownloadBannerPolicy p = new DownloadBannerPolicy();
-        Object first = new Object(), late = new Object(), clear = new Object(), result = new Object();
-        p.beginProgress(); p.register(first, DownloadBannerPolicy.PROGRESS);
-        assertEquals(DownloadBannerPolicy.NATIVE, p.decide(first, null, 0));
-        p.register(late, DownloadBannerPolicy.PROGRESS);
-        assertTrue(p.endProgress()); assertFalse(p.endProgress());
-        p.register(clear, DownloadBannerPolicy.CLEAR);
-        assertEquals(DownloadBannerPolicy.DROP, p.decide(late, first, 100));
-        assertEquals(DownloadBannerPolicy.DISMISS, p.decide(clear, first, 100));
-        p.beginProgress(); p.register(first, DownloadBannerPolicy.PROGRESS);
-        assertEquals(DownloadBannerPolicy.NATIVE, p.decide(first, null, 200));
-        p.endProgress(); p.register(clear, DownloadBannerPolicy.CLEAR);
-        p.beginProgress();
-        assertEquals(DownloadBannerPolicy.DROP, p.decide(clear, first, 250));
-        p.register(late, DownloadBannerPolicy.PROGRESS);
-        assertEquals(DownloadBannerPolicy.REPLACE, p.decide(late, first, 300));
-        p.endProgress(); p.register(clear, DownloadBannerPolicy.CLEAR);
-        p.register(result, DownloadBannerPolicy.SUCCESS);
-        assertEquals(DownloadBannerPolicy.REPLACE, p.decide(result, late, 400));
-        assertEquals(DownloadBannerPolicy.DROP, p.decide(clear, result, 450));
-        // Identity matters even if a native model's equals() considers messages identical.
-        Object a = new String("same"), b = new String("same");
-        p.register(a, DownloadBannerPolicy.ERROR);
-        assertEquals(DownloadBannerPolicy.NATIVE, p.decide(b, result, 500));
-        assertEquals(DownloadBannerPolicy.REPLACE, p.decide(a, result, 500));
+        long bulk = 1L << 32;
+        int[] cancelled = {0};
+        p.start(bulk, "profile", "pages", () -> cancelled[0]++);
+        p.start(7, "single", "video", () -> cancelled[0] += 100);
+        DownloadBannerPolicy.Notice batch = p.next().notice;
+        Object model = new String("same"); p.bind(batch, model);
+        // Native equality may consider two models equal; only identity denotes ownership.
+        assertEquals(DownloadBannerPolicy.NATIVE, p.decide(new String("same"), null));
+        Object foreign = new Object(); p.visible(foreign);
+        assertEquals(DownloadBannerPolicy.DROP, p.decide(model, foreign));
+        p.disposed(model, "Replaced", false);
+        assertNull(p.next());
+        p.visible(null);
+        assertEquals(batch, p.next().notice);
+        assertEquals(DownloadBannerPolicy.NATIVE, p.decide(model, null)); p.visible(model);
+        Runnable cancel = p.disposed(model, "PrimaryButtonClick", true); p.visible(null);
+        assertTrue(cancel != null); cancel.run(); assertEquals(1, cancelled[0]);
+        assertNull(p.disposed(model, "PrimaryButtonClick", false));
+        p.update(bulk, "late tick", "must stay hidden");
+        DownloadBannerPolicy.Notice other = p.next().notice;
+        assertEquals(7, other.id); p.rejected(other);
+        p.result(bulk, DownloadBannerPolicy.INFO, "cancelled", "summary");
+        assertFalse(p.result(bulk, DownloadBannerPolicy.INFO, "cancelled", "duplicate"));
+        DownloadBannerPolicy.Notice summary = p.next().notice;
+        Object summaryModel = new Object(); p.bind(summary, summaryModel);
+        assertEquals(DownloadBannerPolicy.NATIVE, p.decide(summaryModel, null)); p.visible(summaryModel);
+        p.disposed(summaryModel, "Replaced", true); p.visible(foreign);
+        assertNull(p.next()); // Retain the interrupted result until the native message exits.
+        p.visible(null); assertEquals(summary, p.next().notice);
+        assertEquals(DownloadBannerPolicy.NATIVE, p.decide(summaryModel, null)); p.visible(summaryModel);
+        p.disposed(summaryModel, "AutoDismiss", true); p.visible(null);
+        assertEquals(other, p.next().notice); // Cancelling the bulk session did not cancel task 7.
+    }
+
+    @Test
+    public void completionBeforeAdmissionRejectsLateProgressAndNeverClearsUnrelatedMessages() {
+        DownloadBannerPolicy p = new DownloadBannerPolicy();
+        p.start(-1, "merge", "part", null);
+        DownloadBannerPolicy.Notice merge = p.next().notice;
+        Object late = new Object(); p.bind(merge, late);
+        p.finish(-1); p.result(-1, DownloadBannerPolicy.SUCCESS, "merged", "file");
+        assertNull(p.update(-1, "late", "bytes"));
+        assertEquals(DownloadBannerPolicy.DROP, p.decide(late, null));
+        p.disposed(late, "Replaced", false);
+        DownloadBannerPolicy.Notice result = p.next().notice;
+        Object model = new Object(); p.bind(result, model);
+        Object foreign = new Object(); p.visible(foreign);
+        assertEquals(DownloadBannerPolicy.DROP, p.decide(model, foreign));
+        p.disposed(model, "Replaced", false);
+        assertNull(p.next()); p.visible(null);
+        assertEquals(result, p.next().notice);
     }
 
     @Test
