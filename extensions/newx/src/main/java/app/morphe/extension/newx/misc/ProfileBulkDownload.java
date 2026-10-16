@@ -152,7 +152,7 @@ public final class ProfileBulkDownload {
                 }
             }
             if (photos == null || videos == null) {
-                NewXInAppNotification.show(StringRef.str("piko_newx_profile_bulk_unavailable"));
+                NewXInAppNotification.showError(StringRef.str("piko_newx_profile_bulk_unavailable"));
                 return;
             }
             Session session = new Session(activity, component, photos, videos);
@@ -162,7 +162,7 @@ public final class ProfileBulkDownload {
             NewXLogger.printException(() -> "Cannot start profile media download", exception);
             Session session = active;
             if (session != null) session.stop("piko_newx_profile_bulk_read_failed");
-            else NewXInAppNotification.show(StringRef.str("piko_newx_profile_bulk_unavailable"));
+            else NewXInAppNotification.showError(StringRef.str("piko_newx_profile_bulk_unavailable"));
         }
     }
 
@@ -440,6 +440,8 @@ public final class ProfileBulkDownload {
             // Preserve the top-only success feedback; batch members do not toast individually.
             if (failed > 0 || stopped && !"piko_newx_profile_bulk_cancelled".equals(endReason)) {
                 NewXInAppNotification.tryShowError(summary);
+            } else if (stopped || "piko_newx_profile_bulk_cancelled".equals(endReason)) {
+                NewXInAppNotification.tryShow(summary);
             } else {
                 NewXInAppNotification.tryShowSuccess(summary);
             }

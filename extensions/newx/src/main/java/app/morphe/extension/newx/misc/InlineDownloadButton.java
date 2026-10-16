@@ -1115,8 +1115,7 @@ public final class InlineDownloadButton {
             }
             String message = DownloadMessages.summary(result, new NewXDownloadTexts(), username);
             // Live progress already announces queued work in the unified native host.
-            boolean clean = result.failed() == 0 && result.lost() == 0
-                    && (result.queued() == 0 ? result.skipped() > 0 : result.skipped() == 0);
+            boolean clean = result.failed() == 0 && result.lost() == 0;
             NewXUtils.runOnUiThread(() -> {
                 if (clean) {
                     if (result.queued() == 0 || !NewXInAppNotification.hasUnifiedHost()) NewXInAppNotification.show(message);
