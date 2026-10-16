@@ -132,6 +132,29 @@ class NewXResolverLinterTest {
     }
 
     @Test
+    fun `record nested parameter index false positive from automatic refresh CI`() {
+        // 0.7.0 confuses indexing a selected method's parameter list with indexing its candidates.
+        // Keep the observed finding until the owning library fixes its provenance analysis.
+        val before = lint("""
+            val request = requireExactlyOne("request", instructions.mapNotNull { instruction ->
+                instruction.getReference<MethodReference>()?.takeIf { it.parameterTypes.size == 2 }
+            })
+            val type = request.parameterTypes[0]
+        """.trimIndent())
+        assertEquals(listOf(ResolverLinter.Rule.MAP_NOT_NULL), before.map { it.rule })
+        val after = lint("""
+            val request = requireExactlyOne("request", instructions.mapNotNull { instruction ->
+                instruction.getReference<MethodReference>()?.takeIf { it.parameterTypes.size == 2 }
+            })
+            val type = requireExactlyOne("enum", request.parameterTypes.mapNotNull {
+                classDefByOrNull(it)?.takeIf { candidate -> candidate.superclass == ENUM }
+            })
+            require(request.parameterTypes.indexOf(type.type) == 0)
+        """.trimIndent())
+        assertTrue(after.isEmpty(), after.toString())
+    }
+
+    @Test
     fun `at most one proof does not permit required candidate selection`() {
         val findings =
             lint(

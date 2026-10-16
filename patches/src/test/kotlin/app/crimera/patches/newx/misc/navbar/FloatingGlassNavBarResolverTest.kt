@@ -20,6 +20,53 @@ import kotlin.test.assertTrue
 
 class FloatingGlassNavBarResolverTest {
     @Test
+    fun `fixed bar traces the scroll state and preserves the outer hide branch`() {
+        val body = MethodImplementationBuilder(22)
+        fun add(line: String) { body.addInstruction(line.toInstruction()) }
+        body.addInstruction(BuilderInstruction21t(Opcode.IF_NEZ, 8, body.getLabel("hide")))
+        add("invoke-interface {v4}, Lfixture/State;->getValue()Ljava/lang/Object;")
+        add("move-result-object v11")
+        add("check-cast v11, Ljava/lang/Boolean;")
+        add("invoke-virtual {v11}, Ljava/lang/Boolean;->booleanValue()Z")
+        add("move-result v11")
+        body.addInstruction(BuilderInstruction21t(Opcode.IF_NEZ, 11, body.getLabel("show")))
+        body.addLabel("hide")
+        add("const/4 v12, 0")
+        body.addLabel("show")
+        add("invoke-direct {v0, v4, v5}, Lfixture/Glass;-><init>(Lfixture/State;Ljava/lang/Object;)V")
+        add("return-void")
+        val host = fixture("host", emptyList(), "V", body)
+        val constructorBody = MethodImplementationBuilder(3)
+        constructorBody.addInstruction("iput-object v1, v0, Lfixture/Glass;->visible:Lfixture/State;".toInstruction())
+        constructorBody.addInstruction("return-void".toInstruction())
+        val constructor = MutableMethod(ImmutableMethod("Lfixture/Glass;", "<init>",
+            listOf("Lfixture/State;", "Ljava/lang/Object;").map { ImmutableMethodParameter(it, emptySet(), null) }, "V",
+            AccessFlags.PUBLIC.value or AccessFlags.CONSTRUCTOR.value, emptySet(), emptySet(), constructorBody.methodImplementation))
+        val getter = fixture("isVisible", emptyList(), "Z",
+            "iget-object v0, v1, Lfixture/Glass;->visible:Lfixture/State;",
+            "invoke-interface {v0}, Lfixture/State;->getValue()Ljava/lang/Object;")
+        val read = resolveBottomBarScrollRead(host, constructor, getter)
+        assertEquals(BottomBarScrollRead(5, 11), read)
+        host.pinBottomBarScrollRead(read)
+        val code = host.implementation!!.instructions
+        assertEquals(Opcode.INVOKE_STATIC, code[6].opcode)
+        assertEquals(Opcode.MOVE_RESULT, code[7].opcode)
+        assertEquals(11, (code[7] as OneRegisterInstruction).registerA)
+        val hide = (code[0] as BuilderOffsetInstruction).target.location.index
+        assertEquals(9, hide)
+        assertEquals(Opcode.CONST_4, code[hide].opcode)
+        assertEquals(Opcode.IF_NEZ, code[8].opcode)
+        // A reused local that no longer reaches the state constructor must fail closed.
+        val wrong = fixture("wrong", emptyList(), "V",
+            "invoke-interface {v4}, Lfixture/State;->getValue()Ljava/lang/Object;",
+            "move-result-object v11", "check-cast v11, Ljava/lang/Boolean;",
+            "invoke-virtual {v11}, Ljava/lang/Boolean;->booleanValue()Z", "move-result v11",
+            "const/4 v4, 0",
+            "invoke-direct {v0, v4, v5}, Lfixture/Glass;-><init>(Lfixture/State;Ljava/lang/Object;)V")
+        assertFailsWith<PatchException> { resolveBottomBarScrollRead(wrong, constructor, getter) }
+    }
+
+    @Test
     fun `inset decoration precedes both backgrounds and preserves their shared join label`() {
         val body = MethodImplementationBuilder(22)
         fun add(line: String) { body.addInstruction(line.toInstruction()) }

@@ -9,6 +9,7 @@ import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.os.SystemClock;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -75,14 +76,18 @@ public final class MediaMerger {
             DownloadFileName.PostContext postContext
     ) {
         List<File> tempFiles = new ArrayList<>();
+        int progressId = 0;
         try {
+            progressId = DownloadProgressDisplay.beginLocal(StringRef.str("piko_newx_download_progress_merging"));
             File cacheDir = context.getCacheDir();
             for (int i = 0; i < items.size(); i++) {
                 InlineDownloadButton.DownloadItem item = items.get(i);
                 File tempFile = File.createTempFile("piko_merge_split_" + (i + 1) + "_", ".tmp", cacheDir);
                 tempFiles.add(tempFile);
 
-                boolean downloaded = downloadToFile(item.url, tempFile);
+                DownloadProgressDisplay.localStage(progressId,
+                        StringRef.str("piko_newx_download_progress_merge_part", i + 1, items.size()));
+                boolean downloaded = downloadToFile(item.url, tempFile, progressId);
                 final int sliceIndex = i + 1;
                 if (!downloaded) {
                     NewXLogger.printInfo(() -> LOG_PREFIX + "Failed to download slice " + sliceIndex + " from " + item.url);
@@ -90,6 +95,8 @@ public final class MediaMerger {
                     return;
                 }
             }
+
+            DownloadProgressDisplay.localStage(progressId, StringRef.str("piko_newx_download_progress_merging"));
 
             int count = tempFiles.size();
             int[] widths = new int[count];
@@ -270,6 +277,7 @@ public final class MediaMerger {
             NewXLogger.printException(() -> LOG_PREFIX + "Failed to merge images", t);
             NewXInAppNotification.showForUser(StringRef.str("piko_newx_merge_failed"), username);
         } finally {
+            if (progressId != 0) DownloadProgressDisplay.endLocal(progressId);
             for (File tempFile : tempFiles) {
                 try {
                     if (tempFile.exists()) {
@@ -281,7 +289,7 @@ public final class MediaMerger {
         }
     }
 
-    private static boolean downloadToFile(String url, File targetFile) {
+    private static boolean downloadToFile(String url, File targetFile, int progressId) {
         if (!NewXUtils.isHttpUrl(url)) return false;
         HttpURLConnection connection = null;
         try {
@@ -296,25 +304,35 @@ public final class MediaMerger {
             if (responseCode < HttpURLConnection.HTTP_OK || responseCode >= HttpURLConnection.HTTP_MULT_CHOICE) {
                 if (url.contains("name=orig")) {
                     String fallback = url.replace("name=orig", "name=4096x4096");
-                    return downloadToFile(fallback, targetFile);
+                    return downloadToFile(fallback, targetFile, progressId);
                 }
                 return false;
             }
 
+            long total = connection.getContentLengthLong();
+            long done = 0, lastUpdate = SystemClock.elapsedRealtime();
+            DownloadProgressDisplay.localProgress(progressId, 0, total);
             try (InputStream in = connection.getInputStream();
                  FileOutputStream out = new FileOutputStream(targetFile)) {
                 byte[] buf = new byte[64 * 1024];
                 int read;
                 while ((read = in.read(buf)) != -1) {
                     out.write(buf, 0, read);
+                    done += read;
+                    long now = SystemClock.elapsedRealtime();
+                    if (now - lastUpdate >= 500) {
+                        DownloadProgressDisplay.localProgress(progressId, done, total);
+                        lastUpdate = now;
+                    }
                 }
             }
+            DownloadProgressDisplay.localProgress(progressId, done, total);
             return true;
         } catch (Exception e) {
             NewXLogger.printException(() -> LOG_PREFIX + "Download error for " + url, e);
             if (url.contains("name=orig")) {
                 String fallback = url.replace("name=orig", "name=4096x4096");
-                return downloadToFile(fallback, targetFile);
+                return downloadToFile(fallback, targetFile, progressId);
             }
             return false;
         } finally {

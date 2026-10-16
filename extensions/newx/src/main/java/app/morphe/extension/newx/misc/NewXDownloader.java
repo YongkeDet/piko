@@ -133,6 +133,10 @@ public final class NewXDownloader {
                 NOTIFICATION_EXECUTOR
         );
         events.register(
+                new DownloadProgressDisplay(created),
+                new MainThreadExecutor()
+        );
+        events.register(
                 new StatusListener(applicationContext, created),
                 new MainThreadExecutor()
         );

@@ -9,6 +9,7 @@ import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.util.cloneMutable
 import app.morphe.util.getReference
 import app.morphe.util.numberOfParameterRegisters
+import app.morphe.util.registersUsed
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.builder.BuilderOffsetInstruction
@@ -26,6 +27,39 @@ import kotlin.test.assertEquals
 import kotlin.test.assertSame
 
 class RestoreTimelinePositionPatchTest {
+    @Test
+    fun `automatic refresh gate fits two free locals and leaves request inputs untouched`() {
+        // The real 12.34 repository entry has only two provably free four-bit locals.
+        val owner = "Lfixture/Repository;"
+        val implementation = MethodImplementationBuilder(11)
+        val method = MutableMethod(ImmutableMethod(owner, "request",
+            listOf("Ljava/lang/Enum;", "Ljava/lang/Object;").map { ImmutableMethodParameter(it, emptySet(), null) },
+            "V", AccessFlags.PUBLIC.value, emptySet(), emptySet(), implementation.methodImplementation))
+        method.addInstructionsWithLabels(0, """
+            invoke-static/range {v2 .. v10}, Lfixture/Sink;->consume(IIIIIILjava/lang/Object;Ljava/lang/Enum;Ljava/lang/Object;)V
+            return-void
+        """.trimIndent())
+        val native = method.instructions[0]
+        method.insertAutomaticContentRefreshGate(
+            ImmutableMethodReference(owner, "timeline", emptyList<String>(), "Ljava/lang/Enum;"),
+            ImmutableMethodReference(owner, "data", emptyList<String>(), "Lfixture/Flow;"),
+            ImmutableMethodReference("Lfixture/Flow;", "pages", emptyList<String>(), "Ljava/util/List;"),
+        )
+        val code = method.instructions
+        val content = (code[1] as OneRegisterInstruction).registerA
+        val timeline = (code[4] as OneRegisterInstruction).registerA
+        assertEquals(setOf(0, 1), setOf(content, timeline))
+        assertEquals(content, (code[6] as OneRegisterInstruction).registerA)
+        assertEquals(content, (code[8] as OneRegisterInstruction).registerA)
+        assertEquals(content, (code[10] as OneRegisterInstruction).registerA)
+        assertEquals(listOf(9, timeline, content), code[9].registersUsed)
+        assertSame(native, (code[2] as BuilderOffsetInstruction).target.location.instruction)
+        assertSame(native, (code[11] as BuilderOffsetInstruction).target.location.instruction)
+        assertEquals(Opcode.RETURN_VOID, code[12].opcode)
+        assertEquals((2..10).toList(), code[13].registersUsed)
+        assertEquals(11, method.implementation!!.registerCount)
+    }
+
     @Test
     fun `capture uses fresh locals before a native switch and preserves the map continuation`() {
         val owner = "Lapp/crimera/test/ScrollComponent;"

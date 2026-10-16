@@ -8,6 +8,7 @@ import android.os.SystemClock;
 import android.view.WindowManager;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.ProgressBar;
 
 import app.morphe.extension.crimera.downloader.DownloadHandle;
 import app.morphe.extension.crimera.downloader.EnqueueResult;
@@ -178,6 +179,8 @@ public final class ProfileBulkDownload {
         final List<DownloadHandle> transfers = new ArrayList<>();
         final DialogView dialog;
         final TextView progress;
+        final TextView transferProgress;
+        final ProgressBar transferBar;
         ProfileBulkPager pager = new ProfileBulkPager(SystemClock.elapsedRealtime());
         Object desiredTab;
         volatile boolean stopped;
@@ -198,8 +201,14 @@ public final class ProfileBulkDownload {
             this.desiredTab = photos;
             progress = SettingsUi.summaryText(activity);
             LinearLayout body = new LinearLayout(activity);
+            body.setOrientation(LinearLayout.VERTICAL);
             body.setPadding(Theme.dpToPx(activity, 24), 0, Theme.dpToPx(activity, 24), 0);
             body.addView(progress, new LinearLayout.LayoutParams(-1, -2));
+            transferProgress = SettingsUi.summaryText(activity);
+            transferBar = new ProgressBar(activity, null, android.R.attr.progressBarStyleHorizontal);
+            transferBar.setMax(100);
+            body.addView(transferProgress, new LinearLayout.LayoutParams(-1, -2));
+            body.addView(transferBar, new LinearLayout.LayoutParams(-1, Theme.dpToPx(activity, 8)));
             dialog = new DialogView(activity).setTitle(text("piko_newx_profile_bulk_button"))
                     .setSubtitle(text("piko_newx_profile_bulk_keep_open")).setBodyView(body);
             ButtonView cancel = SettingsUi.dialogButton(activity, text("piko_newx_settings_cancel"));
@@ -393,6 +402,16 @@ public final class ProfileBulkDownload {
             String message = StringRef.str("piko_newx_profile_bulk_progress", phase, pages, discovered, saved, skipped, failed);
             if (recovering) message += "\n" + StringRef.str("piko_newx_profile_bulk_retry_progress", pager.attempts());
             progress.setText(message);
+            DownloadProgressState.Snapshot snapshot = DownloadProgressDisplay.batchSnapshot();
+            transferProgress.setVisibility(snapshot.count == 0 ? android.view.View.GONE : android.view.View.VISIBLE);
+            transferBar.setVisibility(snapshot.count == 0 ? android.view.View.GONE : android.view.View.VISIBLE);
+            if (snapshot.count != 0) {
+                transferProgress.setText(StringRef.str("piko_newx_download_progress_active", snapshot.count,
+                        snapshot.percent < 0 ? "" : snapshot.percent + "%") + "\n"
+                        + DownloadProgressDisplay.amount(activity, snapshot));
+                transferBar.setIndeterminate(snapshot.percent < 0 || snapshot.waiting == snapshot.count);
+                if (snapshot.percent >= 0) transferBar.setProgress(snapshot.percent);
+            }
         }
 
         void finish() {

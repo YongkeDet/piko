@@ -96,7 +96,7 @@ private object NewXHomeReselectFingerprint : Fingerprint(
         ),
 )
 
-private fun newXUrtRepositoryRequestFingerprint(requestCall: MethodReference) =
+internal fun newXUrtRepositoryRequestFingerprint(requestCall: MethodReference) =
     Fingerprint(
         definingClass = URT_REPOSITORY_PACKAGE,
         name = requestCall.name,
@@ -105,7 +105,7 @@ private fun newXUrtRepositoryRequestFingerprint(requestCall: MethodReference) =
         custom = { method, _ -> method.implementation != null },
     )
 
-private object NewXUrtAutoRefreshEventFingerprint : Fingerprint(
+internal object NewXUrtAutoRefreshEventFingerprint : Fingerprint(
     definingClass = "Lcom/x/urt/",
     parameters = listOf("L"),
     returnType = "V",
