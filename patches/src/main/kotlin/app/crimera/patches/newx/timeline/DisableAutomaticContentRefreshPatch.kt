@@ -9,6 +9,7 @@ import app.crimera.patches.utils.scopedMatchAll
 import app.morphe.patcher.extensions.InstructionExtensions.instructions
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.util.getReference
 import app.morphe.util.p0Register
 import com.android.tools.smali.dexlib2.Opcode
@@ -17,6 +18,29 @@ import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 private const val GATE = "Lapp/morphe/extension/newx/timeline/TimelineRefreshGate;"
 private const val ENUM = "Ljava/lang/Enum;"
 private const val LIST = "Ljava/util/List;"
+
+/** Reuse the content register for both scalar decisions; the native entry has only two free locals. */
+internal fun MutableMethod.insertAutomaticContentRefreshGate(timeline: MethodReference, data: MethodReference, pages: MethodReference) {
+    insertHook(0, relocateBranchTargets = false) {
+        val type = scratchRegister()
+        val content = scratchRegister()
+        val receiver = this@insertAutomaticContentRefreshGate.p0Register
+        val requested = receiver + 1
+        invokeStatic(methodReference("$GATE->isAutomaticRefresh($ENUM)Z"), requested)
+        moveResult(content, "Z")
+        ifEqz(content, Target.Original)
+        invokeVirtual(timeline, receiver)
+        moveResult(type, timeline.returnType)
+        invokeVirtual(data, receiver)
+        moveResult(content, data.returnType)
+        invokeInterface(pages, content)
+        moveResult(content, LIST)
+        invokeStatic(methodReference("$GATE->shouldBlockAutomaticRefresh($ENUM$ENUM$LIST)Z"), requested, type, content)
+        moveResult(content, "Z")
+        ifEqz(content, Target.Original)
+        returnVoid()
+    }
+}
 
 /** Complements the existing startup/foreground gate with 12.34's cursor-aware background path. */
 @Suppress("unused")
@@ -62,25 +86,6 @@ val disableAutomaticContentRefreshPatch = bytecodePatch(
                 call.definingClass == data.returnType && call.returnType == LIST && call.parameterTypes.isEmpty()
             }
         }.distinct())
-        repository.insertHook(0, relocateBranchTargets = false) {
-            val check = scratchRegister()
-            val type = scratchRegister()
-            val content = scratchRegister()
-            val receiver = repository.p0Register
-            val requested = receiver + 1
-            invokeStatic(methodReference("$GATE->isAutomaticRefresh($ENUM)Z"), requested)
-            moveResult(check, "Z")
-            ifEqz(check, Target.Original)
-            invokeVirtual(timeline, receiver)
-            moveResult(type, timeline.returnType)
-            invokeVirtual(data, receiver)
-            moveResult(content, data.returnType)
-            invokeInterface(pages, content)
-            moveResult(content, LIST)
-            invokeStatic(methodReference("$GATE->shouldBlockAutomaticRefresh($ENUM$ENUM$LIST)Z"), requested, type, content)
-            moveResult(check, "Z")
-            ifEqz(check, Target.Original)
-            returnVoid()
-        }
+        repository.insertAutomaticContentRefreshGate(timeline, data, pages)
     }
 }
