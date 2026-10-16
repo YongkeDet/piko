@@ -157,6 +157,8 @@
     <string name="piko_newx_theme_dim">暗淡</string>
     <string name="piko_newx_dynamic_color_like_title">已点赞图标跟随主题</string>
     <string name="piko_newx_dynamic_color_like_summary">为已点赞帖子使用动态强调色。启用后会关闭爱心的 Lottie 动画。</string>
+    <string name="piko_newx_floating_glass_navbar_title">悬浮玻璃底栏</string>
+    <string name="piko_newx_floating_glass_navbar_summary">将手机底栏变为悬浮胶囊，加入背景模糊、半透明底色和高光边框。重启生效；开启“关闭模糊效果”后保留悬浮外观但不模糊背景。</string>
     <string name="piko_newx_disable_blur_title">关闭模糊效果</string>
     <string name="piko_newx_disable_blur_summary">移除 Compose 界面的模糊效果，保留原有背景色和遮罩效果</string>
     <string name="piko_newx_share_image_title">将帖子分享为图片</string>
