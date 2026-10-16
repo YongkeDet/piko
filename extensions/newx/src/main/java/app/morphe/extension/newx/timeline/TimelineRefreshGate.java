@@ -4,6 +4,8 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.SystemClock;
 
+import app.morphe.extension.crimera.settings.SettingsRegistry;
+
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -56,6 +58,33 @@ public final class TimelineRefreshGate {
             if (!((List<?>) page).isEmpty()) return false;
         }
         return true;
+    }
+
+    public static boolean isAutomaticRefresh(Enum<?> request) {
+        return request != null && isAutomaticRefresh(request.name());
+    }
+
+    private static boolean isAutomaticRefresh(String request) {
+        return "AUTO_REFRESH".equals(request) || "VIEWPORT_AWARE_AUTO_REFRESH".equals(request);
+    }
+
+    public static boolean shouldBlockAutomaticRefresh(Enum<?> request, Enum<?> timeline, List<?> pages) {
+        return shouldBlockAutomaticRefresh(
+                SettingsRegistry.getBooleanOrDefault("newx.timeline.disable_refresh", true),
+                request == null ? null : request.name(), timeline == null ? null : timeline.name(),
+                pages, isPostDeepLinkPending() || isForYouFilterRefreshPending());
+    }
+
+    static boolean shouldBlockAutomaticRefresh(boolean enabled, String request, String timeline,
+                                               List<?> pages, boolean explicitNavigation) {
+        if (!enabled || !isAutomaticRefresh(request) || explicitNavigation || isTimelineDataEmpty(pages)) {
+            return false;
+        }
+        // Freeze automatic updates to populated home/pinned feeds, not profiles, replies or media.
+        // Request cursors deliberately do not decide this: viewport-aware refresh also has a cursor.
+        return "FOR_YOU".equals(timeline) || "FOLLOWING".equals(timeline)
+                || "RANKED_FOLLOWING".equals(timeline) || "LIST_POSTS".equals(timeline)
+                || "TOPIC".equals(timeline) || "COMMUNITY_DETAIL_POSTS".equals(timeline);
     }
 
     private static boolean isPostDeepLink(Intent intent) {

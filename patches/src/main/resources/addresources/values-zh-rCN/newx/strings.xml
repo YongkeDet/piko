@@ -24,8 +24,8 @@
     <string name="piko_newx_category_advanced_summary">高级工具、调试和设置维护</string>
     <string name="piko_newx_backup_restore_title">备份与恢复</string>
     <string name="piko_newx_backup_restore_summary">保存或恢复 Piko 设置</string>
-    <string name="piko_newx_disable_timeline_refresh_title">禁止自动刷新时间线</string>
-    <string name="piko_newx_disable_timeline_refresh_summary">防止 X 启动或回到前台时跳动时间线</string>
+    <string name="piko_newx_disable_timeline_refresh_title">禁止自动刷新新内容</string>
+    <string name="piko_newx_disable_timeline_refresh_summary">阻止首页及固定时间线自动载入新帖子，保留首次加载、手动下拉刷新和向下翻页。</string>
     <string name="piko_newx_restore_timeline_position_title">恢复时间线位置</string>
     <string name="piko_newx_restore_timeline_position_summary">应用重启后，恢复为你推荐、正在关注、列表、话题和社区的浏览位置</string>
     <string name="piko_newx_restore_profile_position_title">恢复个人资料浏览位置</string>
@@ -603,4 +603,6 @@
     <string name="piko_newx_profile_bulk_folder_lost">任务已停止：下载目录已失去写入权限，请重新选择目录。</string>
     <string name="piko_newx_profile_bulk_result">%1$s\n已保存 %2$d 项，跳过 %3$d 项，失败 %4$d 项</string>
     <string name="piko_newx_settings_close">关闭</string>
+    <string name="piko_newx_fixed_bottom_bar_title">固定底栏</string>
+    <string name="piko_newx_fixed_bottom_bar_summary">滚动页面时底栏保持显示，可与悬浮玻璃底栏同时使用。重启生效。</string>
 </resources>

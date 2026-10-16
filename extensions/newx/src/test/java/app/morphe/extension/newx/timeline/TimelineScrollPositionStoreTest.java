@@ -8,6 +8,26 @@ import static org.junit.Assert.assertTrue;
 import org.junit.Test;
 
 public final class TimelineScrollPositionStoreTest {
+    @Test
+    public void automaticUpdatesPreserveManualRefreshPagingAndFirstLoad() {
+        java.util.List<?> populated = java.util.List.of(java.util.List.of("post"));
+        for (String request : new String[]{"AUTO_REFRESH", "VIEWPORT_AWARE_AUTO_REFRESH"}) {
+            for (String timeline : new String[]{"FOR_YOU", "FOLLOWING", "RANKED_FOLLOWING", "LIST_POSTS", "TOPIC", "COMMUNITY_DETAIL_POSTS"}) {
+                assertTrue(TimelineRefreshGate.shouldBlockAutomaticRefresh(true, request, timeline, populated, false));
+                assertFalse(TimelineRefreshGate.shouldBlockAutomaticRefresh(false, request, timeline, populated, false));
+                assertFalse(TimelineRefreshGate.shouldBlockAutomaticRefresh(true, request, timeline, populated, true));
+                assertFalse(TimelineRefreshGate.shouldBlockAutomaticRefresh(true, request, timeline, java.util.List.of(java.util.List.of()), false));
+                assertFalse(TimelineRefreshGate.shouldBlockAutomaticRefresh(true, request, timeline, null, false));
+            }
+            for (String timeline : new String[]{"USER_PROFILE_POSTS_ONLY", "CONVERSATION", "NOTIFICATIONS", "UNKNOWN"}) {
+                assertFalse(TimelineRefreshGate.shouldBlockAutomaticRefresh(true, request, timeline, populated, false));
+            }
+        }
+        for (String request : new String[]{"PULL_TO_REFRESH", "OLDER_THAN", "NEWER_THAN", "GAP", "UNKNOWN"}) {
+            assertFalse(TimelineRefreshGate.shouldBlockAutomaticRefresh(true, request, "FOR_YOU", populated, false));
+        }
+    }
+
     private enum TimelineType {
         FOR_YOU,
         FOLLOWING,

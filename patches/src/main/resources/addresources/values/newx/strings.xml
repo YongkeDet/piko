@@ -25,8 +25,8 @@
     <string name="piko_newx_category_advanced_summary">Power-user tools, debugging, and settings maintenance</string>
     <string name="piko_newx_backup_restore_title">Backup and restore</string>
     <string name="piko_newx_backup_restore_summary">Save or restore your Piko NewX settings</string>
-    <string name="piko_newx_disable_timeline_refresh_title">Disable automatic timeline refresh</string>
-    <string name="piko_newx_disable_timeline_refresh_summary">Prevents timeline jumps when NewX starts or returns to the foreground</string>
+    <string name="piko_newx_disable_timeline_refresh_title">Disable automatic content refresh</string>
+    <string name="piko_newx_disable_timeline_refresh_summary">Prevent automatic new posts in loaded Home and pinned timelines. Manual pull-to-refresh, initial loading and pagination remain available.</string>
     <string name="piko_newx_restore_timeline_position_title">Restore timeline position</string>
     <string name="piko_newx_restore_timeline_position_summary">Returns to saved For You, Following, list, topic and community positions after the app restarts</string>
     <string name="piko_newx_restore_profile_position_title">Restore profile scroll position</string>
@@ -604,4 +604,6 @@
     <string name="piko_newx_profile_bulk_folder_lost">Stopped: the download folder is no longer writable. Choose the folder again.</string>
     <string name="piko_newx_profile_bulk_result">%1$s\nSaved %2$d, skipped %3$d, failed %4$d</string>
     <string name="piko_newx_settings_close">Close</string>
+    <string name="piko_newx_fixed_bottom_bar_title">Fixed bottom navigation bar</string>
+    <string name="piko_newx_fixed_bottom_bar_summary">Keep the main bottom bar visible while scrolling. Works with the floating glass style. Restart to apply.</string>
 </resources>
