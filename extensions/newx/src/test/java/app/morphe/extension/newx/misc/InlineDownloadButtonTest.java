@@ -70,6 +70,19 @@ public final class InlineDownloadButtonTest {
         assertSame(firstMedia, ProfileBulkDownload.itemsBeforeFilters(first, hidden));
         assertSame(secondMedia, ProfileBulkDownload.itemsBeforeFilters(second, hidden));
         assertSame(hidden, ProfileBulkDownload.itemsBeforeFilters(new String("equal"), hidden));
+        // Autoplay/refresh state copies keep the same already-filtered items. Their raw lineage
+        // must survive without allowing a real replacement list to inherit another snapshot.
+        Object copy = new Object(), replacement = new Object();
+        ProfileBulkDownload.inheritPage(first, copy, hidden, hidden);
+        assertSame(firstMedia, ProfileBulkDownload.itemsBeforeFilters(copy, hidden));
+        List<?> newVisible = new ArrayList<>();
+        ProfileBulkDownload.inheritPage(first, replacement, hidden, newVisible);
+        assertSame(newVisible, ProfileBulkDownload.itemsBeforeFilters(replacement, newVisible));
+        Object ownReplacement = new Object();
+        ProfileBulkDownload.rememberPage(TimelineKind.USER_PROFILE_PHOTOS, secondMedia, hidden);
+        ProfileBulkDownload.attachPage(ownReplacement);
+        ProfileBulkDownload.inheritPage(first, ownReplacement, hidden, hidden);
+        assertSame(secondMedia, ProfileBulkDownload.itemsBeforeFilters(ownReplacement, hidden));
     }
 
     @Test

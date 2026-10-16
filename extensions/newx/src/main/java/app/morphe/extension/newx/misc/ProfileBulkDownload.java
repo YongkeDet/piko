@@ -58,7 +58,7 @@ public final class ProfileBulkDownload {
     static synchronized void markRequest(DownloadRequest request) { REQUESTS.add(request); }
     static synchronized boolean isBatchRequest(DownloadRequest request) { return REQUESTS.contains(request); }
 
-    /** Retain only the current few profile snapshots before display filters hide individual posts. */
+    /** Preserve the raw media for each live native Success instance before display filtering. */
     public static void rememberPage(Object type, Object raw, Object filtered) {
         PENDING_PAGE.remove();
         if (!isEnabled() || raw == filtered || !(raw instanceof List<?> source)
@@ -75,10 +75,22 @@ public final class ProfileBulkDownload {
         if (source == null) return;
         RAW_PAGES.removeIf(page -> page.success.get() == null || page.success.get() == success);
         RAW_PAGES.add(new RawPage(success, source));
-        while (RAW_PAGES.size() > 4) RAW_PAGES.remove(0);
+    }
+
+    /** Native copies that retain the exact items list must retain its unfiltered lineage too. */
+    public static synchronized void inheritPage(Object source, Object copy, List<?> before, List<?> after) {
+        if (before != after) return;
+        // A replacement input can itself filter down to the same shared empty list. Its own
+        // freshly captured raw page is authoritative and must not be overwritten by the source.
+        if (itemsBeforeFilters(copy, after) != after) return;
+        List<?> raw = itemsBeforeFilters(source, before);
+        if (raw == before) return;
+        RAW_PAGES.removeIf(page -> page.success.get() == null || page.success.get() == copy);
+        RAW_PAGES.add(new RawPage(copy, raw));
     }
 
     static synchronized List<?> itemsBeforeFilters(Object success, List<?> visible) {
+        RAW_PAGES.removeIf(page -> page.success.get() == null);
         for (int i = RAW_PAGES.size() - 1; i >= 0; i--) {
             RawPage page = RAW_PAGES.get(i);
             if (page.success.get() == success) return page.raw;

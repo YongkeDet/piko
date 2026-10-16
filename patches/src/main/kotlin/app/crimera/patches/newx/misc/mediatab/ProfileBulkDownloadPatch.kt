@@ -1,6 +1,7 @@
 package app.crimera.patches.newx.misc.mediatab
 
 import app.crimera.bytecode.Block
+import app.crimera.bytecode.RegisterLimit
 import app.crimera.bytecode.Target
 import app.crimera.bytecode.fieldReference
 import app.crimera.bytecode.insertHook
@@ -175,6 +176,29 @@ val newXProfileBulkDownloadPatch = bytecodePatch(
             invokeStatic(methodReference("$EXTENSION->allowAutoplay(${OBJECT}Z)Z"),
                 constructor.p0Register + 1, autoplayRegister)
             moveResult(autoplayRegister, "Z")
+        }
+        val successOwner = mutableClassDefBy(success.originalClassDef.type)
+        val copy = requireExactlyOne("NewX bulk native Success copy", successOwner.methods.filter { method ->
+            AccessFlags.STATIC.isSet(method.accessFlags) && method.returnType == successOwner.type &&
+                method.parameters().getOrNull(0) == successOwner.type &&
+                method.parameterTypes.any { it == items.type } &&
+                method.implementation?.instructions?.any { instruction ->
+                    instruction.getReference<MethodReference>()?.let {
+                        it.name == "<init>" && it.definingClass == successOwner.type
+                    } == true
+                } == true
+        })
+        val copyReturn = requireExactlyOne("NewX bulk Success copy return", copy.implementation!!.instructions
+            .toList().withIndex().filter { it.value.opcode == Opcode.RETURN_OBJECT })
+        val copiedRegister = (copyReturn.value as OneRegisterInstruction).registerA
+        copy.insertHook(copyReturn.index, excludedRegisters = listOf(copy.p0Register, copiedRegister),
+            relocateBranchTargets = true) {
+            val before = scratchRegister(RegisterLimit.FOUR_BIT)
+            val after = scratchRegister(RegisterLimit.FOUR_BIT)
+            iget(before, copy.p0Register, items)
+            iget(after, copiedRegister, items)
+            invokeStatic(methodReference("$EXTENSION->inheritPage($OBJECT$OBJECT$LIST$LIST)V"),
+                copy.p0Register, copiedRegister, before, after)
         }
         val pagingStateClass = byType[paging.state.stateType]!!
         val pagingToString = requireExactlyOne("NewX bulk paginator labels", pagingStateClass.methods.filter {
