@@ -118,7 +118,7 @@ class UnifiedDownloadNotificationPatchTest {
         add("move-object/from16 v1, v27")
         add("iget-object v10, v1, Lfixture/Notice;->detail:Ljava/lang/String;")
         add("move-object/from16 v18, v28")
-        add("const/4 v14, 0x2"); add("const/4 v15, 0x0"); add("const/4 v16, 0x1"); add("const/4 v17, 0x1")
+        add("const/4 v14, 0x2"); add("const/4 v15, 0x0"); add("const/16 v16, 0x1"); add("const/16 v17, 0x1")
         add("invoke-static/range {v10 .. v19}, Landroidx/compose/material3/Fixture;->text(Ljava/lang/String;Landroidx/compose/ui/Modifier;JIZIILandroidx/compose/runtime/Composer;I)V")
         add("invoke-static {v1}, Lfixture/Sink;->keep(Ljava/lang/Object;)V"); add("return-void")
         val method = fixture("caption", listOf("Lfixture/Notice;", "Landroidx/compose/runtime/Composer;", "I"), "V", body, true)
