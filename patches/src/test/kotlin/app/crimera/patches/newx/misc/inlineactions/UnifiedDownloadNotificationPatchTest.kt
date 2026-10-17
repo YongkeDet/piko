@@ -116,13 +116,19 @@ class UnifiedDownloadNotificationPatchTest {
         val body = MethodImplementationBuilder(30)
         fun add(s: String) { body.addInstruction(s.toInstruction()) }
         add("move-object/from16 v1, v27")
-        add("iget-object v10, v1, Lfixture/Notice;->detail:Ljava/lang/String;")
+        add("iget-object v10, v1, Lfixture/Notice;->title:Landroidx/compose/ui/text/AnnotatedString;")
         add("move-object/from16 v18, v28")
         add("const/4 v14, 0x2"); add("const/4 v15, 0x0"); add("const/16 v16, 0x1"); add("const/16 v17, 0x1")
+        add("invoke-static/range {v10 .. v19}, Landroidx/compose/material3/Fixture;->rich(Landroidx/compose/ui/text/AnnotatedString;Landroidx/compose/ui/Modifier;JIZIILandroidx/compose/runtime/Composer;I)V")
+        add("iget-object v10, v1, Lfixture/Notice;->detail:Ljava/lang/String;")
         add("invoke-static/range {v10 .. v19}, Landroidx/compose/material3/Fixture;->text(Ljava/lang/String;Landroidx/compose/ui/Modifier;JIZIILandroidx/compose/runtime/Composer;I)V")
         add("invoke-static {v1}, Lfixture/Sink;->keep(Ljava/lang/Object;)V"); add("return-void")
         val method = fixture("caption", listOf("Lfixture/Notice;", "Landroidx/compose/runtime/Composer;", "I"), "V", body, true)
-        val site = bannerTextCalls(method, "Lfixture/Notice;").single()
+        val fallback = fixture("captionFallback", listOf("Lfixture/Notice;", "Landroidx/compose/runtime/Composer;", "I"), "V", body, true)
+        // Real APK regression: modern and fallback layouts each have a rich headline and detail.
+        val renderers = resolveBannerRenderers(listOf(method, fallback).flatMap { bannerTextCalls(it, "Lfixture/Notice;") })
+        assertEquals(2, renderers.size)
+        val site = renderers.single { it.detail.method === method }.detail
         assertEquals(listOf(1, 18, 14, 15, 16), listOf(site.model, site.composer, site.overflow, site.wrap, site.max))
         method.expandBannerText(site)
         val code = method.implementation!!.instructions

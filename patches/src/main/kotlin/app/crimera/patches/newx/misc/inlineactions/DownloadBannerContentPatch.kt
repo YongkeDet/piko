@@ -60,6 +60,20 @@ internal fun Method.bannerParameterOrigins(index: Int): Map<Int, Int> {
 internal data class BannerTextCall(val method: Method, val index: Int, val target: MethodReference,
     val model: Int, val composer: Int, val overflow: Int, val wrap: Int, val max: Int)
 
+internal data class BannerRenderer(val headline: BannerTextCall, val detail: BannerTextCall)
+
+/** Both native layouts have their own headline and detail; neither is globally unique. */
+internal fun resolveBannerRenderers(sites: List<BannerTextCall>): List<BannerRenderer> {
+    if (sites.isEmpty()) throw PatchException("No native notification text renderer found")
+    return sites.groupBy { it.method.toString() }.map { (signature, calls) ->
+        val headline = requireExactlyOne("Native rich notification headline in $signature",
+            calls.filter { "Ljava/lang/String;" !in it.target.parameters() })
+        val detail = requireExactlyOne("Native notification detail in $signature",
+            calls.filter { "Ljava/lang/String;" in it.target.parameters() })
+        BannerRenderer(headline, detail)
+    }
+}
+
 /** Follow both real API renderers, including the AnnotatedString headline and fallback body. */
 internal fun bannerTextCalls(method: Method, api: String): List<BannerTextCall> {
     val parameters = method.parameterTypes.map(CharSequence::toString)
@@ -102,36 +116,34 @@ internal fun MutableMethod.expandBannerText(site: BannerTextCall) {
 context(context: BytecodePatchContext)
 internal fun patchFullDownloadBanner(runtime: ResolvedNotificationRuntime, classes: List<ClassDef>, model: ClassDef) {
     val sites = classes.flatMap { type -> type.methods.flatMap { bannerTextCalls(it, model.type) } }
-    val headline = requireExactlyOne("Native rich notification headline", sites.filter { it.target.parameters().none { p -> p == "Ljava/lang/String;" } })
-    val detail = requireExactlyOne("Native notification detail", sites.filter { it.method.toString() == headline.method.toString() && it != headline })
-    val fallback = requireExactlyOne("Native fallback notification body", sites.filter { it.method.toString() != headline.method.toString() })
-    listOf(headline, detail, fallback).forEach { site ->
+    val renderers = resolveBannerRenderers(sites)
+    sites.distinctBy { it.target.toString() }.forEach { site ->
         val target = requireExactlyOne("Native text implementation", context.classDefByOrNull(site.target.definingClass)!!.methods.filter { it.toString() == site.target.toString() })
         if (!AccessFlags.STATIC.isSet(target.accessFlags) || target.body().none { (it as? NarrowLiteralInstruction)?.narrowLiteral == Int.MAX_VALUE }) {
             throw PatchException("Native text no longer defaults to unlimited lines: $target")
         }
     }
-    patchProgressIndicator(classes, headline.target)
-    listOf(headline, detail, fallback).groupBy { it.method.definingClass }.forEach { (owner, byOwner) ->
-        byOwner.groupBy { it.method.toString() }.forEach { (signature, calls) ->
-            val method = requireExactlyOne("Mutable full notification renderer", context.mutableClassDefBy(owner).methods.filter { it.toString() == signature })
-            calls.sortedByDescending { it.index }.forEach { site ->
-                if (site != headline) method.insertHook(site.index + 1, relocateBranchTargets = false) {
-                    // The void text call leaves both caller registers intact. Its old argument
-                    // registers are dead here, giving typed invoke staging bounded scratch space.
-                    val composer = scratchRegister(RegisterLimit.FOUR_BIT)
-                    move(composer, site.composer, OBJ)
-                    invokeStatic(methodReference("$B->drawProgress($OBJ$OBJ)V"), site.model, composer)
-                }
-                // Argument preparation falls through this call on both validated renderers.
-                method.expandBannerText(site)
+    patchProgressIndicator(classes, requireExactlyOne("Native notification text owner", sites.map { it.target.definingClass }.distinct()))
+    renderers.forEach { renderer ->
+        val calls = listOf(renderer.headline, renderer.detail)
+        val signature = renderer.headline.method.toString()
+        val method = requireExactlyOne("Mutable full notification renderer", context.mutableClassDefBy(renderer.headline.method.definingClass).methods.filter { it.toString() == signature })
+        calls.sortedByDescending { it.index }.forEach { site ->
+            if (site == renderer.detail) method.insertHook(site.index + 1, relocateBranchTargets = false) {
+                // The void text call leaves both caller registers intact. Its old argument
+                // registers are dead here, giving typed invoke staging bounded scratch space.
+                val composer = scratchRegister(RegisterLimit.FOUR_BIT)
+                move(composer, site.composer, OBJ)
+                invokeStatic(methodReference("$B->drawProgress($OBJ$OBJ)V"), site.model, composer)
             }
+            // Argument preparation falls through this call on both validated renderers.
+            method.expandBannerText(site)
         }
     }
 }
 
 context(context: BytecodePatchContext)
-private fun patchProgressIndicator(classes: List<ClassDef>, text: MethodReference) {
+private fun patchProgressIndicator(classes: List<ClassDef>, textOwner: String) {
     val methods = classes.flatMap { it.methods }
     val linear = requireExactlyOne("Native determinate linear progress indicator", methods.filter { method ->
         val parameters = method.parameters()
@@ -155,7 +167,7 @@ private fun patchProgressIndicator(classes: List<ClassDef>, text: MethodReferenc
         it.definingClass.startsWith("Landroidx/compose/foundation/layout/") && it.parameters() == listOf(MOD, "F") && it.returnType == MOD &&
             it.body().any { op -> op.getReference<FieldReference>()?.name == "Horizontal" }
     })
-    val textClass = context.classDefByOrNull(text.definingClass) ?: throw PatchException("Missing native text class")
+    val textClass = context.classDefByOrNull(textOwner) ?: throw PatchException("Missing native text class")
     val empty = requireExactlyOne("Native empty Modifier", textClass.methods.flatMap { it.body().mapNotNull { op -> op.getReference<FieldReference>() } }.filter { field ->
         field.definingClass.startsWith("Landroidx/compose/ui/") && context.classDefByOrNull(field.type)?.interfaces?.contains(MOD) == true && field.definingClass == field.type
     }.distinctBy { it.toString() })
